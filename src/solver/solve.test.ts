@@ -7,7 +7,7 @@ import { STRAINS, SUITS, cardCode, dealRandom, mulberry32, shuffle, sideOf } fro
 import type { Position } from './position';
 import { referenceAnalyze, referenceSolve } from './reference';
 import type { CardAnalysis } from './solve';
-import { analyze, ddTable, solve } from './solve';
+import { Solver, analyze, ddTable, solve } from './solve';
 import {
   positionFromPbn,
   randomPosition,
@@ -143,6 +143,46 @@ describe('solver properties (1–6 cards)', () => {
     expect(analyze(p).map((a) => cardCode(a.card))).toEqual(['SK', 'S4']);
     const lead = positionFromPbn('N:A2.K.Q.J 3.2.43.5 ...AKQ98 T9.8.7.6', 'NT', 'N');
     expect(analyze(lead).map((a) => cardCode(a.card))).toEqual(['SA', 'S2', 'HK', 'DQ', 'CJ']);
+  });
+});
+
+// The reference is too slow past 5 cards, so the table and the sure-trick bounds — the parts
+// that generalise from one position to others — are also checked against plain search
+// (equivalent cards and move ordering only) on bigger positions.
+describe('optimized search matches plain search (5–7 cards)', () => {
+  const plain = new Solver({ plain: true });
+  const opts = { minCards: 5, maxCards: 7 };
+
+  it('solve, with a table shared by all positions', () => {
+    const shared = new Solver();
+    expect(failures(11, 300, opts, (p) => shared.solve(p) === plain.solve(p))).toEqual([]);
+  });
+
+  it('solve, with a tiny table (constant collisions and evictions)', () => {
+    const tiny = new Solver({ ttBits: 5 });
+    expect(failures(12, 300, opts, (p) => tiny.solve(p) === plain.solve(p))).toEqual([]);
+  });
+
+  it('analyze card by card', () => {
+    const shared = new Solver();
+    const bad = failures(
+      13,
+      150,
+      opts,
+      (p) => analysisText(shared.analyze(p)) === analysisText(plain.analyze(p)),
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it('ddTable on 7-card deals', () => {
+    const shared = new Solver();
+    const rng = mulberry32(14);
+    for (let i = 0; i < 15; i++) {
+      const full = dealRandom(rng);
+      const cut = (seat: keyof Deal) => full[seat].slice(0, 7);
+      const deal: Deal = { N: cut('N'), E: cut('E'), S: cut('S'), W: cut('W') };
+      expect(shared.ddTable(deal)).toEqual(plain.ddTable(deal));
+    }
   });
 });
 

@@ -38,15 +38,17 @@
 
 ## M4 — Solver: ทำให้เร็ว
 
-- [ ] **4.1** `bench/` + `pnpm bench`: ชุดมือ 13 ใบแบบ seed คงที่ (≥ 50 มือ) วัด `solve`, `analyze`, `ddTable` พิมพ์ p50 / p95 — บันทึกผลก่อน optimize ไว้ใน `DECISIONS.md`
-- [ ] **4.2** ไพ่ที่เทียบเท่ากัน (sequence ใน relative rank) ค้นแค่ใบเดียว
-- [ ] **4.3** transposition table ที่ต้น trick (คีย์ relative rank + คนนำ + trump, เก็บขอบเขตบน/ล่าง, จำกัดขนาด)
-- [ ] **4.4** quick tricks / ขอบเขตที่ดีขึ้น
-- [ ] **4.5** move ordering (SPEC §5.2)
-- [ ] **4.6** `ddTable` ใช้ TT ร่วมกันระหว่างคนนำ/strain ได้เท่าที่ทำได้
-- [ ] **4.7** รัน test ของ M3 ซ้ำทุกครั้งหลัง optimize แต่ละข้อ และบันทึกผล bench หลังแต่ละข้อใน `DECISIONS.md`
+- [x] **4.1** `bench/` + `pnpm bench`: ชุดมือ 13 ใบแบบ seed คงที่ (≥ 50 มือ) วัด `solve`, `analyze`, `ddTable` พิมพ์ p50 / p95 — บันทึกผลก่อน optimize ไว้ใน `DECISIONS.md`
+- [x] **4.2** ไพ่ที่เทียบเท่ากัน (sequence ใน relative rank) ค้นแค่ใบเดียว
+- [x] **4.3** transposition table ที่ต้น trick (คีย์ relative rank + คนนำ + trump, เก็บขอบเขตบน/ล่าง, จำกัดขนาด)
+- [x] **4.4** quick tricks / ขอบเขตที่ดีขึ้น
+- [x] **4.5** move ordering (SPEC §5.2)
+- [x] **4.6** `ddTable` ใช้ TT ร่วมกันระหว่างคนนำ/strain ได้เท่าที่ทำได้
+- [x] **4.7** รัน test ของ M3 ซ้ำทุกครั้งหลัง optimize แต่ละข้อ และบันทึกผล bench หลังแต่ละข้อใน `DECISIONS.md`
 
 **เสร็จเมื่อ:** ผ่านเป้า SPEC §5.4 และ test ของ M3 ยังผ่าน (ถ้ายังช้ากว่าเป้า > 3 เท่าหลังทำครบ ให้หยุดและเสนอทาง DDS → WASM ตาม SPEC §5.4)
+
+> **สถานะ (2026-10-27):** ทำ 4.1–4.7 ครบ test ผ่าน แต่ solve มือ 13 ใบยังช้ากว่าเป้า 30–170 เท่า → หยุดรอตัดสินใจเรื่อง DDS → WASM (ดู `DECISIONS.md` M4)
 
 ## M5 — Worker
 

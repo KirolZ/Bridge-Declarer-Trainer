@@ -8,5 +8,7 @@ export {
   validatePosition,
 } from './position';
 export type { CardAnalysis, DDTable } from './solve';
+export type { SolverOptions } from './solve';
+export { Solver } from './solve';
 export { analyze, ddTable, solve } from './solve';
 export { referenceAnalyze, referenceSolve } from './reference';
