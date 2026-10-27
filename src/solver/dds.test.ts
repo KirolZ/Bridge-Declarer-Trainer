@@ -1,8 +1,18 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { STRAINS, cardCode, dealRandom, mulberry32 } from '../engine';
-import type { DdsSolver } from './dds';
-import { loadDds } from './dds';
+import type { Strain } from '../engine';
+import {
+  STRAINS,
+  applyPlay,
+  cardCode,
+  dealRandom,
+  isComplete,
+  legalPlays,
+  mulberry32,
+  newPlayState,
+} from '../engine';
+import { DdsSolver, loadDds } from './dds';
 import type { Position } from './position';
+import { positionFromPlayState } from './position';
 import { referenceAnalyze, referenceSolve } from './reference';
 import type { CardAnalysis } from './solve';
 import { Solver } from './solve';
@@ -123,6 +133,43 @@ describe('DDS (wasm) on full deals', () => {
       dds.solve({ hands: { ...deal, N: deal.N.slice(1) }, trump: 'S', trick: [], toPlay: 'W' }),
     ).toThrow();
   });
+});
+
+describe('DDS (wasm) keeps its cache between calls (SPEC §5.5)', () => {
+  // A second wasm instance whose cache is never cleared, checked against the shared one cleared
+  // before every call: along played-out deals, with undo-style jumps back, and across deals.
+  it('gives the same answers as a cold start along played-out deals', async () => {
+    const warm = await DdsSolver.load();
+    const bad: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      const deal = dealRandom(mulberry32(700 + i));
+      const strain = STRAINS[i % 5] as Strain;
+      const rng = mulberry32(800 + i);
+      let state = newPlayState(deal, { level: 1, strain, declarer: 'S' });
+      const positions: Position[] = [];
+      while (!isComplete(state)) {
+        positions.push(positionFromPlayState(state));
+        const legal = legalPlays(state);
+        state = applyPlay(state, legal[Math.floor(rng() * legal.length)]!);
+      }
+      // Forward, jumping back a few cards after every trick (as undo does).
+      const order: number[] = [];
+      positions.forEach((_, k) => {
+        order.push(k);
+        if (k % 4 === 3) order.push(k - 1 - Math.floor(rng() * 3));
+      });
+      for (const k of order) {
+        const pos = positions[k]!;
+        const got = `${warm.solve(pos)} ${text(warm.analyze(pos))}`;
+        dds.clear();
+        const solved = dds.solve(pos);
+        dds.clear();
+        const want = `${solved} ${text(dds.analyze(pos))}`;
+        if (got !== want) bad.push(`${describePos(pos)}: ${got} ≠ ${want}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  }, 180_000);
 });
 
 function sameSet(a: CardAnalysis[], b: CardAnalysis[]): boolean {

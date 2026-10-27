@@ -20,6 +20,9 @@ pnpm install
 pnpm dev          # http://localhost:5173
 ```
 
+หน้า `#/dev/solver` (ไม่มีลิงก์จากแอป) ใช้ลองเรียก solver ผ่าน Web Worker: ddTable มือสุ่ม / 10 มือ,
+เล่นทั้งมือแบบ DD, ยกเลิก และดูว่าหน้าจอยังกดได้ (ตัวนับ + เฟรมที่ค้างนานสุด)
+
 ## Test
 
 ```sh
@@ -38,6 +41,7 @@ pnpm format:check
 ```sh
 pnpm bench                # วัดความเร็ว solver DDS (p50 / p95) เทียบเป้า SPEC §5.4
 pnpm bench --engine ts    # วัดตัว TS (ช้า ใช้กับ --cards 8 เป็นต้น)
+pnpm bench --only play    # เล่นทั้งมือ: เก็บ TT ข้ามการเรียก เทียบกับล้างทุกครั้ง
 ```
 
 ## Solver (DDS)
@@ -68,7 +72,7 @@ pnpm build        # ได้ dist/ เป็นไฟล์ static (hash routin
 | `src/solver` | double-dummy solver (DDS wasm + TS) + reference brute-force |
 | `native/dds` | wrapper C++ ของ DDS สำหรับ build wasm                       |
 | `src/bot`    | เลือกใบของบอทฝั่งป้องกัน                                    |
-| `src/worker` | Web Worker ห่อ solver                                       |
+| `src/worker` | Web Worker ห่อ solver + `SolverClient` (Promise / ยกเลิก)   |
 | `src/game`   | Zustand store ของมือที่กำลังเล่น                            |
 | `src/learn`  | เนื้อหาคู่มือ + ข้อมูลแบบฝึก                                |
 | `src/ui`     | React components + pages                                    |

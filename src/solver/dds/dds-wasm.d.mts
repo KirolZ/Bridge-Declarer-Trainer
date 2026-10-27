@@ -7,6 +7,8 @@ export interface DdsModule {
   _free(ptr: number): void;
   /** in: 24 ints, out: 1 + 13 * 3 ints. Returns 1 on success, else a DDS error code. */
   _bt_solve(inPtr: number, solutions: 1 | 3, outPtr: number): number;
+  /** Clears the play context's transposition table (kept between `_bt_solve` calls). */
+  _bt_reset_play(): void;
   /** in: 16 ints, out: 20 ints. Returns 1 on success, else a DDS error code. */
   _bt_calc_table(inPtr: number, outPtr: number): number;
 }

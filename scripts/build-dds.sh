@@ -39,7 +39,7 @@ docker run --rm -v "$host_root:/work" -w /work "$EMSDK_IMAGE" bash -euo pipefail
     -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createDdsModule \
     -sSINGLE_FILE=1 -sENVIRONMENT=web,worker,node \
     -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sSTACK_SIZE=8MB \
-    -sEXPORTED_FUNCTIONS=_bt_solve,_bt_calc_table,_malloc,_free \
+    -sEXPORTED_FUNCTIONS=_bt_solve,_bt_calc_table,_bt_reset_play,_malloc,_free \
     -sEXPORTED_RUNTIME_METHODS=HEAP32 \
     -o src/solver/dds/dds-wasm.mjs
 '

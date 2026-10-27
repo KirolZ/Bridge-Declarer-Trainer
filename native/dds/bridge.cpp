@@ -24,6 +24,9 @@ auto config() -> SolverConfig
 }
 
 // One context for play (solve / analyze), one for tables, so neither evicts the other.
+// The play context keeps its TT between calls: positions from the same deal reuse earlier work
+// (SPEC §5.5). DDS itself resets the TT when the holdings no longer look like the same deal or
+// the trump suit changes (solver_if.cpp), and bt_reset_play() clears it on request.
 auto play_context() -> SolverContext&
 {
   static SolverContext ctx(config());
@@ -68,12 +71,9 @@ auto bt_solve(const int* in, int solutions, int* out) -> int
     }
   }
 
-  SolverContext& ctx = play_context();
-  ctx.reset_for_solve();
-
   FutureTricks fut{};
   // mode 1: always search, even when only one card can be played.
-  const int res = solve_board(ctx, dl, /*target=*/-1, solutions, /*mode=*/1, &fut);
+  const int res = solve_board(play_context(), dl, /*target=*/-1, solutions, /*mode=*/1, &fut);
   if (res != RETURN_NO_FAULT) {
     return res;
   }
@@ -99,6 +99,13 @@ auto bt_solve(const int* in, int solutions, int* out) -> int
   }
   out[0] = n;
   return RETURN_NO_FAULT;
+}
+
+// Forgets everything the play context has cached (call when moving on to a new deal).
+EMSCRIPTEN_KEEPALIVE
+auto bt_reset_play() -> void
+{
+  play_context().reset_for_solve();
 }
 
 // in[16]: holdings[hand * 4 + suit]. out[20]: tricks[strain * 4 + declarer].

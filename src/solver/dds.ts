@@ -40,6 +40,16 @@ export class DdsSolver {
     return new DdsSolver(await createDdsModule());
   }
 
+  /**
+   * Forget cached search results. `solve` / `analyze` keep DDS's transposition table between
+   * calls, so later positions of the same deal reuse earlier work; DDS resets it by itself when
+   * the cards no longer look like the same deal or the trump suit changes. Call this when moving
+   * on to a new deal (the Web Worker does, SPEC §5.5) or to time a cold start.
+   */
+  clear(): void {
+    this.mod._bt_reset_play();
+  }
+
   /** Most tricks NS take from `pos` to the end of play (not counting tricks already won). */
   solve(pos: Position): number {
     assertValidPosition(pos);

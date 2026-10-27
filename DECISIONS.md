@@ -163,3 +163,50 @@ ddTable` เป็น sync ตาม SPEC §5.1 คะแนนจาก DDS เ
 | solve   | 16 ms  | 186 ms | 239 ms | 1 s ✓    |
 | analyze | 38 ms  | 379 ms | 525 ms | 1.5 s ✓  |
 | ddTable | 179 ms | 966 ms | 1.57 s | 4 s ✓    |
+
+## M5 — Worker (2026-10-27)
+
+- **โมดูล `src/worker/`** — `protocol.ts` (type ข้อความตาม SPEC §5.5), `host.ts` (`SolverHost` รับคำขอ → คำตอบ
+  ไม่แตะ global ของ Worker จึง test ใน Node ได้), `solver.worker.ts` (โหลด DDS ครั้งเดียวแล้วตอบตามลำดับ),
+  `client.ts` (`SolverClient`), `index.ts` (`getSolver()` ตัวเดียวทั้งแอป) — UI ต้อง import จาก `solver/position`
+  หรือ type จาก `solver` เท่านั้น ห้าม import ค่าจาก `solver/index` เพราะจะลาก DDS (440 KB) เข้า bundle หลัก
+  (ตอนนี้ DDS อยู่แค่ใน chunk `solver.worker-*.js`)
+- **คิวอยู่ฝั่ง main ส่งให้ worker ทีละงาน** — งานที่ยังรอคิวยกเลิกได้โดย worker ไม่เคยเห็น ส่วนงานที่ worker
+  กำลังทำหยุดกลางทางไม่ได้ (DDS เป็น sync) → ยกเลิกแล้ว Promise reject ทันที (`SolverAbortError`,
+  `name = 'AbortError'`) ผลที่ตามมาทีหลังทิ้งไป และถ้า worker ยังไม่ว่างภายใน `cancelGraceMs` (300 ms)
+  ให้ `terminate()` แล้วสร้างใหม่ งานถัดไปจะได้ไม่ต้องรอ (สร้าง DDS ใหม่ใช้เวลาราว 10 ms)
+- **ยกเลิกด้วย `AbortSignal`** ต่องาน + `cancelAll()` (ใช้ตอน undo / แจกใหม่) + `dispose()`
+- **watchdog** — งานที่รันนานเกิน `timeoutMs` (ค่าเริ่มต้น 20 s, ตั้งต่องานได้) → terminate + สร้าง worker ใหม่
+  แล้ว reject ด้วย `SolverTimeoutError`; worker crash (`onerror`) → `SolverError` และเริ่ม worker ใหม่ตอนงานถัดไป;
+  solver ตอบ error (เช่น ตำแหน่งผิด) → `{ ok: false, error }` → `SolverError` โดยไม่ต้องสร้าง worker ใหม่
+- **`warmUp()`** เริ่ม worker (และโหลด DDS) ล่วงหน้าได้ หน้า dev เรียกตอนเปิด
+- **TT ข้ามการเรียก (5.3)** — เดิม `bt_solve` เรียก `reset_for_solve()` ทุกครั้ง ตอนนี้ไม่ล้างแล้ว และเพิ่ม
+  `bt_reset_play()` → `DdsSolver.clear()` DDS เองก็ล้าง TT ให้เมื่อไพ่ไม่เหมือนมือเดิมหรือ trump เปลี่ยน
+  (`solver_if.cpp`; DDS ใช้ context ตัวเดียวข้ามหลายมือแบบนี้เองใน `calc_tables.cpp`) ฝั่ง worker มี `DealTracker`
+  จำว่าไพ่แต่ละใบอยู่ที่นั่งไหน ถ้าตำแหน่งใหม่มีไพ่ที่ย้ายที่นั่ง = มือใหม่ → `clear()` (เดินหน้าหรือ undo
+  ในมือเดียวกันไม่มีไพ่ย้ายที่นั่ง) ไม่ต้องเพิ่ม field ใน protocol `ddTable` ใช้ context แยกและยังล้างทุกครั้ง
+  (แต่ละครั้งเป็นมือใหม่อยู่แล้ว)
+- **ยืนยันความถูกต้อง** — test เทียบ DDS ที่เก็บ TT (instance แยก) กับ DDS ที่ล้างก่อนทุกครั้ง ตามมือที่เล่นจนจบ
+  6 มือ (ทุก strain) พร้อมกระโดดถอยหลังแบบ undo ทั้ง `solve` และ `analyze` ตรงกันทั้งหมด และ test เดิมของ M4
+  (2,000 + 500 ตำแหน่งสุ่ม) ตอนนี้ก็รันโดยไม่ล้าง TT ระหว่างตำแหน่งแล้ว
+- **หน้า dev `#/dev/solver`** อยู่ใน build จริงด้วย (ไม่มีลิงก์) เพื่อให้ e2e ที่รันกับ `vite preview` ใช้ได้
+  ใช้ e2e ตรวจว่า (1) มี Web Worker `solver.worker` (2) กดปุ่มนับได้ระหว่างคำนวณ (3) ช่วงห่างระหว่างเฟรมนานสุด
+  < 500 ms (ปกติ 17 ms = 1 เฟรม เผื่อไว้สำหรับเครื่องที่รันหลาย browser พร้อมกัน) (4) เล่นทั้งมือแบบ DD ผ่าน
+  worker ได้ trick เท่ากับ `solve` ตอนเริ่ม (5) ยกเลิกแล้วงานถัดไปยังทำงาน
+- **ยังไม่ทำ (M13)** — DDS แบบ `SINGLE_FILE` compile wasm จาก JS จึงต้องให้ CSP มี `'wasm-unsafe-eval'`
+  ใน `script-src` ด้วย นอกจาก `worker-src 'self'` (Vite สร้าง worker เป็นไฟล์แยก ไม่ใช่ blob)
+- **หน้า dev รับ `?seed=N`** (`#/dev/solver?seed=4`) ให้แจกมือจาก RNG แบบ seed — e2e ใช้ seed 4 ซึ่ง ddTable 10 มือ
+  ใช้เวลารวม ~1.3 s (มือละไม่เกิน 0.25 s) งานจึงยาวพอให้กดปุ่มระหว่างคำนวณ และไม่เจอมือที่ช้าผิดปกติ
+
+### ผลวัด (DDS, Node 24)
+
+| วัดอะไร                                                     | ผล                                                          |
+| ----------------------------------------------------------- | ----------------------------------------------------------- |
+| `pnpm bench --only play --deals 30` (solve + analyze ทุกตา) | เก็บ TT: 123 ms ต่อมือ, p95 4.7 ms ต่อตำแหน่ง               |
+|                                                             | ล้าง TT ทุกครั้ง: 265 ms ต่อมือ, p95 18.8 ms ต่อตำแหน่ง     |
+| ddTable มือสุ่ม 1,000 มือ                                   | p50 159 ms, p95 772 ms, p99 1.19 s, p99.9 2.39 s, max 7.2 s |
+| สร้าง DDS ใหม่ (`DdsSolver.load()`)                         | ~10 ms                                                      |
+| browser (Chromium, ไม่มีงานอื่น) ระหว่าง ddTable 10 มือ     | เฟรมค้างนานสุด 17 ms (= 1 เฟรม)                             |
+
+- **ข้อควรระวังสำหรับ M6** — มือสุ่มราว 1 ใน 1,000 ใช้ ddTable หลายวินาที (แย่สุดที่เจอ 7.2 s ใน Node อาจช้ากว่านี้
+  หลายเท่าบนมือถือ) ตอนแจกไพ่ควรส่ง `timeoutMs` สั้นกว่าค่าเริ่มต้น (เช่น 5 s) แล้วถือว่า timeout = แจกใหม่

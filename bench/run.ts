@@ -4,18 +4,33 @@
 //   pnpm bench --engine ts           the pure-TS solver instead (too slow for 13 cards)
 //   pnpm bench --deals 10 --cards 8  10 deals cut down to 8 cards per hand
 //   pnpm bench --only solve          one job (solve | analyze | ddTable)
+//   pnpm bench --only play           cache kept vs cleared along played-out deals (SPEC §5.5)
 //
-// Every TS job starts from an empty cache (`clear()`), so the numbers are cold-start times. DDS
-// resets its own table on every call.
+// Every solve / analyze / ddTable job starts from an empty cache (`clear()`), so the numbers are
+// cold-start times. The `play` job (not run by default) plays each deal out with seeded random
+// legal cards and times solve + analyze at every position twice: keeping the cache between calls
+// as the Web Worker does, and clearing it before each call.
 
 import type { Deal, Strain } from '../src/engine';
-import { STRAINS, dealRandom, mulberry32 } from '../src/engine';
+import {
+  STRAINS,
+  applyPlay,
+  dealRandom,
+  isComplete,
+  legalPlays,
+  mulberry32,
+  newPlayState,
+} from '../src/engine';
 import type { CardAnalysis, DDTable, Position } from '../src/solver';
-import { Solver, loadDds } from '../src/solver';
+import { Solver, loadDds, positionFromPlayState } from '../src/solver';
 
-type Job = 'solve' | 'analyze' | 'ddTable';
+type Job = 'solve' | 'analyze' | 'ddTable' | 'play';
 
-const TARGETS_MS: Record<Job, number> = { solve: 1000, analyze: 1500, ddTable: 4000 };
+const TARGETS_MS: Record<Exclude<Job, 'play'>, number> = {
+  solve: 1000,
+  analyze: 1500,
+  ddTable: 4000,
+};
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -60,7 +75,7 @@ async function makeEngine(): Promise<Engine> {
       solve: (p) => dds.solve(p),
       analyze: (p) => dds.analyze(p),
       ddTable: (d) => dds.ddTable(d),
-      reset: () => {},
+      reset: () => dds.clear(),
       stats: () => null,
     };
   }
@@ -88,8 +103,52 @@ async function makeEngine(): Promise<Engine> {
 const solver = await makeEngine();
 console.log(`bench: ${engine}, ${deals} deals × ${cards} cards per hand (Node ${process.version})`);
 
+/** Positions met when deal `i` is played out with seeded random legal cards. */
+function playedOut(i: number): Position[] {
+  const { deal, strain } = benchDeal(i);
+  const rng = mulberry32(2000 + i);
+  let state = newPlayState(deal, { level: 1, strain, declarer: 'S' });
+  const out: Position[] = [];
+  while (!isComplete(state)) {
+    out.push(positionFromPlayState(state));
+    const legal = legalPlays(state);
+    state = applyPlay(state, legal[Math.floor(rng() * legal.length)]!);
+  }
+  return out;
+}
+
+/** Per-position time of solve + analyze along each deal, with the cache kept or cleared. */
+function benchPlay(): void {
+  for (const keep of [true, false]) {
+    const times: number[] = [];
+    let total = 0;
+    for (let i = 0; i < deals; i++) {
+      solver.reset();
+      for (const pos of playedOut(i)) {
+        if (!keep) solver.reset();
+        const t0 = performance.now();
+        solver.solve(pos);
+        solver.analyze(pos);
+        const t = performance.now() - t0;
+        times.push(t);
+        total += t;
+      }
+    }
+    times.sort((a, b) => a - b);
+    console.log(
+      `play (${keep ? 'cache kept   ' : 'cache cleared'})  p50 ${fmt(percentile(times, 50)).padStart(9)}  ` +
+        `p95 ${fmt(percentile(times, 95)).padStart(9)}  max ${fmt(times.at(-1) as number).padStart(9)}  ` +
+        `per deal ${fmt(total / deals)}`,
+    );
+  }
+}
+
 let failed = false;
 for (const job of jobs) {
+  if (job === 'play') {
+    benchPlay();
+    continue;
+  }
   const times: number[] = [];
   const before = solver.stats();
   for (let i = 0; i < deals; i++) {

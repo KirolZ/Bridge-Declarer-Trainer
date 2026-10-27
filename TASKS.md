@@ -59,12 +59,15 @@
 
 ## M5 — Worker
 
-- [ ] **5.1** Web Worker ห่อ `solve / analyze / ddTable` + protocol `{ id, type, payload }` → `{ id, ok, result | error }`
-- [ ] **5.2** wrapper ฝั่ง main แบบ Promise + ยกเลิกได้ + `terminate()` แล้วสร้างใหม่เมื่อค้างนาน
-- [ ] **5.3** เก็บ TT ข้ามการเรียกของมือเดียวกัน ล้างเมื่อเปลี่ยนมือ
-- [ ] **5.4** test ของ wrapper (mock worker) + ลองเรียกจริงใน dev ว่า UI ไม่ค้างระหว่างคำนวณ
+- [x] **5.1** Web Worker ห่อ `solve / analyze / ddTable` + protocol `{ id, type, payload }` → `{ id, ok, result | error }`
+- [x] **5.2** wrapper ฝั่ง main แบบ Promise + ยกเลิกได้ + `terminate()` แล้วสร้างใหม่เมื่อค้างนาน
+- [x] **5.3** เก็บ TT ข้ามการเรียกของมือเดียวกัน ล้างเมื่อเปลี่ยนมือ
+- [x] **5.4** test ของ wrapper (mock worker) + ลองเรียกจริงใน dev ว่า UI ไม่ค้างระหว่างคำนวณ
 
 **เสร็จเมื่อ:** หน้า dev ทดลองเรียก `ddTable` ได้ผลโดยหน้าจอยังกดอย่างอื่นได้
+
+> **สถานะ (2026-10-27):** M5 เสร็จ — `src/worker/` (protocol, `SolverHost`, `solver.worker.ts`, `SolverClient`, `getSolver()`)
+> หน้า dev `#/dev/solver` + e2e ยืนยันว่ากดปุ่มได้และไม่มีเฟรมค้างระหว่างคำนวณ TT ของ DDS เก็บข้ามการเรียกในมือเดียวกันแล้ว
 
 ## M6 — แจกไพ่ + เลือก contract
 
