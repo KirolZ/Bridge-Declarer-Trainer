@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.DS_Store
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# deploy packages
+bridge-trainer-deploy.tar.gz
+.release/

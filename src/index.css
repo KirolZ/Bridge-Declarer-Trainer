@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-felt: #0f5132;
+  --color-felt-dark: #0a3622;
+  --color-suit-red: #c62828;
+  --color-suit-black: #111827;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Solid colour for everything below the first screen (body is only one viewport tall). */
+html {
+  background-color: #052014;
+}
+
+body {
+  background: radial-gradient(ellipse at top, #146c43 0%, #0a3622 60%, #052014 100%) no-repeat;
+  color: white;
+  font-family: 'Noto Sans Thai', 'Sarabun', system-ui, sans-serif;
+}

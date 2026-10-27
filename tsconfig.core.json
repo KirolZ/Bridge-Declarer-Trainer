@@ -1,0 +1,11 @@
+{
+  // Pure-logic code (engine / solver / bot) is type-checked without DOM types,
+  // so any use of window/document/localStorage fails to compile (SPEC §3).
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src/engine", "src/solver", "src/bot"],
+  "exclude": ["src/**/*.test.ts"]
+}
