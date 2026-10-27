@@ -24,6 +24,7 @@ pnpm dev          # http://localhost:5173
 
 ```sh
 pnpm test         # Vitest: engine / solver / bot / แบบฝึก
+SOLVER_SLOW=1 pnpm test   # เพิ่มตำแหน่ง 5 ใบที่เทียบกับ reference solver เป็น 200 ตำแหน่ง (ช้า)
 pnpm test:e2e     # Playwright (build + vite preview ให้เอง; ตั้ง E2E_BASE_URL เพื่อยิงเซิร์ฟเวอร์ที่รันอยู่แล้ว)
 pnpm typecheck
 pnpm lint
