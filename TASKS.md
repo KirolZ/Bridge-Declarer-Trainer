@@ -48,7 +48,14 @@
 
 **เสร็จเมื่อ:** ผ่านเป้า SPEC §5.4 และ test ของ M3 ยังผ่าน (ถ้ายังช้ากว่าเป้า > 3 เท่าหลังทำครบ ให้หยุดและเสนอทาง DDS → WASM ตาม SPEC §5.4)
 
-> **สถานะ (2026-10-27):** ทำ 4.1–4.7 ครบ test ผ่าน แต่ solve มือ 13 ใบยังช้ากว่าเป้า 30–170 เท่า → หยุดรอตัดสินใจเรื่อง DDS → WASM (ดู `DECISIONS.md` M4)
+> **สถานะ (2026-10-27):** ทำ 4.1–4.7 ครบ test ผ่าน แต่ solve มือ 13 ใบยังช้ากว่าเป้า 30–170 เท่า → ผู้ใช้เลือกทาง DDS → WASM (ข้อ 4.8–4.11)
+
+- [x] **4.8** `scripts/build-dds.sh` (`pnpm build:dds`): DDS v3.1.1 (commit pin) + `native/dds/bridge.cpp` → `src/solver/dds/dds-wasm.mjs` ด้วย Emscripten ใน Docker (image pin), แบบ thread เดียว ไฟล์เดียว commit ผลลัพธ์ + `LICENSE-DDS`
+- [x] **4.9** `src/solver/dds.ts`: `loadDds()` → `DdsSolver` ที่มี `solve / analyze / ddTable` ตาม SPEC §5.1 (ผลเหมือน `Solver` ทุกอย่าง รวมลำดับใบของ `analyze`)
+- [x] **4.10** test DDS เทียบ reference (2,000 solve + 500 analyze, มือละ ≤ 4 ใบ, กลาง trick), เทียบ TS solver (analyze 300 ตำแหน่ง 5–8 ใบ, ddTable 7 ใบ) และมือเต็ม (ddTable ตรงกับ solve / analyze ทุก strain)
+- [x] **4.11** `pnpm bench` ใช้ DDS เป็นค่าเริ่มต้น (`--engine ts` วัดตัว TS) — ผ่านเป้า SPEC §5.4 ทั้งสามงาน
+
+> **สถานะ (2026-10-27):** M4 เสร็จด้วย DDS → WASM — solve p95 186 ms, analyze 379 ms, ddTable 966 ms (50 มือ 13 ใบ) ตัว TS `Solver` เก็บไว้ใช้ตรวจเทียบใน test
 
 ## M5 — Worker
 

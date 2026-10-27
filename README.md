@@ -36,7 +36,20 @@ pnpm format:check
 ## Bench
 
 ```sh
-pnpm bench        # วัดความเร็ว solver (p50 / p95) — เริ่มใช้ได้จริงตั้งแต่ M4
+pnpm bench                # วัดความเร็ว solver DDS (p50 / p95) เทียบเป้า SPEC §5.4
+pnpm bench --engine ts    # วัดตัว TS (ช้า ใช้กับ --cards 8 เป็นต้น)
+```
+
+## Solver (DDS)
+
+solver ที่ใช้จริงคือ [DDS](https://github.com/dds-bridge/dds) ของ Bo Haglund, Soren Hein และผู้ร่วมพัฒนา
+(Apache-2.0, ดู `src/solver/dds/LICENSE-DDS`) compile เป็น WebAssembly แล้ว commit ไว้ที่
+`src/solver/dds/dds-wasm.mjs` ส่วน solver ที่เขียนด้วย TS ล้วนเก็บไว้ใช้ตรวจเทียบใน test
+
+build ใหม่เฉพาะตอนจะเปลี่ยนเวอร์ชัน DDS หรือแก้ `native/dds/bridge.cpp` (ต้องมี git + Docker):
+
+```sh
+pnpm build:dds
 ```
 
 ## Build / Deploy
@@ -49,17 +62,18 @@ pnpm build        # ได้ dist/ เป็นไฟล์ static (hash routin
 
 ## โครงสร้าง
 
-| โฟลเดอร์     | หน้าที่                                     |
-| ------------ | ------------------------------------------- |
-| `src/engine` | กติกา bridge ล้วน (pure TS)                 |
-| `src/solver` | double-dummy solver + reference brute-force |
-| `src/bot`    | เลือกใบของบอทฝั่งป้องกัน                    |
-| `src/worker` | Web Worker ห่อ solver                       |
-| `src/game`   | Zustand store ของมือที่กำลังเล่น            |
-| `src/learn`  | เนื้อหาคู่มือ + ข้อมูลแบบฝึก                |
-| `src/ui`     | React components + pages                    |
-| `bench/`     | สคริปต์วัดความเร็ว solver                   |
-| `e2e/`       | Playwright                                  |
+| โฟลเดอร์     | หน้าที่                                                     |
+| ------------ | ----------------------------------------------------------- |
+| `src/engine` | กติกา bridge ล้วน (pure TS)                                 |
+| `src/solver` | double-dummy solver (DDS wasm + TS) + reference brute-force |
+| `native/dds` | wrapper C++ ของ DDS สำหรับ build wasm                       |
+| `src/bot`    | เลือกใบของบอทฝั่งป้องกัน                                    |
+| `src/worker` | Web Worker ห่อ solver                                       |
+| `src/game`   | Zustand store ของมือที่กำลังเล่น                            |
+| `src/learn`  | เนื้อหาคู่มือ + ข้อมูลแบบฝึก                                |
+| `src/ui`     | React components + pages                                    |
+| `bench/`     | สคริปต์วัดความเร็ว solver                                   |
+| `e2e/`       | Playwright                                                  |
 
 `engine` / `solver` / `bot` ห้ามใช้ React, DOM, Zustand หรือ import `ui/` `game/` `worker/`
 บังคับสองชั้น: ESLint (`no-restricted-imports`, `no-restricted-globals`, ห้าม `Math.random`)

@@ -11,3 +11,6 @@ test-results/
 # deploy packages
 bridge-trainer-deploy.tar.gz
 .release/
+
+# DDS source fetched by scripts/build-dds.sh
+.cache/

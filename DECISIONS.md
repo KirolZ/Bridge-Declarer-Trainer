@@ -80,7 +80,7 @@
 - **ความเร็วตอนจบ M3** (ยังไม่มี TT / ใบเทียบเท่า, `tsx`): มือ 6 ใบเฉลี่ย 2.4 ms, 7 ใบ 93 ms (แย่สุด 0.9 s),
   8 ใบ 549 ms (แย่สุด 3 s) — มือเต็ม 13 ใบยังใช้ไม่ได้ ต้องรอ M4
 
-## M4 — Solver: ทำให้เร็ว (2026-10-27) — ยังไม่ผ่านเป้า
+## M4 — Solver: ทำให้เร็ว (2026-10-27) — TS ไม่ผ่านเป้า → ใช้ DDS → WASM (ดูหัวข้อถัดไป)
 
 - **`Solver` class** — เก็บ TT ข้ามการเรียกได้ (`new Solver({ ttBits, plain })`, `clear()`) ส่วน `solve` /
   `analyze` / `ddTable` แบบฟังก์ชันใช้ instance ร่วมตัวเดียว `plain: true` ปิด TT และขอบเขต trick แน่ ๆ
@@ -127,4 +127,39 @@
 
 **มือเต็ม 13 ใบ (5 มือ, solve): p50 32.6 s, แย่สุด 170 s** — ช้ากว่าเป้า 1 s ราว 30–170 เท่า (เกิน 3 เท่าที่ TASKS
 กำหนดให้หยุด) แต่ละใบที่เพิ่มยังแพงขึ้นราว 5–10 เท่า analyze / ddTable 13 ใบไม่ได้วัด (นานเกินไป)
-→ หยุดตาม TASKS M4 แล้วเสนอทาง DDS → WASM (SPEC §5.4) รอผู้ใช้ตัดสินใจ
+→ หยุดตาม TASKS M4 แล้วเสนอทาง DDS → WASM (SPEC §5.4) ผู้ใช้เลือกทางนี้
+
+## M4 (ต่อ) — DDS → WebAssembly (2026-10-27)
+
+- **ตัวที่ใช้** — DDS v3.1.1 (`dds-bridge/dds`, commit `cd953c2`, Apache-2.0) build ด้วย `em++` จาก image
+  `emscripten/emsdk:6.0.12` ผ่าน Docker (`pnpm build:dds`) ไม่ใช้ Bazel ของ DDS เพราะหนักเกินจำเป็น
+  แค่ compile `library/src/**/*.cpp` ทั้งหมดตรง ๆ source ดึงมาไว้ที่ `.cache/dds` (gitignore)
+  **ไฟล์ที่ build แล้ว (`src/solver/dds/dds-wasm.mjs`) commit เข้า repo** — คนที่แค่ dev / test / build
+  ไม่ต้องมี Docker หรือ Emscripten
+- **ตัวเลือกการ build** — thread เดียว (DDS เลือก `DDS_THREADS_NONE` เองเมื่อไม่กำหนด) จึงไม่ต้องใช้
+  SharedArrayBuffer / COOP-COEP; `SINGLE_FILE` ฝัง wasm ไว้ใน ES module (439 KB, หลัง Vite bundle 560 KB,
+  gzip 136 KB) โหลดได้เหมือนกันใน Node, Vite และ Worker; `-fwasm-exceptions` แบบ legacy
+  (`WASM_LEGACY_EXCEPTIONS=1`) เพื่อให้รันบนเบราว์เซอร์รุ่นก่อนหน้าได้กว้างกว่า exnref; memory เริ่ม 64 MB
+  แล้วขยายได้, stack 8 MB ตามที่ DDS ต้องการ
+- **wrapper (`native/dds/bridge.cpp`, โค้ดของเรา)** — ส่งข้อมูลเป็น int array แบบ encoding ของ DDS
+  `bt_solve` ใช้ `solve_board` (target −1, mode 1 = ค้นเสมอแม้มีใบเดียว, solutions 1 หรือ 3) แล้วกระจาย
+  `equals` ให้ได้ทุกใบ `bt_calc_table` ใช้ `calc_dd_table` ใช้ `SolverContext` แยกกัน 2 ตัว (เล่น / ตาราง)
+  TT แบบ Small (20–30 MB) เหมือน web build ของ DDS เอง และ `reset_for_solve()` ทุกครั้ง
+  (ไม่เก็บ TT ข้ามการเรียกแบบ SPEC §5.5 — DDS เร็วพอแล้ว)
+- **ฝั่ง TS (`src/solver/dds.ts`)** — `loadDds()` (async ครั้งเดียว) → `DdsSolver` ที่ `solve / analyze /
+ddTable` เป็น sync ตาม SPEC §5.1 คะแนนจาก DDS เป็นของฝ่ายที่ถึงตา นับรวม trick ปัจจุบัน → แปลงเป็น
+  ของ NS, `analyze` เรียงใบตามลำดับเดียวกับ `Solver` `ddTable` ของมือไม่ครบ 13 ใบใช้ `solve` ทีละ strain
+  (`calc_dd_table` ต้องการมือเต็ม)
+- **ตัว TS `Solver` ไม่ลบ** — ใช้เป็นตัวเทียบใน test ร่วมกับ reference brute-force
+- **Vite** เตือนว่า `node:module` ถูกแทนด้วย stub ตอน build สำหรับเบราว์เซอร์ — เป็น code ฝั่ง Node
+  ที่ไม่ถูกเรียกในเบราว์เซอร์ ไม่มีผล
+- **license** — Apache-2.0 อนุญาตให้แจกจ่ายได้ ต้องแนบ license ไปด้วย: `src/solver/dds/LICENSE-DDS`
+  และระบุเครดิตใน README (หน้าเกี่ยวกับ / เครดิตในแอปให้ทำตอน M11–M13)
+
+### ผล bench (DDS, Node 24, 50 มือ 13 ใบ)
+
+| งาน     | p50    | p95    | max    | เป้า p95 |
+| ------- | ------ | ------ | ------ | -------- |
+| solve   | 16 ms  | 186 ms | 239 ms | 1 s ✓    |
+| analyze | 38 ms  | 379 ms | 525 ms | 1.5 s ✓  |
+| ddTable | 179 ms | 966 ms | 1.57 s | 4 s ✓    |

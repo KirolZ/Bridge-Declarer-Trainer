@@ -7,3 +7,5 @@ test-results
 .release
 SPEC.md
 TASKS.md
+.cache
+src/solver/dds/dds-wasm.mjs

@@ -234,9 +234,11 @@ describe('solver boundary', () => {
   const dir = fileURLToPath(new URL('.', import.meta.url));
   const sources = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
 
-  it.each(sources)('%s only imports solver modules and the engine', (file) => {
+  it.each(sources)('%s only imports solver modules, the engine and the DDS build', (file) => {
     const text = readFileSync(join(dir, file), 'utf8');
     const specifiers = [...text.matchAll(/(?:from|import)\s*\(?\s*'([^']+)'/g)].map((m) => m[1]);
-    for (const spec of specifiers) expect(spec).toMatch(/^(\.\/[\w-]+|\.\.\/engine)$/);
+    for (const spec of specifiers) {
+      expect(spec).toMatch(/^(\.\/[\w-]+|\.\.\/engine|\.\/dds\/dds-wasm\.mjs)$/);
+    }
   });
 });

@@ -12,3 +12,4 @@ export type { SolverOptions } from './solve';
 export { Solver } from './solve';
 export { analyze, ddTable, solve } from './solve';
 export { referenceAnalyze, referenceSolve } from './reference';
+export { DdsSolver, loadDds } from './dds';
