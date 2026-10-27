@@ -1,24 +1,27 @@
 // The table (SPEC §8): dummy on top, South at the bottom, the defenders left and right and the
 // trick in the middle. The player plays South's and dummy's cards; the store plays the defenders.
+// Practice tools (SPEC §7.2–§7.4, §7.6): hint (H), undo (U), claim, play again, study mode.
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Card, Seat } from '../../engine';
 import {
   completedTricks,
   currentTrick,
-  isComplete,
   legalPlays,
   remainingHands,
   sameCard,
-  sideOf,
   toPlay,
   totalTricks,
+  tricksNeeded,
   tricksWon,
 } from '../../engine';
+import { canUndo, finalNsTricks, isHandOver, isPlayerTurn, tricksLeft } from '../../game/playStore';
 import { DealingOverlay } from '../DealingOverlay';
 import { gameStore, useDealNew, useGame } from '../gameStore';
+import { ActionBar } from './ActionBar';
+import { ClaimDialog } from './ClaimDialog';
 import type { CardMode, PlayHandler } from './hands';
-import { DummyHand, FaceDownRow, FannedHand, HiddenHand } from './hands';
+import { DummyHand, FaceDownRow, FannedHand, HiddenHand, OpenHand } from './hands';
 import { InfoBar } from './InfoBar';
 import { SEAT_NAME, SEAT_ROLE, cardName } from './labels';
 import { ResultPanel } from './ResultPanel';
@@ -55,32 +58,73 @@ function SeatTag({ seat, active, thinking, className }: SeatTagProps) {
   );
 }
 
+/** Keys for the practice tools; ignored while typing or with a modifier held. */
+function useShortcuts(enabled: boolean, onHint: () => void, onUndo: () => void) {
+  useEffect(() => {
+    if (!enabled) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable]')) {
+        return;
+      }
+      // `code` is the physical key, so H / U also work with the Thai keyboard layout.
+      if (e.code === 'KeyH') onHint();
+      else if (e.code === 'KeyU') onUndo();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [enabled, onHint, onUndo]);
+}
+
 export function PlayTable() {
-  const hand = useGame((s) => s.hand);
-  const play = useGame((s) => s.play);
-  const trickPause = useGame((s) => s.trickPause);
-  const botThinking = useGame((s) => s.botThinking);
-  const error = useGame((s) => s.error);
-  const notice = useGame((s) => s.notice);
+  const state = useGame((s) => s);
+  const { hand, play, trickPause, botThinking, error, notice, hint, studyMode, epoch } = state;
+  const dealing = useGame((s) => s.dealing);
   const dealNew = useDealNew();
   const root = useRef<HTMLDivElement>(null);
-  /** The last card was played from the keyboard: keep focus on the cards. */
+  /** The last action came from the keyboard: keep focus on the cards. */
   const keyboard = useRef(false);
+  const [claimOpen, setClaimOpen] = useState(false);
 
   const seat = play ? toPlay(play) : null;
-  const playerTurn = !trickPause && !error && seat !== null && sideOf(seat) === 'NS';
+  const playerTurn = isPlayerTurn(state);
   const plays = play?.plays.length ?? 0;
+  const over = isHandOver(state);
 
   useEffect(() => {
     if (!playerTurn || !keyboard.current) return;
     root.current?.querySelector<HTMLElement>('[data-playable="true"]')?.focus();
-  }, [playerTurn, plays]);
+  }, [playerTurn, plays, epoch]);
+
+  useEffect(() => {
+    if (!hint || !keyboard.current) return;
+    root.current?.querySelector<HTMLElement>('[data-hint="true"]')?.focus();
+  }, [hint]);
+
+  const onHint = useCallback(() => {
+    void gameStore.getState().showHint();
+  }, []);
+  const onUndo = useCallback(() => {
+    gameStore.getState().undo();
+  }, []);
+  const onRestart = useCallback(() => gameStore.getState().restart(), []);
+  const onStudyMode = useCallback((on: boolean) => gameStore.getState().setStudyMode(on), []);
+  const onKeyHint = useCallback(() => {
+    keyboard.current = true;
+    onHint();
+  }, [onHint]);
+  const onKeyUndo = useCallback(() => {
+    keyboard.current = true;
+    onUndo();
+  }, [onUndo]);
+  useShortcuts(!claimOpen && !dealing, onKeyHint, onKeyUndo);
 
   if (!hand || !play) return null;
 
   const done = completedTricks(play);
   const total = totalTricks(play);
-  const over = isComplete(play) && !trickPause;
   const shown = trickPause ? done.at(-1) : undefined;
   const trickPlays = shown ? shown.plays : currentTrick(play);
   const trickNumber = Math.min(done.length + (trickPause ? 0 : 1), total);
@@ -88,6 +132,9 @@ export function PlayTable() {
   const hands = remainingHands(play);
   const trump = play.contract.strain;
   const last = play.plays.at(-1);
+  const won = tricksWon(play);
+  const needed = tricksNeeded(play.contract);
+  const liveHint = playerTurn && hint?.at === plays ? hint : null;
 
   const modeOf =
     (owner: Seat) =>
@@ -95,6 +142,10 @@ export function PlayTable() {
       if (!playerTurn || seat !== owner) return 'idle';
       return legal.some((c) => sameCard(c, card)) ? 'playable' : 'illegal';
     };
+  const hintOf =
+    (owner: Seat) =>
+    (card: Card): boolean =>
+      liveHint !== null && seat === owner && liveHint.cards.some((c) => sameCard(c, card));
   const onPlay: PlayHandler = (card, viaKeyboard) => {
     keyboard.current = viaKeyboard;
     gameStore.getState().playCard(card);
@@ -105,18 +156,44 @@ export function PlayTable() {
   if (over) status = '';
   else if (error) status = error;
   else if (shown?.winner) status = `${SEAT_NAME[shown.winner]} กิน trick นี้`;
-  else if (seat === 'N') status = 'ถึงตา dummy — กดไพ่ของ North ด้านบน';
+  else if (liveHint) {
+    const short = liveHint.tricks < needed ? ` — ไม่พอแล้ว (ต้องได้ ${needed})` : '';
+    status = `คำใบ้: ใบที่ยกขึ้นยังทำได้ ${liveHint.tricks} trick${short}`;
+  } else if (seat === 'N') status = 'ถึงตา dummy — กดไพ่ของ North ด้านบน';
   else if (seat === 'S') status = 'ถึงตาคุณ — ลงไพ่จากมือ South';
   else if (seat) status = `${SEAT_NAME[seat]} กำลังคิด…`;
+
+  const defender = (s: 'W' | 'E') =>
+    studyMode ? (
+      <OpenHand cards={hands[s]} trump={trump} label={SEAT_NAME[s]} />
+    ) : (
+      <HiddenHand count={hands[s].length} label={SEAT_NAME[s]} />
+    );
 
   return (
     <div ref={root} className="flex min-h-full flex-col">
       <InfoBar
         contract={play.contract}
         vulnerability={hand.vulnerability}
-        won={tricksWon(play)}
+        won={won}
         trickNumber={trickNumber}
         totalTricks={total}
+        actions={
+          <ActionBar
+            canHint={playerTurn}
+            hintLoading={state.hintLoading}
+            hintsUsed={state.hintsUsed}
+            canUndo={canUndo(state)}
+            canClaim={playerTurn && !state.claimChecking}
+            studyMode={studyMode}
+            onHint={onHint}
+            onUndo={onUndo}
+            onClaim={() => setClaimOpen(true)}
+            onRestart={onRestart}
+            onNewHand={() => void dealNew()}
+            onStudyMode={onStudyMode}
+          />
+        }
       />
       {notice && (
         <div
@@ -152,8 +229,14 @@ export function PlayTable() {
             >
               {/* Wider screens: name tags in the corner, to save height. */}
               <SeatTag seat="N" active={active('N')} className="sm:absolute sm:top-2 sm:left-3" />
-              {plays > 0 ? (
-                <DummyHand cards={hands.N} trump={trump} modeOf={modeOf('N')} onPlay={onPlay} />
+              {plays > 0 || studyMode ? (
+                <DummyHand
+                  cards={hands.N}
+                  trump={trump}
+                  modeOf={modeOf('N')}
+                  hintOf={hintOf('N')}
+                  onPlay={onPlay}
+                />
               ) : (
                 <FaceDownRow count={hands.N.length} />
               )}
@@ -162,10 +245,12 @@ export function PlayTable() {
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
               <section aria-label="West" className="flex flex-col items-center gap-1.5">
                 <SeatTag seat="W" active={active('W')} thinking={active('W') && botThinking} />
-                <HiddenHand count={hands.W.length} label="West" />
+                {defender('W')}
               </section>
               <div className="flex justify-center">
+                {/* Remounted on undo / restart so rewound cards don't animate. */}
                 <TrickArea
+                  key={epoch}
                   trickNumber={trickNumber}
                   plays={trickPlays}
                   winner={shown?.winner ?? null}
@@ -174,7 +259,7 @@ export function PlayTable() {
               </div>
               <section aria-label="East" className="flex flex-col items-center gap-1.5">
                 <SeatTag seat="E" active={active('E')} thinking={active('E') && botThinking} />
-                <HiddenHand count={hands.E.length} label="East" />
+                {defender('E')}
               </section>
             </div>
 
@@ -189,7 +274,7 @@ export function PlayTable() {
                 .join(' ')}
             >
               <p
-                className="min-h-5 text-center text-sm text-white/90"
+                className={`min-h-5 text-center text-sm ${liveHint ? 'font-semibold text-emerald-200' : 'text-white/90'}`}
                 data-testid="status"
                 aria-live="polite"
               >
@@ -204,7 +289,13 @@ export function PlayTable() {
                   </button>
                 )}
               </p>
-              <FannedHand cards={hands.S} trump={trump} modeOf={modeOf('S')} onPlay={onPlay} />
+              <FannedHand
+                cards={hands.S}
+                trump={trump}
+                modeOf={modeOf('S')}
+                hintOf={hintOf('S')}
+                onPlay={onPlay}
+              />
               <SeatTag seat="S" active={active('S')} className="sm:absolute sm:top-2 sm:left-3" />
             </section>
           </div>
@@ -214,12 +305,27 @@ export function PlayTable() {
       <p className="sr-only" aria-live="polite">
         {last ? `${SEAT_NAME[last.seat]} ลง ${cardName(last.card)}` : ''}
       </p>
+      {claimOpen && playerTurn && (
+        <ClaimDialog
+          left={tricksLeft(play)}
+          won={won.NS}
+          needed={needed}
+          checking={state.claimChecking}
+          onClaim={(n) => gameStore.getState().claim(n)}
+          onClose={() => setClaimOpen(false)}
+        />
+      )}
       {over && (
         <ResultPanel
           contract={play.contract}
           vulnerability={hand.vulnerability}
-          nsTricks={tricksWon(play).NS}
+          nsTricks={finalNsTricks(state)}
+          claimed={state.claimed !== null}
+          hintsUsed={state.hintsUsed}
+          studied={state.studied}
           onNewHand={() => void dealNew()}
+          onRestart={onRestart}
+          onUndo={onUndo}
         />
       )}
       <DealingOverlay />

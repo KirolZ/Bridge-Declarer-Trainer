@@ -1,5 +1,7 @@
-// Contract, tricks needed and tricks taken (SPEC §8 info panel). Hint / undo / claim come in M9.
+// Contract, tricks needed and tricks taken (SPEC §8 info panel), plus the practice buttons
+// (`actions`): inline on wider screens, a row of their own on phones.
 
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Contract, TrickCount, Vulnerability } from '../../engine';
 import { contractLabel, tricksNeeded } from '../../engine';
@@ -12,6 +14,7 @@ type InfoBarProps = {
   /** Trick being played (1-based), or the total when the hand is over. */
   trickNumber: number;
   totalTricks: number;
+  actions?: ReactNode;
 };
 
 function Stat({ label, value, testId }: { label: string; value: string; testId?: string }) {
@@ -25,10 +28,11 @@ function Stat({ label, value, testId }: { label: string; value: string; testId?:
   );
 }
 
-export function InfoBar({ contract, vulnerability, won, trickNumber, totalTricks }: InfoBarProps) {
+export function InfoBar(props: InfoBarProps) {
+  const { contract, vulnerability, won, trickNumber, totalTricks, actions } = props;
   const red = contract.strain === 'H' || contract.strain === 'D';
   return (
-    <header className="flex items-center gap-2 border-b border-white/10 bg-black/25 px-2 py-1.5 sm:gap-4 sm:px-4">
+    <header className="relative z-20 flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-white/10 bg-black/25 px-2 py-1.5 sm:gap-x-4 sm:px-4">
       <Link
         to="/"
         aria-label="กลับหน้าแรก"
@@ -53,6 +57,7 @@ export function InfoBar({ contract, vulnerability, won, trickNumber, totalTricks
       <Stat label="NS" value={String(won.NS)} testId="tricks-ns" />
       <Stat label="EW" value={String(won.EW)} testId="tricks-ew" />
       <Stat label="trick" value={`${trickNumber}/${totalTricks}`} />
+      {actions}
     </header>
   );
 }

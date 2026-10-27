@@ -69,8 +69,8 @@ test('cards can be played with Tab and Enter', async ({ page }) => {
   await expect(playable.first()).toBeVisible({ timeout: 15_000 });
   const count = await page.locator('[data-trick-card]').count();
 
-  // Tab from the back button lands on the first playable card; Enter plays it.
-  await page.getByRole('link', { name: 'กลับหน้าแรก' }).focus();
+  // Tab from the last header button (the menu) lands on the first playable card; Enter plays it.
+  await page.getByRole('button', { name: 'เมนู' }).focus();
   await page.keyboard.press('Tab');
   const focused = await page.evaluate(() => document.activeElement?.getAttribute('data-card'));
   expect(focused).toBe(await playable.first().getAttribute('data-card'));

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { Card, Contract, Deal } from '../engine';
+import type { Card, Contract, Deal, PlayState } from '../engine';
 import {
   applyPlay,
   cardCode,
@@ -22,7 +22,15 @@ import type { DdsSolver } from '../solver/dds';
 import { loadDds } from '../solver/dds';
 import { playerDdLog } from './ddLog';
 import type { HandSetup, PlaySolver, PlayStore } from './playStore';
-import { createPlayStore, handPath, isSameHand } from './playStore';
+import {
+  canUndo,
+  createPlayStore,
+  finalNsTricks,
+  handPath,
+  isHandOver,
+  isSameHand,
+  tricksLeft,
+} from './playStore';
 import { DEFAULT_DEAL_SETTINGS } from './settings';
 
 let dds: DdsSolver;
@@ -33,13 +41,15 @@ beforeAll(async () => {
 const NO_PACE = { cardMs: 0, trickMs: 0 };
 
 /** Solver backed by DDS in this thread; counts calls and can be made to hang or fail. */
-function ddsSolver(opts: { hang?: boolean; fail?: () => boolean } = {}) {
-  const calls = { analyze: 0, ddTable: 0 };
+function ddsSolver(opts: { hang?: boolean | (() => boolean); fail?: () => boolean } = {}) {
+  const calls = { analyze: 0, ddTable: 0, aborted: 0 };
+  const hangs = () => (typeof opts.hang === 'function' ? opts.hang() : opts.hang === true);
   const solver: PlaySolver = {
     analyze(pos: Position, { signal }) {
       calls.analyze++;
       if (opts.fail?.()) return Promise.reject(new Error('boom'));
-      if (opts.hang) {
+      if (hangs()) {
+        signal.addEventListener('abort', () => calls.aborted++);
         return new Promise((_, reject) =>
           signal.addEventListener('abort', () =>
             reject(Object.assign(new Error('aborted'), { name: 'AbortError' })),
@@ -50,7 +60,7 @@ function ddsSolver(opts: { hang?: boolean; fail?: () => boolean } = {}) {
     },
     ddTable(deal: Deal, { signal }) {
       calls.ddTable++;
-      if (opts.hang) {
+      if (hangs()) {
         return new Promise((_, reject) =>
           signal?.addEventListener('abort', () =>
             reject(Object.assign(new Error('aborted'), { name: 'AbortError' })),
@@ -271,5 +281,232 @@ describe('play store', () => {
     const setup = hand(9, { level: 4, strain: 'S', declarer: 'S' });
     expect(handPath(setup)).toMatch(/^\/play\/[A-Za-z0-9_-]{18}\/4S$/);
     expect(handPath({ ...setup, vulnerability: 'ns' })).toMatch(/\/4S\?v=ns$/);
+  });
+});
+
+describe('practice tools (M9)', () => {
+  const bestOf = (lines: readonly CardAnalysis[]) => Math.max(...lines.map((l) => l.nsTricks));
+  const bestCard = (play: PlayState) => {
+    const lines = dds.analyze(positionFromPlayState(play));
+    return lines.find((l) => l.nsTricks === bestOf(lines))!.card;
+  };
+  const codes = (cards: readonly Card[]) => cards.map(cardCode).sort();
+
+  it('a hint shows every DD-best card and the tricks they make, counted once per position', async () => {
+    const { solver } = ddsSolver();
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    store.getState().startHand(hand(21, { level: 2, strain: 'S', declarer: 'S' }));
+
+    // Not on the bots' turn.
+    expect(store.getState().play!.plays).toHaveLength(0);
+    await expect(store.getState().showHint()).resolves.toBe(false);
+
+    for (let turn = 0; turn < 4; turn++) {
+      await until(() => playerTurn(store));
+      const play = store.getState().play!;
+      const lines = dds.analyze(positionFromPlayState(play));
+      const best = bestOf(lines);
+      await expect(store.getState().showHint()).resolves.toBe(true);
+      const { hint, hintsUsed } = store.getState();
+      expect(hint!.at).toBe(play.plays.length);
+      expect(codes(hint!.cards)).toEqual(
+        codes(lines.filter((l) => l.nsTricks === best).map((l) => l.card)),
+      );
+      expect(hint!.tricks).toBe(tricksWon(play).NS + best);
+      expect(hintsUsed).toBe(turn + 1);
+      // Asking again at the same position costs nothing.
+      await store.getState().showHint();
+      expect(store.getState().hintsUsed).toBe(turn + 1);
+
+      store.getState().playCard(hint!.cards[0]!);
+      expect(store.getState().hint).toBeNull();
+    }
+    store.getState().leave();
+  });
+
+  it('undo takes back the last player card and the bot cards after it', async () => {
+    const { solver } = ddsSolver();
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    store.getState().startHand(hand(22, { level: 3, strain: 'NT', declarer: 'S' }));
+
+    // Nothing to undo before the player's first card (West's lead is not theirs).
+    await until(() => playerTurn(store));
+    expect(canUndo(store.getState())).toBe(false);
+    expect(store.getState().undo()).toBe(false);
+    expect(store.getState().play!.plays).toHaveLength(1);
+
+    // Play a few cards, then undo them one at a time.
+    const marks: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      await until(() => playerTurn(store));
+      const play = store.getState().play!;
+      marks.push(play.plays.length);
+      store.getState().playCard(legalPlays(play)[0]!);
+    }
+    await until(() => playerTurn(store));
+    const longest = store.getState().play!.plays;
+
+    for (const mark of marks.reverse()) {
+      const epoch = store.getState().epoch;
+      expect(store.getState().undo()).toBe(true);
+      const { play, analyses } = store.getState();
+      expect(play!.plays).toEqual(longest.slice(0, mark));
+      expect(store.getState().epoch).toBe(epoch + 1);
+      expect(Object.keys(analyses).every((k) => Number(k) <= mark)).toBe(true);
+      expect(playerTurn(store)).toBe(true);
+    }
+    expect(store.getState().undo()).toBe(false);
+
+    // Replaying the same cards brings the same defence.
+    for (let i = 0; i < 5; i++) {
+      await until(() => playerTurn(store));
+      store.getState().playCard(legalPlays(store.getState().play!)[0]!);
+    }
+    await until(() => playerTurn(store));
+    expect(store.getState().play!.plays).toEqual(longest);
+    store.getState().leave();
+  });
+
+  it('undo while a bot is thinking cancels it, and play carries on cleanly', async () => {
+    let hang = false;
+    const { solver, calls } = ddsSolver({ hang: () => hang });
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    store.getState().startHand(hand(23, { level: 4, strain: 'H', declarer: 'S' }));
+    await until(() => playerTurn(store));
+
+    // Get to dummy's turn; dummy's card then leaves East thinking forever.
+    let before = store.getState().play!;
+    while (toPlay(before) !== 'N') {
+      store.getState().playCard(legalPlays(before)[0]!);
+      await until(() => playerTurn(store));
+      before = store.getState().play!;
+    }
+    hang = true;
+    store.getState().playCard(legalPlays(before)[0]!);
+    await until(() => store.getState().botThinking);
+    expect(toPlay(store.getState().play!)).toBe('E');
+
+    hang = false;
+    expect(store.getState().undo()).toBe(true);
+    expect(calls.aborted).toBeGreaterThan(0);
+    expect(store.getState().botThinking).toBe(false);
+    expect(store.getState().play!.plays).toEqual(before.plays);
+    await new Promise((r) => setTimeout(r, 10));
+    // Nothing from the cancelled job leaked in.
+    expect(store.getState().error).toBeNull();
+    expect(store.getState().play!.plays).toEqual(before.plays);
+
+    // From here, best play still makes what the position is worth.
+    const worth = tricksWon(before).NS + bestOf(dds.analyze(positionFromPlayState(before)));
+    await playOut(store);
+    expect(store.getState().play!.plays).toHaveLength(52);
+    expect(tricksWon(store.getState().play!).NS).toBe(worth);
+  });
+
+  it('undo works during the trick pause and after the hand is over', async () => {
+    const { solver } = ddsSolver();
+    const store = createPlayStore({ solver, pace: { cardMs: 0, trickMs: 60_000 } });
+    store.getState().startHand(hand(24, { level: 1, strain: 'D', declarer: 'S' }));
+    while (!store.getState().trickPause) {
+      await until(() => playerTurn(store) || store.getState().trickPause);
+      if (store.getState().trickPause) break;
+      store.getState().playCard(legalPlays(store.getState().play!)[0]!);
+    }
+    const trick = store.getState().play!.plays;
+    expect(trick).toHaveLength(4);
+    expect(store.getState().undo()).toBe(true);
+    expect(store.getState().trickPause).toBe(false);
+    const back = store.getState().play!.plays.length;
+    expect(sideOf(trick[back]!.seat)).toBe('NS');
+    expect(trick.slice(back + 1).every((p) => sideOf(p.seat) === 'EW')).toBe(true);
+    store.getState().leave();
+
+    const fast = createPlayStore({ solver, pace: NO_PACE });
+    fast.getState().startHand(hand(25, { level: 1, strain: 'NT', declarer: 'S' }));
+    await playOut(fast);
+    expect(isHandOver(fast.getState())).toBe(true);
+    expect(fast.getState().undo()).toBe(true);
+    expect(isHandOver(fast.getState())).toBe(false);
+    expect(playerTurn(fast)).toBe(true);
+    fast.getState().leave();
+  });
+
+  it('restart plays the same hand again from the same opening lead', async () => {
+    const { solver } = ddsSolver();
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    store.getState().startHand(hand(26, { level: 2, strain: 'C', declarer: 'S' }));
+    await until(() => playerTurn(store));
+    const lead = store.getState().play!.plays[0]!;
+    await store.getState().showHint();
+    store.getState().playCard(legalPlays(store.getState().play!)[0]!);
+    await until(() => playerTurn(store));
+    expect(store.getState().hintsUsed).toBe(1);
+
+    store.getState().restart();
+    expect(store.getState().play!.plays).toHaveLength(0);
+    expect(store.getState().hintsUsed).toBe(0);
+    expect(Object.keys(store.getState().analyses).every((k) => k === '0')).toBe(true);
+    await until(() => playerTurn(store));
+    expect(store.getState().play!.plays).toEqual([lead]);
+    store.getState().leave();
+  });
+
+  it('a claim is accepted only when NS can still take that many tricks', async () => {
+    const { solver } = ddsSolver();
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    // Seed 30 / 3NT: checked below that a too-high claim exists at the claim point.
+    store.getState().startHand(hand(30, { level: 3, strain: 'NT', declarer: 'S' }));
+    // Best play for three tricks, then claim at the player's next turn.
+    for (;;) {
+      await until(() => playerTurn(store));
+      const play = store.getState().play!;
+      if (play.plays.length >= 12) break;
+      store.getState().playCard(bestCard(play));
+    }
+    const play = store.getState().play!;
+    const can = bestOf(dds.analyze(positionFromPlayState(play)));
+    const won = tricksWon(play).NS;
+    const left = tricksLeft(play);
+    expect(can).toBeLessThan(left);
+
+    // Out of range: ignored.
+    await expect(store.getState().claim(left + 1)).resolves.toBe('cancelled');
+    await expect(store.getState().claim(-1)).resolves.toBe('cancelled');
+
+    await expect(store.getState().claim(can + 1)).resolves.toBe('rejected');
+    expect(isHandOver(store.getState())).toBe(false);
+    expect(store.getState().claimed).toBeNull();
+    expect(playerTurn(store)).toBe(true);
+
+    await expect(store.getState().claim(can)).resolves.toBe('accepted');
+    expect(isHandOver(store.getState())).toBe(true);
+    expect(finalNsTricks(store.getState())).toBe(won + can);
+    // The hand is over: nothing more can be played or hinted.
+    expect(store.getState().playCard(legalPlays(play)[0]!)).toBe(false);
+    await expect(store.getState().showHint()).resolves.toBe(false);
+
+    // Undo takes back the claim only.
+    expect(store.getState().undo()).toBe(true);
+    expect(store.getState().claimed).toBeNull();
+    expect(store.getState().play!.plays).toEqual(play.plays);
+    expect(playerTurn(store)).toBe(true);
+    store.getState().leave();
+  });
+
+  it('study mode marks the attempt as studied until a fresh start', () => {
+    const { solver } = ddsSolver();
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    store.getState().startHand(hand(28, { level: 1, strain: 'S', declarer: 'S' }));
+    expect(store.getState().studied).toBe(false);
+    store.getState().setStudyMode(true);
+    expect(store.getState().studied).toBe(true);
+    store.getState().setStudyMode(false);
+    expect(store.getState().studied).toBe(true); // peeked once: still not counted
+    store.getState().restart();
+    expect(store.getState().studied).toBe(false);
+    store.getState().setStudyMode(true);
+    store.getState().startHand(hand(29, { level: 1, strain: 'H', declarer: 'S' }));
+    expect(store.getState().studied).toBe(true);
+    store.getState().leave();
   });
 });

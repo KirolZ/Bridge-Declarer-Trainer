@@ -58,3 +58,10 @@ body {
 .table-cards {
   --card-w: min(clamp(40px, 14.5cqw, 80px), max(40px, calc((100svh - 250px) / 7.2)));
 }
+
+/* Phones: the practice buttons take a row of their own under the contract. */
+@media (max-width: 639.98px) {
+  .table-cards {
+    --card-w: min(clamp(40px, 14.5cqw, 80px), max(40px, calc((100svh - 290px) / 7.2)));
+  }
+}

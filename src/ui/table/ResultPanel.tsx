@@ -1,7 +1,8 @@
-// End of hand: made / down and the score (SPEC §4.3). The full analysis page comes in M10.
+// End of hand: made / down and the score (SPEC §4.3), hints used (§7.2), and the ways on: new
+// hand, play this hand again, undo the last card (§7.3). The full analysis page comes in M10.
 
 import { motion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { Contract, Vulnerability } from '../../engine';
 import { contractLabel, isDeclarerVulnerable, scoreBreakdown, tricksNeeded } from '../../engine';
@@ -10,14 +11,31 @@ type ResultPanelProps = {
   contract: Contract;
   vulnerability: Vulnerability;
   nsTricks: number;
+  /** The hand ended with an accepted claim. */
+  claimed: boolean;
+  hintsUsed: number;
+  /** Study mode was on: the hand does not count for the stats. */
+  studied: boolean;
   onNewHand: () => void;
+  onRestart: () => void;
+  onUndo: () => void;
 };
 
-export function ResultPanel({ contract, vulnerability, nsTricks, onNewHand }: ResultPanelProps) {
+const SECONDARY =
+  'flex-1 rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none';
+
+export function ResultPanel(props: ResultPanelProps) {
+  const { contract, vulnerability, nsTricks, claimed, hintsUsed, studied } = props;
   const result = scoreBreakdown(contract, nsTricks, isDeclarerVulnerable(vulnerability));
   const needed = tricksNeeded(contract);
   const first = useRef<HTMLButtonElement>(null);
   useEffect(() => first.current?.focus(), []);
+
+  const notes = [
+    claimed && 'จบด้วย claim',
+    hintsUsed > 0 ? `ใช้คำใบ้ ${hintsUsed} ครั้ง` : 'ไม่ได้ใช้คำใบ้',
+    studied && 'โหมดศึกษา (ไม่นับสถิติ)',
+  ].filter(Boolean);
 
   return (
     <motion.div
@@ -51,19 +69,32 @@ export function ResultPanel({ contract, vulnerability, nsTricks, onNewHand }: Re
           {result.total > 0 ? `+${result.total}` : result.total}
           <span className="ml-1 text-base font-normal text-white/70">แต้ม</span>
         </p>
+        <p className="text-sm text-white/65" data-testid="result-notes">
+          {notes.map((note, i) => (
+            <Fragment key={i}>
+              {i > 0 && ' · '}
+              <span className="whitespace-nowrap">{note}</span>
+            </Fragment>
+          ))}
+        </p>
         <div className="mt-2 flex w-full gap-2">
           <button
             ref={first}
             type="button"
-            onClick={onNewHand}
+            onClick={props.onNewHand}
             className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
           >
             มือใหม่
           </button>
-          <Link
-            to="/"
-            className="flex-1 rounded-lg bg-white/10 px-4 py-2 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
-          >
+          <button type="button" onClick={props.onRestart} className={SECONDARY}>
+            เล่นมือนี้ใหม่
+          </button>
+        </div>
+        <div className="flex w-full gap-2">
+          <button type="button" onClick={props.onUndo} aria-keyshortcuts="U" className={SECONDARY}>
+            ↶ ย้อน{claimed ? ' claim' : 'ใบล่าสุด'}
+          </button>
+          <Link to="/" className={SECONDARY}>
             หน้าแรก
           </Link>
         </div>

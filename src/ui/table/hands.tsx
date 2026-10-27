@@ -4,7 +4,7 @@
 import { motion } from 'framer-motion';
 import type { MouseEvent } from 'react';
 import type { Card, Strain } from '../../engine';
-import { cardCode } from '../../engine';
+import { SUIT_INFO, cardCode, rankLabel } from '../../engine';
 import type { IndexLayout } from './PlayingCard';
 import { cardName } from './labels';
 import { PlayingCard } from './PlayingCard';
@@ -18,28 +18,36 @@ export type PlayHandler = (card: Card, viaKeyboard: boolean) => void;
 type CardButtonProps = {
   card: Card;
   mode: CardMode;
+  /** One of the best cards of a hint (SPEC §7.2). */
+  hinted: boolean;
   layout: IndexLayout;
   onPlay: PlayHandler;
   flipInDelay?: number;
 };
 
-function CardButton({ card, mode, layout, onPlay, flipInDelay }: CardButtonProps) {
+function CardButton({ card, mode, hinted, layout, onPlay, flipInDelay }: CardButtonProps) {
   const playable = mode === 'playable';
   const onClick = (e: MouseEvent) => {
     // `detail` is 0 when the click came from the keyboard (Enter / Space).
     if (playable) onPlay(card, e.detail === 0);
   };
+  let label = cardName(card);
+  if (mode === 'illegal') label += ' (ลงไม่ได้)';
+  else if (hinted) label += ' (คำใบ้)';
   return (
     <button
       type="button"
       data-card={cardCode(card)}
       data-playable={playable ? 'true' : undefined}
+      data-hint={hinted ? 'true' : undefined}
       aria-disabled={!playable}
       tabIndex={playable ? 0 : -1}
-      aria-label={mode === 'illegal' ? `${cardName(card)} (ลงไม่ได้)` : cardName(card)}
+      aria-label={label}
       onClick={onClick}
       className={[
         'block rounded-[6px] transition duration-150 outline-none',
+        // Lifted as well as outlined, so a hint does not rely on colour alone.
+        hinted && '-translate-y-[9%] shadow-[0_0_0_3px_#34d399,0_0_16px_4px_rgba(52,211,153,0.6)]',
         playable &&
           'cursor-pointer hover:-translate-y-[9%] focus-visible:-translate-y-[9%] focus-visible:ring-4 focus-visible:ring-amber-300',
         // Dimmed but opaque: overlapped cards must not show through each other.
@@ -58,6 +66,7 @@ type HandProps = {
   cards: readonly Card[];
   trump: Strain;
   modeOf: (card: Card) => CardMode;
+  hintOf: (card: Card) => boolean;
   onPlay: PlayHandler;
 };
 
@@ -65,7 +74,7 @@ type HandProps = {
  * Cards fanned sideways and overlapped just enough to fit the width (`100cqw` of the wrapper):
  * each step shows at least the corner index.
  */
-export function FannedHand({ cards, trump, modeOf, onPlay }: HandProps) {
+export function FannedHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) {
   const sorted = sortForDisplay(cards, trump);
   const gaps = Math.max(sorted.length - 1, 1);
   const step = `min(calc(var(--card-w) * 0.62), calc((100cqw - var(--card-w)) / ${gaps}))`;
@@ -86,7 +95,13 @@ export function FannedHand({ cards, trump, modeOf, onPlay }: HandProps) {
             style={{ left: `calc(${i} * ${step})` }}
             transition={{ type: 'spring', stiffness: 500, damping: 40 }}
           >
-            <CardButton card={card} mode={modeOf(card)} layout="stack" onPlay={onPlay} />
+            <CardButton
+              card={card}
+              mode={modeOf(card)}
+              hinted={hintOf(card)}
+              layout="stack"
+              onPlay={onPlay}
+            />
           </motion.div>
         ))}
       </div>
@@ -95,7 +110,7 @@ export function FannedHand({ cards, trump, modeOf, onPlay }: HandProps) {
 }
 
 /** Dummy laid out as on a real table: one column per suit, cards running downwards. */
-export function DummyHand({ cards, trump, modeOf, onPlay }: HandProps) {
+export function DummyHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) {
   const columns = displaySuits(trump)
     .map((suit) => sortForDisplay(cards, trump).filter((c) => c.suit === suit))
     .filter((col) => col.length > 0);
@@ -124,6 +139,7 @@ export function DummyHand({ cards, trump, modeOf, onPlay }: HandProps) {
               <CardButton
                 card={card}
                 mode={modeOf(card)}
+                hinted={hintOf(card)}
                 layout="row"
                 onPlay={onPlay}
                 flipInDelay={0.03 * order++}
@@ -158,6 +174,45 @@ export function HiddenHand({ count, label }: { count: number; label: string }) {
       <span className="rounded-full bg-black/40 px-2 text-xs tabular-nums text-white/90">
         {count} ใบ
       </span>
+    </div>
+  );
+}
+
+/**
+ * A defender's hand face up (study mode, SPEC §7.6), as in a bridge diagram: one line per suit.
+ * Compact so it fits beside the trick on a 360 px phone.
+ */
+export function OpenHand({
+  cards,
+  trump,
+  label,
+}: {
+  cards: readonly Card[];
+  trump: Strain;
+  label: string;
+}) {
+  const sorted = sortForDisplay(cards, trump);
+  return (
+    <div
+      data-open-hand={label}
+      aria-label={`${label}: ${cards.map(cardName).join(', ') || 'ไม่มีไพ่'}`}
+      className="max-w-[27cqw] rounded-lg bg-white/95 px-1.5 py-1 text-[11px] leading-snug font-semibold text-black shadow sm:px-2 sm:text-sm"
+    >
+      {displaySuits(trump).map((suit) => {
+        const ranks = sorted.filter((c) => c.suit === suit);
+        return (
+          <div key={suit} className="flex gap-1" aria-hidden="true">
+            <span className={SUIT_INFO[suit].red ? 'text-suit-red' : 'text-suit-black'}>
+              {SUIT_INFO[suit].symbol}
+            </span>
+            <span className="flex flex-wrap gap-x-[0.2em] tabular-nums">
+              {ranks.length > 0
+                ? ranks.map((c) => <span key={c.rank}>{rankLabel(c.rank)}</span>)
+                : '—'}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
