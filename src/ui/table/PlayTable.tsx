@@ -18,7 +18,7 @@ import {
 import { canUndo, isHandOver, isPlayerTurn, tricksLeft } from '../../game/playStore';
 import { reviewHand } from '../../game/review';
 import { DealingOverlay } from '../DealingOverlay';
-import { gameStore, useDealNew, useGame } from '../gameStore';
+import { gameStore, updateSettings, useDealNew, useGame } from '../gameStore';
 import { ActionBar } from './ActionBar';
 import { ClaimDialog } from './ClaimDialog';
 import type { CardMode, PlayHandler } from './hands';
@@ -147,7 +147,8 @@ export function PlayTable() {
     gameStore.getState().undo();
   }, []);
   const onRestart = useCallback(() => gameStore.getState().restart(), []);
-  const onStudyMode = useCallback((on: boolean) => gameStore.getState().setStudyMode(on), []);
+  // Study mode is a saved setting; the store follows it (see gameStore.ts).
+  const onStudyMode = useCallback((on: boolean) => updateSettings({ studyMode: on }), []);
   const onKeyHint = useCallback(() => {
     keyboard.current = true;
     onHint();

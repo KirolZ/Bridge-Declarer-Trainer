@@ -4,11 +4,15 @@ import { DevSolverPage } from './pages/DevSolverPage';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PlayPage } from './pages/PlayPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { StatsPage } from './pages/StatsPage';
 
 // Hash routing (#/...) so dist/ can be served as static files from anywhere (SPEC §2).
 const router = createHashRouter([
   { path: '/', element: <HomePage /> },
   { path: '/play/:code/:contract', element: <PlayPage /> },
+  { path: '/settings', element: <SettingsPage /> },
+  { path: '/stats', element: <StatsPage /> },
   { path: '/dev/solver', element: <DevSolverPage /> },
   { path: '*', element: <NotFoundPage /> },
 ]);

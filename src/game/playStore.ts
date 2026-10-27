@@ -27,21 +27,11 @@ import {
 import { chooseDefenderCard, dealSeed } from '../bot';
 import type { CardAnalysis, DDTable, Position } from '../solver';
 import { positionFromPlayState } from '../solver/position';
-import type { ContractType, DealSettings } from './settings';
+import type { ContractType, DealSettings, Pace } from './settings';
+import { BOT_PACE } from './settings';
 import type { NewHand } from './newHand';
 import { newHand } from './newHand';
 import { reviewKeys } from './review';
-
-/** Bot timing: at least `cardMs` per card, and a finished trick stays up `trickMs` (SPEC §6). */
-export type Pace = { readonly cardMs: number; readonly trickMs: number };
-
-export type BotSpeed = 'slow' | 'normal' | 'fast';
-
-export const BOT_PACE: Readonly<Record<BotSpeed, Pace>> = {
-  slow: { cardMs: 1000, trickMs: 1400 },
-  normal: { cardMs: 500, trickMs: 800 },
-  fast: { cardMs: 250, trickMs: 400 },
-};
 
 /** What the store needs from the solver (the app passes the worker client). */
 export type PlaySolver = {
@@ -111,6 +101,11 @@ export type PlayStoreState = {
   readonly studied: boolean;
   /** Bumped whenever play starts over or is rewound, so the table can skip animations. */
   readonly epoch: number;
+  /**
+   * Bumped by `startHand` only (not by undo, rewinds or "play again"), so the stats count the
+   * first finish of each hand started (M11).
+   */
+  readonly handSerial: number;
 
   /** Starts playing `hand` from the opening lead (West, a bot). */
   startHand(hand: HandSetup): void;
@@ -368,6 +363,7 @@ export function createPlayStore(options: PlayStoreOptions) {
       studyMode: false,
       studied: false,
       epoch: 0,
+      handSerial: 0,
 
       startHand(hand) {
         const g = nextGeneration();
@@ -387,6 +383,7 @@ export function createPlayStore(options: PlayStoreOptions) {
           claimChecking: false,
           studied: get().studyMode,
           epoch: get().epoch + 1,
+          handSerial: get().handSerial + 1,
         });
         void step(g);
       },

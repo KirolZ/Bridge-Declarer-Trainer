@@ -1,5 +1,5 @@
 // Practice buttons on the info panel (SPEC §8): hint, undo, claim and the menu (play this hand
-// again, new hand, study mode, home). Keys: H = hint, U = undo (handled by the table).
+// again, new hand, study mode, settings, home). Keys: H = hint, U = undo (handled by the table).
 
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -115,6 +115,9 @@ function GameMenu({ studyMode, onRestart, onNewHand, onStudyMode }: MenuProps) {
             </span>
             โหมดศึกษา (เปิดไพ่ทุกมือ)
           </button>
+          <Link to="/settings" role="menuitem" className={MENU_ITEM}>
+            ตั้งค่า
+          </Link>
           <Link to="/" role="menuitem" className={MENU_ITEM}>
             หน้าแรก
           </Link>

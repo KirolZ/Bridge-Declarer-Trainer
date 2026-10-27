@@ -15,6 +15,13 @@ describe('table layout', () => {
     expect(displaySuits('NT')).toEqual(['S', 'H', 'C', 'D']);
   });
 
+  it('rank order is always spades, hearts, diamonds, clubs', () => {
+    for (const strain of STRAINS)
+      expect(displaySuits(strain, 'rank')).toEqual(['S', 'H', 'D', 'C']);
+    const codes = sortForDisplay(parseHand('A2.K3.Q4.J5'), 'C', 'rank').map((c) => c.suit + c.rank);
+    expect(codes.join(' ')).toBe('S14 S2 H13 H3 D12 D4 C11 C5');
+  });
+
   it('sorts by display suit, then high to low', () => {
     const hand = parseHand('A2.K3.Q4.J5');
     const codes = (s: 'NT' | 'D') =>

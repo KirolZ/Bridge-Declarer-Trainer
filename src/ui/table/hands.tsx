@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import type { MouseEvent } from 'react';
 import type { Card, Strain } from '../../engine';
 import { SUIT_INFO, cardCode, rankLabel } from '../../engine';
+import { useSuitOrder } from '../gameStore';
 import type { IndexLayout } from './PlayingCard';
 import { cardName } from './labels';
 import { PlayingCard } from './PlayingCard';
@@ -75,7 +76,8 @@ type HandProps = {
  * each step shows at least the corner index.
  */
 export function FannedHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) {
-  const sorted = sortForDisplay(cards, trump);
+  const order = useSuitOrder();
+  const sorted = sortForDisplay(cards, trump, order);
   const gaps = Math.max(sorted.length - 1, 1);
   const step = `min(calc(var(--card-w) * 0.62), calc((100cqw - var(--card-w)) / ${gaps}))`;
   return (
@@ -111,8 +113,9 @@ export function FannedHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) 
 
 /** Dummy laid out as on a real table: one column per suit, cards running downwards. */
 export function DummyHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) {
-  const columns = displaySuits(trump)
-    .map((suit) => sortForDisplay(cards, trump).filter((c) => c.suit === suit))
+  const suitOrder = useSuitOrder();
+  const columns = displaySuits(trump, suitOrder)
+    .map((suit) => sortForDisplay(cards, trump, suitOrder).filter((c) => c.suit === suit))
     .filter((col) => col.length > 0);
   const longest = Math.max(1, ...columns.map((col) => col.length));
   const step = dummyStep(longest);
@@ -122,6 +125,7 @@ export function DummyHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) {
       {columns.map((col) => (
         <div
           key={col[0]!.suit}
+          data-suit={col[0]!.suit}
           className="relative"
           style={{
             width: 'var(--card-w)',
@@ -203,14 +207,15 @@ export function OpenHand({
   label: string;
   markOf?: (card: Card) => CardMark | undefined;
 }) {
-  const sorted = sortForDisplay(cards, trump);
+  const order = useSuitOrder();
+  const sorted = sortForDisplay(cards, trump, order);
   return (
     <div
       data-open-hand={label}
       aria-label={`${label}: ${cards.map(cardName).join(', ') || 'ไม่มีไพ่'}`}
       className="max-w-[27cqw] rounded-lg bg-white/95 px-1.5 py-1 text-[11px] leading-snug font-semibold text-black shadow sm:px-2 sm:text-sm"
     >
-      {displaySuits(trump).map((suit) => {
+      {displaySuits(trump, order).map((suit) => {
         const ranks = sorted.filter((c) => c.suit === suit);
         return (
           <div key={suit} className="flex gap-1" aria-hidden="true">

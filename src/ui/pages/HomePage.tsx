@@ -1,9 +1,13 @@
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { SUIT_INFO, SUITS } from '../../engine/card';
 import { getSolver } from '../../worker';
 import { DealingOverlay } from '../DealingOverlay';
 import { useDealNew, useGame } from '../gameStore';
+
+const SECONDARY =
+  'rounded-lg bg-white/10 px-5 py-2 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none';
 
 export function HomePage() {
   const dealNew = useDealNew();
@@ -38,6 +42,14 @@ export function HomePage() {
       >
         เริ่มเล่น
       </button>
+      <nav aria-label="เมนูหลัก" className="flex gap-3">
+        <Link to="/settings" className={SECONDARY}>
+          ตั้งค่า
+        </Link>
+        <Link to="/stats" className={SECONDARY}>
+          สถิติ
+        </Link>
+      </nav>
       {dealError && (
         <p role="alert" className="text-red-300">
           {dealError}

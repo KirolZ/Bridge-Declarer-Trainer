@@ -158,10 +158,26 @@
 
 ## M11 — ตั้งค่า + สถิติ
 
-- [ ] **11.1** หน้าตั้งค่าตาม SPEC §7.6 เก็บใน `localStorage` (ครอบ try/catch)
-- [ ] **11.2** บันทึกสถิติหลังจบแต่ละมือ (ยกเว้นโหมดศึกษา) + หน้าสถิติ (แยก suit / NT)
+- [x] **11.1** หน้าตั้งค่าตาม SPEC §7.6 เก็บใน `localStorage` (ครอบ try/catch)
+- [x] **11.2** บันทึกสถิติหลังจบแต่ละมือ (ยกเว้นโหมดศึกษา) + หน้าสถิติ (แยก suit / NT)
 
 **เสร็จเมื่อ:** ปิดแล้วเปิดเบราว์เซอร์ใหม่ ตั้งค่าและสถิติยังอยู่ และถ้าบล็อก storage เว็บยังใช้ได้
+
+> **สถานะ (2026-10-27):** M11 เสร็จ — `src/game/storage.ts` (`createSafeStorage`, try/catch ทุกครั้ง + สำรองในหน่วยความจำ),
+> `settings.ts` (`Settings`, `parseSettings`, `BOT_PACE` ย้ายมาจาก playStore), `stats.ts` (`addResult`, `statTotals`, `handResultOf`,
+> `watchHandResults`), `saved.ts` (store ตั้งค่า / สถิติ), play store เพิ่ม `handSerial`, หน้า `#/settings` / `#/stats` (ดู DECISIONS M11)
+> test: `saved.test.ts` 9 ข้อ (storage พัง 4 แบบ, อ่านค่าเสีย, 2 แท็บไม่ทับกัน, นับครั้งแรกครั้งเดียว / ไม่นับหลังย้อน / เล่นใหม่ / โหมดศึกษา)
+> + e2e `settings-stats.spec.ts` (ตั้งค่า + จบมือ → context ใหม่จาก storageState ยังอยู่, บล็อก localStorage แล้วยังเล่น / ดูสถิติได้
+> ไม่มี error, ย้อน claim แล้วจบอีกรอบนับ 1 มือ)
+>
+> **ส่งต่อให้ M12:**
+>
+> - `Settings.beginnerMode` มีแล้ว (เก็บ / อ่าน / validate) แต่**ยังไม่มีสวิตช์ในหน้าตั้งค่า** เพราะยังไม่มีผลอะไร — 12.8 เพิ่ม
+>   `<label>` checkbox แบบเดียวกับโหมดศึกษาใน `SettingsPage.tsx` แล้วผูกพฤติกรรม: deal ใช้ `dealSettingsOf` → ให้บังคับ
+>   `cushion` + ไม่มี slam ตรงนั้น, ความเร็ว "ช้า" ให้ทำใน subscription ของ `src/ui/gameStore.ts` (ที่ตั้ง `setPace`)
+> - ความคืบหน้าคู่มือ / ข้อความ "เข้าใจแล้ว": ใช้ `browserStorage()` / `SafeStorage` เดิม เพิ่ม key ใน `STORAGE_KEYS`
+>   (เช่น `bridge-trainer.learn.v1`) และ parse แบบทีละช่องเหมือน `parseSettings` "เปิดเว็บครั้งแรก" = key นี้ยังไม่มี
+> - ตั้งค่าเปลี่ยนผ่าน `updateSettings(patch)` เท่านั้น (play store ตาม settings เอง อย่าเรียก `gameStore.setStudyMode` ตรง ๆ)
 
 ## M12 — คู่มือมือใหม่ + โหมดมือใหม่
 
