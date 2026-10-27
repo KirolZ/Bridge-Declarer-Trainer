@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { SUIT_SYMBOLS } from '../../engine/suits';
+import { SUIT_INFO, SUITS } from '../../engine/card';
 
 export function HomePage() {
   return (
@@ -13,9 +13,9 @@ export function HomePage() {
       </motion.h1>
       <p className="text-lg text-white/80">ฝึกเดินไพ่ฝั่ง declarer — กำลังสร้าง</p>
       <p className="text-4xl tracking-widest" aria-label="สัญลักษณ์ดอกไพ่">
-        {SUIT_SYMBOLS.map(({ suit, symbol, red }) => (
-          <span key={suit} className={red ? 'text-red-400' : 'text-white'}>
-            {symbol}
+        {SUITS.map((suit) => (
+          <span key={suit} className={SUIT_INFO[suit].red ? 'text-red-400' : 'text-white'}>
+            {SUIT_INFO[suit].symbol}
           </span>
         ))}
       </p>

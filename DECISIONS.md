@@ -22,3 +22,26 @@
 - **Vite `base: './'`** — asset เป็น path แบบ relative เพื่อให้ `dist/` วางไว้ใต้ sub-path ไหนก็ได้
   (เช่น GitHub Pages)
 - `SPEC.md` / `TASKS.md` ไม่ผ่าน Prettier เพื่อไม่ให้ format เอกสารต้นฉบับใหม่
+
+## M2 — Engine (2026-10-27)
+
+- **โมดูล** — `card` (type + helper), `rng`, `deal`, `encode` (รหัสมือ 18 ตัว, PBN, รหัส contract), `play`,
+  `scoring` รวมไว้ที่ `src/engine/index.ts` ลบ placeholder `suits.ts` จาก M1 ทิ้ง
+- **`Rng` = ฟังก์ชันคืนเลขทศนิยม [0, 1)** ทั้ง `mulberry32(seed)` และ `cryptoRng()` (crypto เติม buffer
+  ทีละ 64 ค่า) `dealRandom()` ใช้ crypto ถ้าไม่ส่ง RNG มา ส่วน `withStrongerSouth` แยกเป็นฟังก์ชันของตัวเอง
+  (§7.1 ข้อ 1) ให้ M6 เรียกต่อเอง
+- **`PlayState.leader` (optional)** — คนนำ trick แรก ค่าเริ่มต้นคือคนทางซ้ายของ declarer (West)
+  ใช้กับแบบฝึกที่เริ่มจากคนนำอื่น นอกนั้นตรงตาม §4.2
+- **`toPlay` คืน `null` เมื่อจบมือ** และ `currentTrick` คืน `[]` ทันทีที่ trick ครบ 4 ใบ
+  (UI ใช้ `completedTricks().at(-1)` แสดง trick ที่เพิ่งจบ)
+- **`illegalReason(state, card)`** — คืนเหตุผลที่ลงใบนั้นไม่ได้ (`must-follow-suit` + ดอก, `not-in-hand`,
+  `hand-complete`) เตรียมไว้ให้โหมดมือใหม่ (§7.8) บอกเหตุผลได้โดยไม่ต้องเขียนกติกาซ้ำใน UI
+- **รหัสมือไพ่ decode แบบเข้มงวด** — ต้องยาว 18 ตัวพอดี, ไม่มี `=`, และ 4 bit ท้ายต้องเป็น 0
+  จึงมีรหัสเดียวต่อมือ (ลิงก์เทียบกันตรง ๆ ได้)
+- **PBN** — รับเฉพาะ `T` แทน 10 (ไม่รับ `10`) และตัวพิมพ์ใหญ่เท่านั้น นอกจากมือเดี่ยวแล้วมี
+  `parseDealPbn` / `formatDealPbn` แบบ `N:<N> <E> <S> <W>` (ไล่ตามเข็มนาฬิกาจากทิศแรก) ไว้เขียน test / แบบฝึก
+- **รหัส contract ใน URL** — `encodeContract` / `decodeContract` (`4S`, `3N`) อยู่ใน engine ด้วย
+- **Scoring** — `scoreBreakdown` คืนแต้มแยกส่วน (contract, overtrick, game/partscore, slam, undertrick)
+  ไว้ใช้กับคำอธิบายแต้มเต็มในโหมดมือใหม่ `score` คืนแค่ยอดรวม
+- **ชื่อดอกภาษาไทย** — `SUIT_INFO` มีทั้งชื่ออังกฤษและไทย (โพดำ / โพแดง / ข้าวหลามตัด / ดอกจิก)
+- **Test ขอบเขต engine** — `boundary.test.ts` สแกนว่าไฟล์ใน `src/engine` import ได้แค่ `./...`

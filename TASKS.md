@@ -17,12 +17,12 @@
 
 ## M2 — Engine (กติกา)
 
-- [ ] **2.1** type `Suit / Rank / Card / Seat / Strain / Deal / Contract` + helper (เทียบ rank, ชื่อ/สัญลักษณ์ดอก, เรียงมือ, HCP)
-- [ ] **2.2** สำรับ + แจก (Fisher–Yates, RNG แบบ crypto และแบบ seed mulberry32) + สลับ N↔S ให้ South แข็งกว่า
-- [ ] **2.3** encode / decode รหัสมือไพ่ 18 ตัวอักษร (SPEC §4.4) + validate, และ parse / format มือแบบ PBN (`AK3.Q2..T9`)
-- [ ] **2.4** `PlayState` + `legalPlays`, `applyPlay`, `currentTrick`, `toPlay`, `tricksWon`, `isComplete` (SPEC §4.2) — opening lead โดย West, ต้องลงตามดอก, trump กิน, รองรับมือที่มีไม่ครบ 13 ใบ (ทุกมือเท่ากัน) และเริ่มจากคนนำที่กำหนดได้
-- [ ] **2.5** scoring ตาม SPEC §4.3 (non-vul / vul, partscore, game, slam, overtrick, undertrick)
-- [ ] **2.6** unit test ครบทุกข้อข้างบน รวมกรณีขอบ: ไม่มีดอกที่นำแล้ว trump / ทิ้ง, trump ซ้อน trump, NT, grand slam, ขาด 13 trick
+- [x] **2.1** type `Suit / Rank / Card / Seat / Strain / Deal / Contract` + helper (เทียบ rank, ชื่อ/สัญลักษณ์ดอก, เรียงมือ, HCP)
+- [x] **2.2** สำรับ + แจก (Fisher–Yates, RNG แบบ crypto และแบบ seed mulberry32) + สลับ N↔S ให้ South แข็งกว่า
+- [x] **2.3** encode / decode รหัสมือไพ่ 18 ตัวอักษร (SPEC §4.4) + validate, และ parse / format มือแบบ PBN (`AK3.Q2..T9`)
+- [x] **2.4** `PlayState` + `legalPlays`, `applyPlay`, `currentTrick`, `toPlay`, `tricksWon`, `isComplete` (SPEC §4.2) — opening lead โดย West, ต้องลงตามดอก, trump กิน, รองรับมือที่มีไม่ครบ 13 ใบ (ทุกมือเท่ากัน) และเริ่มจากคนนำที่กำหนดได้
+- [x] **2.5** scoring ตาม SPEC §4.3 (non-vul / vul, partscore, game, slam, overtrick, undertrick)
+- [x] **2.6** unit test ครบทุกข้อข้างบน รวมกรณีขอบ: ไม่มีดอกที่นำแล้ว trump / ทิ้ง, trump ซ้อน trump, NT, grand slam, ขาด 13 trick
 
 **เสร็จเมื่อ:** test ของ engine ผ่าน และ engine ไม่มี import อะไรนอก `src/engine`
 
