@@ -44,7 +44,8 @@ test('following the hint every turn makes the contract', async ({ page }) => {
 
   expect(turns).toBe(26);
   await expect(result).toHaveAttribute('data-made', 'true');
-  await expect(result).toContainText('ได้ 9 trick (ต้องได้ 9)');
+  await expect(page.getByTestId('result-tricks')).toContainText('ได้ 9 trick (DD ทำได้ 9)');
+  await expect(page.getByTestId('review')).toContainText('เสีย 0 trick');
   await expect(page.getByTestId('result-notes')).toContainText('ใช้คำใบ้ 26 ครั้ง');
   expect(errors).toEqual([]);
 });

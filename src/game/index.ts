@@ -5,3 +5,4 @@ export * from './contract';
 export * from './newHand';
 export * from './playStore';
 export * from './ddLog';
+export * from './review';

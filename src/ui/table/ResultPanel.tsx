@@ -1,21 +1,35 @@
-// End of hand: made / down and the score (SPEC §4.3), hints used (§7.2), and the ways on: new
-// hand, play this hand again, undo the last card (§7.3). The full analysis page comes in M10.
+// End-of-hand summary (SPEC §7.5): made / down and the score (§4.3), tricks taken against the
+// double-dummy value, where tricks were lost and which cards would have kept them, hints used
+// (§7.2), and the ways on: replay, share, new hand, play again, undo (§7.3).
 
 import { motion } from 'framer-motion';
 import { Fragment, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import type { Contract, Vulnerability } from '../../engine';
+import type { Card, Contract, Vulnerability } from '../../engine';
 import { contractLabel, isDeclarerVulnerable, scoreBreakdown, tricksNeeded } from '../../engine';
+import type { HandSetup } from '../../game/playStore';
+import type { HandReview, Loss } from '../../game/review';
+import { CardText } from './hands';
+import { SEAT_NAME } from './labels';
+import { ShareButton } from './ShareButton';
+
+export type ReviewStatus = 'loading' | 'failed' | 'ready';
 
 type ResultPanelProps = {
+  hand: HandSetup;
   contract: Contract;
   vulnerability: Vulnerability;
-  nsTricks: number;
+  review: HandReview;
+  /** `ready` once every analysis the review needs is in. */
+  reviewStatus: ReviewStatus;
   /** The hand ended with an accepted claim. */
   claimed: boolean;
   hintsUsed: number;
   /** Study mode was on: the hand does not count for the stats. */
   studied: boolean;
+  onRetryReview: () => void;
+  /** Opens the replay at `trick` (1-based). */
+  onReplay: (trick: number) => void;
   onNewHand: () => void;
   onRestart: () => void;
   onUndo: () => void;
@@ -24,12 +38,124 @@ type ResultPanelProps = {
 const SECONDARY =
   'flex-1 rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none';
 
+/** "♠K, ♠Q หรือ ♥2" */
+function CardList({ cards }: { cards: readonly Card[] }) {
+  return (
+    <>
+      {cards.map((c, i) => (
+        <Fragment key={`${c.suit}${c.rank}`}>
+          {i > 0 && (i === cards.length - 1 ? ' หรือ ' : ', ')}
+          <CardText card={c} />
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
+/** One place where tricks were lost; opens the replay at that trick. */
+export function LossText({ loss }: { loss: Loss }) {
+  if (loss.kind === 'card') {
+    return (
+      <>
+        {SEAT_NAME[loss.seat]} ลง <CardText card={loss.card} /> · ควรลง{' '}
+        <CardList cards={loss.best} />
+      </>
+    );
+  }
+  return (
+    <>
+      Claim รวม {loss.claimed} trick แต่ยังทำได้ {loss.before} · ควรเล่นต่อ เช่น{' '}
+      <CardList cards={loss.best} />
+    </>
+  );
+}
+
+function ReviewSection(
+  props: Pick<ResultPanelProps, 'review' | 'reviewStatus' | 'onReplay'> & {
+    onRetry: () => void;
+  },
+) {
+  const { review, reviewStatus, onReplay, onRetry } = props;
+  if (reviewStatus === 'failed') {
+    return (
+      <p className="text-sm text-red-200" data-testid="review" data-status="failed">
+        วิเคราะห์ไม่สำเร็จ{' '}
+        <button
+          type="button"
+          onClick={onRetry}
+          className="ml-1 rounded bg-white/15 px-2 py-0.5 text-white hover:bg-white/25"
+        >
+          ลองใหม่
+        </button>
+      </p>
+    );
+  }
+  if (reviewStatus === 'loading') {
+    return (
+      <p className="text-sm text-white/70" data-testid="review" data-status="loading">
+        กำลังวิเคราะห์…
+      </p>
+    );
+  }
+  if (review.lost === 0) {
+    return (
+      <p
+        className="font-semibold text-emerald-300"
+        data-testid="review"
+        data-status="ready"
+        data-lost="0"
+      >
+        เสีย 0 trick — เล่นได้ดีที่สุดแบบ double-dummy ทุกใบ
+      </p>
+    );
+  }
+  return (
+    <section
+      className="flex w-full flex-col gap-2 text-left"
+      data-testid="review"
+      data-status="ready"
+      data-lost={review.lost}
+      aria-labelledby="losses-title"
+    >
+      <h3 id="losses-title" className="text-center font-semibold text-red-200">
+        เสีย {review.lost} trick เทียบกับ double-dummy
+      </h3>
+      <ul className="flex flex-col gap-1.5">
+        {review.losses.map((loss) => (
+          <li key={`${loss.kind}${loss.index}`}>
+            <button
+              type="button"
+              data-testid="loss"
+              data-trick={loss.trick}
+              onClick={() => onReplay(loss.trick)}
+              className="flex w-full items-start gap-2 rounded-lg bg-black/25 px-3 py-2 text-left text-sm hover:bg-black/40 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
+            >
+              <span className="shrink-0 font-semibold whitespace-nowrap text-white/90">
+                trick {loss.trick}
+              </span>
+              <span className="flex-1 leading-relaxed text-white/85">
+                <LossText loss={loss} />
+              </span>
+              <span className="shrink-0 font-semibold whitespace-nowrap text-red-300 tabular-nums">
+                −{loss.lost}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="text-center text-xs text-white/55">กดรายการเพื่อดูย้อนหลัง trick นั้น</p>
+    </section>
+  );
+}
+
 export function ResultPanel(props: ResultPanelProps) {
-  const { contract, vulnerability, nsTricks, claimed, hintsUsed, studied } = props;
+  const { contract, vulnerability, review, claimed, hintsUsed, studied } = props;
+  const { nsTricks, ddTricks } = review;
   const result = scoreBreakdown(contract, nsTricks, isDeclarerVulnerable(vulnerability));
   const needed = tricksNeeded(contract);
   const first = useRef<HTMLButtonElement>(null);
-  useEffect(() => first.current?.focus(), []);
+  // No scroll: on a phone the buttons are below the fold, the result should stay in view.
+  useEffect(() => first.current?.focus({ preventScroll: true }), []);
 
   const notes = [
     claimed && 'จบด้วย claim',
@@ -39,66 +165,88 @@ export function ResultPanel(props: ResultPanelProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-40 grid place-items-center bg-black/55 px-4"
+      className="fixed inset-0 z-40 overflow-y-auto bg-black/55 px-4 py-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="result-title"
-        data-testid="result"
-        data-made={result.made}
-        className="flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl border border-white/10 bg-felt-dark p-6 text-center shadow-2xl"
-        initial={{ scale: 0.9, y: 16 }}
-        animate={{ scale: 1, y: 0 }}
-      >
-        <h2
-          id="result-title"
-          className={`text-2xl font-bold ${result.made ? 'text-amber-300' : 'text-red-300'}`}
+      <div className="flex min-h-full items-center justify-center">
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="result-title"
+          data-testid="result"
+          data-made={result.made}
+          className="flex w-full max-w-md flex-col items-center gap-3 rounded-2xl border border-white/10 bg-felt-dark p-5 text-center shadow-2xl sm:p-6"
+          initial={{ scale: 0.9, y: 16 }}
+          animate={{ scale: 1, y: 0 }}
         >
-          {result.made
-            ? `ทำ ${contractLabel(contract)} ได้!`
-            : `${contractLabel(contract)} ขาด ${-result.result} trick`}
-        </h2>
-        <p className="text-white/85">
-          ได้ {nsTricks} trick (ต้องได้ {needed})
-          {result.made && result.result > 0 && ` · เกิน ${result.result}`}
-        </p>
-        <p className="text-3xl font-bold tabular-nums" data-testid="score">
-          {result.total > 0 ? `+${result.total}` : result.total}
-          <span className="ml-1 text-base font-normal text-white/70">แต้ม</span>
-        </p>
-        <p className="text-sm text-white/65" data-testid="result-notes">
-          {notes.map((note, i) => (
-            <Fragment key={i}>
-              {i > 0 && ' · '}
-              <span className="whitespace-nowrap">{note}</span>
-            </Fragment>
-          ))}
-        </p>
-        <div className="mt-2 flex w-full gap-2">
-          <button
-            ref={first}
-            type="button"
-            onClick={props.onNewHand}
-            className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+          <h2
+            id="result-title"
+            className={`text-2xl font-bold ${result.made ? 'text-amber-300' : 'text-red-300'}`}
           >
-            มือใหม่
-          </button>
-          <button type="button" onClick={props.onRestart} className={SECONDARY}>
-            เล่นมือนี้ใหม่
-          </button>
-        </div>
-        <div className="flex w-full gap-2">
-          <button type="button" onClick={props.onUndo} aria-keyshortcuts="U" className={SECONDARY}>
-            ↶ ย้อน{claimed ? ' claim' : 'ใบล่าสุด'}
-          </button>
-          <Link to="/" className={SECONDARY}>
-            หน้าแรก
-          </Link>
-        </div>
-      </motion.div>
+            {result.made
+              ? `ทำ ${contractLabel(contract)} ได้!`
+              : `${contractLabel(contract)} ขาด ${-result.result} trick`}
+          </h2>
+          <p className="text-white/85" data-testid="result-tricks">
+            ได้ {nsTricks} trick
+            {ddTricks !== null && ` (DD ทำได้ ${ddTricks})`} · ต้องได้ {needed}
+            {result.made && result.result > 0 && ` · เกิน ${result.result}`}
+          </p>
+          <p className="text-3xl font-bold tabular-nums" data-testid="score">
+            {result.total > 0 ? `+${result.total}` : result.total}
+            <span className="ml-1 text-base font-normal text-white/70">แต้ม</span>
+          </p>
+          <p className="text-sm text-white/65" data-testid="result-notes">
+            {notes.map((note, i) => (
+              <Fragment key={i}>
+                {i > 0 && ' · '}
+                <span className="whitespace-nowrap">{note}</span>
+              </Fragment>
+            ))}
+          </p>
+
+          <ReviewSection
+            review={review}
+            reviewStatus={props.reviewStatus}
+            onReplay={props.onReplay}
+            onRetry={props.onRetryReview}
+          />
+
+          <div className="mt-1 flex w-full flex-wrap gap-2">
+            <button type="button" onClick={() => props.onReplay(1)} className={SECONDARY}>
+              ▶ ดูย้อนหลัง
+            </button>
+            <ShareButton hand={props.hand} className={SECONDARY} />
+          </div>
+          <div className="flex w-full gap-2">
+            <button
+              ref={first}
+              type="button"
+              onClick={props.onNewHand}
+              className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+            >
+              มือใหม่
+            </button>
+            <button type="button" onClick={props.onRestart} className={SECONDARY}>
+              เล่นมือนี้ใหม่
+            </button>
+          </div>
+          <div className="flex w-full gap-2">
+            <button
+              type="button"
+              onClick={props.onUndo}
+              aria-keyshortcuts="U"
+              className={SECONDARY}
+            >
+              ↶ ย้อน{claimed ? ' claim' : 'ใบล่าสุด'}
+            </button>
+            <Link to="/" className={SECONDARY}>
+              หน้าแรก
+            </Link>
+          </div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 }

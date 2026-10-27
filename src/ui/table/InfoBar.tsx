@@ -56,7 +56,7 @@ export function InfoBar(props: InfoBarProps) {
       </div>
       <Stat label="NS" value={String(won.NS)} testId="tricks-ns" />
       <Stat label="EW" value={String(won.EW)} testId="tricks-ew" />
-      <Stat label="trick" value={`${trickNumber}/${totalTricks}`} />
+      <Stat label="trick" value={`${trickNumber}/${totalTricks}`} testId="trick-number" />
       {actions}
     </header>
   );

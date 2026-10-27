@@ -58,7 +58,9 @@ test('a hand from a link plays through 13 tricks and shows the result', async ({
   const ns = Number(await page.getByTestId('tricks-ns').textContent());
   const ew = Number(await page.getByTestId('tricks-ew').textContent());
   expect(ns + ew).toBe(13);
-  await expect(page.getByTestId('result')).toContainText(`ได้ ${ns} trick (ต้องได้ 9)`);
+  await expect(page.getByTestId('result-tricks')).toContainText(`ได้ ${ns} trick (DD ทำได้ 9)`);
+  // The defence never errs, so every trick short of 9 shows up in the review.
+  await expect(page.getByTestId('review')).toHaveAttribute('data-lost', String(9 - ns));
   await expect(page.getByTestId('score')).toHaveText(/^[+-]?\d+\s*แต้ม$/);
   expect(errors).toEqual([]);
 });

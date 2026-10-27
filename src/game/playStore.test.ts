@@ -21,6 +21,7 @@ import { positionFromPlayState } from '../solver/position';
 import type { DdsSolver } from '../solver/dds';
 import { loadDds } from '../solver/dds';
 import { playerDdLog } from './ddLog';
+import { reviewHand } from './review';
 import type { HandSetup, PlaySolver, PlayStore } from './playStore';
 import {
   canUndo,
@@ -507,6 +508,154 @@ describe('practice tools (M9)', () => {
     store.getState().setStudyMode(true);
     store.getState().startHand(hand(29, { level: 1, strain: 'H', declarer: 'S' }));
     expect(store.getState().studied).toBe(true);
+    store.getState().leave();
+  });
+});
+
+describe('post-hand review (M10)', () => {
+  const bestOf = (lines: readonly CardAnalysis[]) => Math.max(...lines.map((l) => l.nsTricks));
+  const codes = (cards: readonly Card[]) => cards.map(cardCode).sort();
+  const ddStart = (setup: HandSetup) =>
+    dds.solve({ hands: setup.deal, trump: setup.contract.strain, trick: [], toPlay: 'W' });
+
+  it('points at the one card that lost tricks and the cards that would have kept them', async () => {
+    const { solver } = ddsSolver();
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    const setup = hand(41, { level: 4, strain: 'H', declarer: 'S' });
+    store.getState().startHand(setup);
+
+    // Best play, except for the first turn where some card loses a trick.
+    let mistake: { index: number; card: Card; lost: number; best: Card[] } | null = null;
+    await playOut(store, (_, lines) => {
+      const best = bestOf(lines);
+      const bad = lines.reduce((a, b) => (b.nsTricks < a.nsTricks ? b : a));
+      if (!mistake && bad.nsTricks < best) {
+        mistake = {
+          index: store.getState().play!.plays.length,
+          card: bad.card,
+          lost: best - bad.nsTricks,
+          best: lines.filter((l) => l.nsTricks === best).map((l) => l.card),
+        };
+        return bad.card;
+      }
+      return lines.find((l) => l.nsTricks === best)!.card;
+    });
+    expect(mistake).not.toBeNull();
+    const m = mistake!;
+
+    await expect(store.getState().completeReview()).resolves.toBe(true);
+    const { play, analyses, claimed } = store.getState();
+    const review = reviewHand(play!, analyses, claimed);
+    expect(review.complete).toBe(true);
+    expect(review.ddTricks).toBe(ddStart(setup));
+    expect(review.losses).toHaveLength(1);
+    const loss = review.losses[0]!;
+    expect(loss.kind).toBe('card');
+    if (loss.kind !== 'card') return;
+    expect(loss.index).toBe(m.index);
+    expect(loss.trick).toBe(Math.floor(m.index / 4) + 1);
+    expect(cardCode(loss.card)).toBe(cardCode(m.card));
+    expect(codes(loss.best)).toEqual(codes(m.best));
+    expect(loss.lost).toBe(m.lost);
+    expect(review.lost).toBe(m.lost);
+    expect(review.nsTricks).toBe(ddStart(setup) - m.lost);
+  });
+
+  it('fills in analyses that failed during play', async () => {
+    let failNs = true;
+    const { solver: inner } = ddsSolver();
+    const solver: PlaySolver = {
+      analyze: (pos, o) =>
+        failNs && sideOf(pos.toPlay) === 'NS'
+          ? Promise.reject(new Error('boom'))
+          : inner.analyze(pos, o),
+      ddTable: (deal, o) => inner.ddTable(deal, o),
+    };
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    const setup = hand(42, { level: 2, strain: 'NT', declarer: 'S' });
+    store.getState().startHand(setup);
+    await playOut(store, (legal) => legal[0]!);
+
+    const reviewNow = () => {
+      const { play, analyses, claimed } = store.getState();
+      return reviewHand(play!, analyses, claimed);
+    };
+    expect(reviewNow().complete).toBe(false);
+    await expect(store.getState().completeReview()).resolves.toBe(false);
+
+    failNs = false;
+    await expect(store.getState().completeReview()).resolves.toBe(true);
+    const review = reviewNow();
+    expect(review.complete).toBe(true);
+    expect(review.ddTricks).toBe(ddStart(setup));
+    // The defence never errs, so every trick below DD is one the review points at.
+    expect(review.nsTricks).toBe(review.ddTricks! - review.lost);
+    expect(review.losses.every((l) => l.kind === 'card' && l.lost > 0)).toBe(true);
+    // Nothing more to fetch.
+    await expect(store.getState().completeReview()).resolves.toBe(true);
+  });
+
+  it('a claim for fewer tricks than best play counts as tricks lost', async () => {
+    const { solver } = ddsSolver();
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    const setup = hand(43, { level: 3, strain: 'NT', declarer: 'S' });
+    store.getState().startHand(setup);
+    for (;;) {
+      await until(() => playerTurn(store));
+      const play = store.getState().play!;
+      if (play.plays.length >= 8) break;
+      const lines = dds.analyze(positionFromPlayState(play));
+      store.getState().playCard(lines.find((l) => l.nsTricks === bestOf(lines))!.card);
+    }
+    const play = store.getState().play!;
+    const lines = dds.analyze(positionFromPlayState(play));
+    const can = bestOf(lines);
+    expect(can).toBeGreaterThan(0);
+    await expect(store.getState().claim(can - 1)).resolves.toBe('accepted');
+
+    await expect(store.getState().completeReview()).resolves.toBe(true);
+    const s = store.getState();
+    const review = reviewHand(s.play!, s.analyses, s.claimed);
+    expect(review.complete).toBe(true);
+    expect(review.losses).toHaveLength(1);
+    const loss = review.losses[0]!;
+    expect(loss.kind).toBe('claim');
+    if (loss.kind !== 'claim') return;
+    expect(loss.index).toBe(play.plays.length);
+    expect(loss.lost).toBe(1);
+    expect(loss.claimed).toBe(tricksWon(play).NS + can - 1);
+    expect(codes(loss.best)).toEqual(
+      codes(lines.filter((l) => l.nsTricks === can).map((l) => l.card)),
+    );
+    expect(review.nsTricks).toBe(ddStart(setup) - 1);
+    store.getState().leave();
+  });
+
+  it('rewindTo cuts play back to any point and the bots carry on from there', async () => {
+    const { solver } = ddsSolver();
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    const setup = hand(44, { level: 1, strain: 'S', declarer: 'S' });
+    store.getState().startHand(setup);
+    await playOut(store, (legal) => legal[0]!);
+    const full = store.getState().play!.plays;
+    const hintsUsed = store.getState().hintsUsed;
+
+    expect(store.getState().rewindTo(-1)).toBe(false);
+    expect(store.getState().rewindTo(53)).toBe(false);
+    expect(store.getState().rewindTo(2.5)).toBe(false);
+    expect(isHandOver(store.getState())).toBe(true);
+
+    // Back to the start of trick 5: the same cards bring the same play.
+    expect(store.getState().rewindTo(16)).toBe(true);
+    expect(isHandOver(store.getState())).toBe(false);
+    expect(Object.keys(store.getState().analyses).every((k) => Number(k) <= 16)).toBe(true);
+    expect(store.getState().hintsUsed).toBe(hintsUsed);
+    await until(() => playerTurn(store));
+    expect(store.getState().play!.plays).toEqual(
+      full.slice(0, store.getState().play!.plays.length),
+    );
+    await playOut(store, (legal) => legal[0]!);
+    expect(store.getState().play!.plays).toEqual(full);
     store.getState().leave();
   });
 });

@@ -2,7 +2,7 @@
 // trick in the middle. The player plays South's and dummy's cards; the store plays the defenders.
 // Practice tools (SPEC §7.2–§7.4, §7.6): hint (H), undo (U), claim, play again, study mode.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Card, Seat } from '../../engine';
 import {
   completedTricks,
@@ -15,7 +15,8 @@ import {
   tricksNeeded,
   tricksWon,
 } from '../../engine';
-import { canUndo, finalNsTricks, isHandOver, isPlayerTurn, tricksLeft } from '../../game/playStore';
+import { canUndo, isHandOver, isPlayerTurn, tricksLeft } from '../../game/playStore';
+import { reviewHand } from '../../game/review';
 import { DealingOverlay } from '../DealingOverlay';
 import { gameStore, useDealNew, useGame } from '../gameStore';
 import { ActionBar } from './ActionBar';
@@ -24,7 +25,9 @@ import type { CardMode, PlayHandler } from './hands';
 import { DummyHand, FaceDownRow, FannedHand, HiddenHand, OpenHand } from './hands';
 import { InfoBar } from './InfoBar';
 import { SEAT_NAME, SEAT_ROLE, cardName } from './labels';
+import type { ReviewStatus } from './ResultPanel';
 import { ResultPanel } from './ResultPanel';
+import { ReplayView } from './ReplayView';
 import { TrickArea } from './TrickArea';
 
 type SeatTagProps = { seat: Seat; active: boolean; thinking?: boolean; className?: string };
@@ -78,6 +81,11 @@ function useShortcuts(enabled: boolean, onHint: () => void, onUndo: () => void) 
   }, [enabled, onHint, onUndo]);
 }
 
+function reviewStatus(complete: boolean, failed: boolean): ReviewStatus {
+  if (complete) return 'ready';
+  return failed ? 'failed' : 'loading';
+}
+
 export function PlayTable() {
   const state = useGame((s) => s);
   const { hand, play, trickPause, botThinking, error, notice, hint, studyMode, epoch } = state;
@@ -87,11 +95,40 @@ export function PlayTable() {
   /** The last action came from the keyboard: keep focus on the cards. */
   const keyboard = useRef(false);
   const [claimOpen, setClaimOpen] = useState(false);
+  /** Trick on show in the replay (1-based), or null for the summary. */
+  const [replayTrick, setReplayTrick] = useState<number | null>(null);
+  const [reviewFailed, setReviewFailed] = useState(false);
+  /** Bumped by "ลองใหม่" on a failed review. */
+  const [reviewTry, setReviewTry] = useState(0);
 
   const seat = play ? toPlay(play) : null;
   const playerTurn = isPlayerTurn(state);
   const plays = play?.plays.length ?? 0;
   const over = isHandOver(state);
+
+  // Post-hand review (SPEC §7.5): fetch any analysis still missing once the hand is over.
+  const { analyses, claimed } = state;
+  const review = useMemo(
+    () => (over && play ? reviewHand(play, analyses, claimed) : null),
+    [over, play, analyses, claimed],
+  );
+  useEffect(() => {
+    if (!over) {
+      setReplayTrick(null);
+      return;
+    }
+    let live = true;
+    setReviewFailed(false);
+    void gameStore
+      .getState()
+      .completeReview()
+      .then((ok) => {
+        if (live && !ok) setReviewFailed(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [over, epoch, reviewTry]);
 
   useEffect(() => {
     if (!playerTurn || !keyboard.current) return;
@@ -119,7 +156,11 @@ export function PlayTable() {
     keyboard.current = true;
     onUndo();
   }, [onUndo]);
-  useShortcuts(!claimOpen && !dealing, onKeyHint, onKeyUndo);
+  const onPlayFrom = useCallback((trick: number) => {
+    gameStore.getState().rewindTo((trick - 1) * 4);
+  }, []);
+  const onCloseReplay = useCallback(() => setReplayTrick(null), []);
+  useShortcuts(!claimOpen && !dealing && replayTrick === null, onKeyHint, onKeyUndo);
 
   if (!hand || !play) return null;
 
@@ -315,17 +356,33 @@ export function PlayTable() {
           onClose={() => setClaimOpen(false)}
         />
       )}
-      {over && (
+      {review && replayTrick === null && (
         <ResultPanel
+          hand={hand}
           contract={play.contract}
           vulnerability={hand.vulnerability}
-          nsTricks={finalNsTricks(state)}
-          claimed={state.claimed !== null}
+          review={review}
+          reviewStatus={reviewStatus(review.complete, reviewFailed)}
+          claimed={claimed !== null}
           hintsUsed={state.hintsUsed}
           studied={state.studied}
+          onRetryReview={() => setReviewTry((n) => n + 1)}
+          onReplay={setReplayTrick}
           onNewHand={() => void dealNew()}
           onRestart={onRestart}
           onUndo={onUndo}
+        />
+      )}
+      {review && replayTrick !== null && (
+        <ReplayView
+          play={play}
+          analyses={analyses}
+          review={review}
+          claimed={claimed}
+          trick={replayTrick}
+          onTrick={setReplayTrick}
+          onClose={onCloseReplay}
+          onPlayFrom={onPlayFrom}
         />
       )}
       <DealingOverlay />

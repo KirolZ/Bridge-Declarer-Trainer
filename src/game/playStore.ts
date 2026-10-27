@@ -30,6 +30,7 @@ import { positionFromPlayState } from '../solver/position';
 import type { ContractType, DealSettings } from './settings';
 import type { NewHand } from './newHand';
 import { newHand } from './newHand';
+import { reviewKeys } from './review';
 
 /** Bot timing: at least `cardMs` per card, and a finished trick stays up `trickMs` (SPEC §6). */
 export type Pace = { readonly cardMs: number; readonly trickMs: number };
@@ -124,6 +125,16 @@ export type PlayStoreState = {
   undo(): boolean;
   /** Plays the same hand again from the opening lead. */
   restart(): void;
+  /**
+   * Cuts play back to its first `n` cards ("play again from here", SPEC §7.5) and lets the bots
+   * carry on. False (and no change) if `n` is out of range.
+   */
+  rewindTo(n: number): boolean;
+  /**
+   * Fetches the analyses the post-hand review still lacks (`reviewKeys`). True once all are in;
+   * false on a solver error or when play moved on meanwhile.
+   */
+  completeReview(): Promise<boolean>;
   /**
    * The player claims `tricks` more tricks (SPEC §7.4). Accepted, and the hand ends, if NS can
    * still take that many against best defence; otherwise play goes on.
@@ -440,6 +451,28 @@ export function createPlayStore(options: PlayStoreOptions) {
       restart() {
         if (!get().play) return;
         rewind(0, { hintsUsed: 0, studied: get().studyMode });
+      },
+
+      rewindTo(n) {
+        const { play } = get();
+        if (!play || !Number.isInteger(n) || n < 0 || n > play.plays.length) return false;
+        rewind(n);
+        return true;
+      },
+
+      async completeReview() {
+        const { play, claimed, analyses } = get();
+        if (!play) return false;
+        const g = gen;
+        const missing = reviewKeys(play, claimed !== null).filter((k) => !analyses[k]);
+        try {
+          await Promise.all(
+            missing.map((k) => analysisOf({ ...play, plays: play.plays.slice(0, k) }, g)),
+          );
+        } catch {
+          return false;
+        }
+        return g === gen;
       },
 
       async claim(tricks) {

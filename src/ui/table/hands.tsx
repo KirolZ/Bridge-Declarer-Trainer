@@ -178,18 +178,30 @@ export function HiddenHand({ count, label }: { count: number; label: string }) {
   );
 }
 
+/** How a card stands out in an open hand (replay, SPEC §7.5). */
+export type CardMark = 'played' | 'wrong' | 'better';
+
+const MARK_CLASS: Record<CardMark, string> = {
+  played: 'rounded-sm bg-amber-300 px-0.5',
+  wrong: 'rounded-sm bg-red-600 px-0.5 text-white',
+  better: 'rounded-sm px-0.5 outline-2 outline-emerald-500',
+};
+
 /**
- * A defender's hand face up (study mode, SPEC §7.6), as in a bridge diagram: one line per suit.
- * Compact so it fits beside the trick on a 360 px phone.
+ * A hand face up as in a bridge diagram, one line per suit: the defenders in study mode
+ * (SPEC §7.6) and all four hands in the replay. Compact so it fits beside the trick on a
+ * 360 px phone.
  */
 export function OpenHand({
   cards,
   trump,
   label,
+  markOf,
 }: {
   cards: readonly Card[];
   trump: Strain;
   label: string;
+  markOf?: (card: Card) => CardMark | undefined;
 }) {
   const sorted = sortForDisplay(cards, trump);
   return (
@@ -207,13 +219,40 @@ export function OpenHand({
             </span>
             <span className="flex flex-wrap gap-x-[0.2em] tabular-nums">
               {ranks.length > 0
-                ? ranks.map((c) => <span key={c.rank}>{rankLabel(c.rank)}</span>)
+                ? ranks.map((c) => {
+                    const mark = markOf?.(c);
+                    return (
+                      <span
+                        key={c.rank}
+                        data-mark={mark}
+                        data-hand-card={markOf ? cardCode(c) : undefined}
+                        className={mark ? MARK_CLASS[mark] : undefined}
+                      >
+                        {rankLabel(c.rank)}
+                      </span>
+                    );
+                  })
                 : '—'}
             </span>
           </div>
         );
       })}
     </div>
+  );
+}
+
+/** A card written inline, e.g. ♠K on a white chip (readable on the dark panels). */
+export function CardText({ card }: { card: Card }) {
+  return (
+    <span
+      className="inline-flex items-center rounded bg-white px-1 leading-tight font-semibold whitespace-nowrap text-black"
+      aria-label={cardName(card)}
+    >
+      <span className={SUIT_INFO[card.suit].red ? 'text-suit-red' : 'text-suit-black'}>
+        {SUIT_INFO[card.suit].symbol}
+      </span>
+      {rankLabel(card.rank)}
+    </span>
   );
 }
 

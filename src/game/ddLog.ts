@@ -17,7 +17,7 @@ export type PlayerDd = {
 
 /**
  * One entry per card the player (South or North) has played. `before` / `after` are null while
- * the analysis of that position is not in yet (or failed); M10 fills such gaps later.
+ * the analysis of that position is not in yet (or failed); `completeReview` fills such gaps.
  */
 export function playerDdLog(
   play: PlayState,
