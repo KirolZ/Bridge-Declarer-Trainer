@@ -1,7 +1,18 @@
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 import { SUIT_INFO, SUITS } from '../../engine/card';
+import { getSolver } from '../../worker';
+import { DealingOverlay } from '../DealingOverlay';
+import { useDealNew, useGame } from '../gameStore';
 
 export function HomePage() {
+  const dealNew = useDealNew();
+  const dealing = useGame((s) => s.dealing);
+  const dealError = useGame((s) => s.dealError);
+
+  // Load the solver while the player reads the page, so the first deal is quicker.
+  useEffect(() => getSolver().warmUp(), []);
+
   return (
     <main className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-6 px-4 text-center">
       <motion.h1
@@ -11,14 +22,28 @@ export function HomePage() {
       >
         Bridge Declarer Trainer
       </motion.h1>
-      <p className="text-lg text-white/80">ฝึกเดินไพ่ฝั่ง declarer — กำลังสร้าง</p>
-      <p className="text-4xl tracking-widest" aria-label="สัญลักษณ์ดอกไพ่">
+      <p className="text-lg text-white/80">ฝึกเดินไพ่ฝั่ง declarer กับบอทที่เห็นไพ่ทุกมือ</p>
+      <p className="text-4xl tracking-widest" aria-hidden="true">
         {SUITS.map((suit) => (
           <span key={suit} className={SUIT_INFO[suit].red ? 'text-red-400' : 'text-white'}>
             {SUIT_INFO[suit].symbol}
           </span>
         ))}
       </p>
+      <button
+        type="button"
+        onClick={() => void dealNew()}
+        disabled={dealing}
+        className="rounded-xl bg-amber-400 px-8 py-3 text-lg font-semibold text-black shadow-lg hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+      >
+        เริ่มเล่น
+      </button>
+      {dealError && (
+        <p role="alert" className="text-red-300">
+          {dealError}
+        </p>
+      )}
+      <DealingOverlay />
     </main>
   );
 }

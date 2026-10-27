@@ -3,7 +3,7 @@
 import type { Card, Suit } from '../engine';
 import { SEATS, SUITS, cardCode, cardIndex, randomInt, sideOf } from '../engine';
 import type { CardAnalysis, Position } from '../solver';
-import { legalCards } from '../solver';
+import { legalCards } from '../solver/position';
 import { positionRng } from './seed';
 
 /**
