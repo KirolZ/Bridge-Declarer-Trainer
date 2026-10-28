@@ -13,13 +13,26 @@ body,
   height: 100%;
 }
 
-/* Solid colour for everything below the first screen (body is only one viewport tall). */
+/* Fallback colour (overscroll bounce, before the gradient paints). */
 html {
   background-color: #052014;
 }
 
+/*
+ * The gradient sits on a fixed layer the size of the screen, so long pages scroll over it
+ * instead of running past its bottom edge. (A fixed layer, not `background-attachment: fixed`,
+ * which iOS Safari ignores.)
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at top, #146c43 0%, #0a3622 60%, #052014 100%);
+}
+
 body {
-  background: radial-gradient(ellipse at top, #146c43 0%, #0a3622 60%, #052014 100%) no-repeat;
   color: white;
   font-family: 'Noto Sans Thai', 'Sarabun', system-ui, sans-serif;
 }
