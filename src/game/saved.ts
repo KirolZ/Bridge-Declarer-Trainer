@@ -1,7 +1,15 @@
-// Settings and stats stores, saved to storage on every change (SPEC §7.6). There is no "save"
+// Settings, stats and guide-progress stores, saved to storage on every change (SPEC §7.6). There is no "save"
 // button: a change applies and is kept at once.
 
 import { createStore } from 'zustand/vanilla';
+import type { LearnProgress } from '../learn/progress';
+import {
+  parseProgress,
+  withPassed,
+  withRead,
+  withTipDismissed,
+  withWelcomed,
+} from '../learn/progress';
 import type { Settings } from './settings';
 import { parseSettings } from './settings';
 import type { HandResult, Stats } from './stats';
@@ -62,5 +70,44 @@ export function createStatsStore(storage: SafeStorage) {
   }));
 }
 
+export type LearnState = {
+  readonly progress: LearnProgress;
+  readonly persistent: boolean;
+  /** Chapter `n` was read to the end. */
+  markRead(n: number): void;
+  /** Exercise `id` was passed. */
+  markPassed(id: string): void;
+  /** The first-visit question was answered. */
+  markWelcomed(): void;
+  /** A beginner-mode tip was dismissed for good. */
+  dismissTip(id: string): void;
+  reload(): void;
+};
+
+export function createLearnStore(storage: SafeStorage) {
+  const load = () => parseProgress(storage.read(STORAGE_KEYS.learn));
+  return createStore<LearnState>()((set) => {
+    /** Applies `change` to what is in storage now, so another tab's progress is kept. */
+    function save(change: (p: LearnProgress) => LearnProgress): void {
+      const before = load();
+      const progress = change(before);
+      if (progress !== before) storage.write(STORAGE_KEYS.learn, progress);
+      set({ progress, persistent: storage.persistent });
+    }
+    return {
+      progress: load(),
+      persistent: storage.persistent,
+      markRead: (n) => save((p) => withRead(p, n)),
+      markPassed: (id) => save((p) => withPassed(p, id)),
+      markWelcomed: () => save(withWelcomed),
+      dismissTip: (id) => save((p) => withTipDismissed(p, id)),
+      reload() {
+        set({ progress: load() });
+      },
+    };
+  });
+}
+
 export type SettingsStore = ReturnType<typeof createSettingsStore>;
 export type StatsStore = ReturnType<typeof createStatsStore>;
+export type LearnStore = ReturnType<typeof createLearnStore>;

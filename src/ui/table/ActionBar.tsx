@@ -1,5 +1,6 @@
-// Practice buttons on the info panel (SPEC §8): hint, undo, claim and the menu (play this hand
-// again, new hand, study mode, settings, home). Keys: H = hint, U = undo (handled by the table).
+// Practice buttons on the info panel (SPEC §8): hint, undo, claim, `?` (the guide chapter about
+// the situation, SPEC §7.7) and the menu (play this hand again, new hand, study mode, settings,
+// home). Keys: H = hint, U = undo (handled by the table).
 
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -136,6 +137,8 @@ type ActionBarProps = MenuProps & {
   onHint: () => void;
   onUndo: () => void;
   onClaim: () => void;
+  /** Opens the guide panel beside the table. */
+  onGuide: () => void;
 };
 
 export function ActionBar(props: ActionBarProps) {
@@ -170,6 +173,16 @@ export function ActionBar(props: ActionBarProps) {
       <ActionButton onClick={onClaim} disabled={!canClaim} label="Claim">
         Claim
       </ActionButton>
+      <button
+        type="button"
+        onClick={props.onGuide}
+        aria-label="คู่มือบทที่เกี่ยวกับตอนนี้"
+        title="คู่มือบทที่เกี่ยวกับตอนนี้"
+        data-testid="guide-button"
+        className={`${BUTTON} flex-none font-bold`}
+      >
+        ?
+      </button>
       <GameMenu {...props} />
     </nav>
   );

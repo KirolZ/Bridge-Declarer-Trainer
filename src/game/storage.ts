@@ -93,4 +93,5 @@ export function browserStorage(): SafeStorage {
 export const STORAGE_KEYS = {
   settings: 'bridge-trainer.settings.v1',
   stats: 'bridge-trainer.stats.v1',
+  learn: 'bridge-trainer.learn.v1',
 } as const;

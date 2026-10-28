@@ -12,6 +12,7 @@ export const MIN_NS_HCP: Readonly<Record<ContractType, number>> = {
   slam: 29,
   nt: 20,
   suit: 20,
+  noSlam: 20,
 };
 
 export function nsHcp(deal: Deal): number {
@@ -42,6 +43,8 @@ export function matchesType(contract: Contract, type: ContractType): boolean {
       return contract.strain === 'NT';
     case 'suit':
       return contract.strain !== 'NT';
+    case 'noSlam':
+      return contract.level < 6;
   }
 }
 
@@ -100,6 +103,7 @@ export function relaxContractType(type: ContractType): ContractType | null {
     case 'gameUp':
     case 'nt':
     case 'suit':
+    case 'noSlam':
       return 'any';
     case 'any':
       return null;

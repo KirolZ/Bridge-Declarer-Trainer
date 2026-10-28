@@ -11,6 +11,7 @@ import type { HandSetup } from '../../game/playStore';
 import type { HandReview, Loss } from '../../game/review';
 import { CardText } from './hands';
 import { SEAT_NAME } from './labels';
+import { explainScore } from './scoreExplain';
 import { ShareButton } from './ShareButton';
 
 export type ReviewStatus = 'loading' | 'failed' | 'ready';
@@ -27,6 +28,8 @@ type ResultPanelProps = {
   hintsUsed: number;
   /** Study mode was on: the hand does not count for the stats. */
   studied: boolean;
+  /** Beginner mode: explain the score line by line (SPEC §7.8). */
+  beginner?: boolean;
   onRetryReview: () => void;
   /** Opens the replay at `trick` (1-based). */
   onReplay: (trick: number) => void;
@@ -49,6 +52,47 @@ function CardList({ cards }: { cards: readonly Card[] }) {
         </Fragment>
       ))}
     </>
+  );
+}
+
+/** Where the score comes from, line by line (beginner mode). */
+function ScoreExplain({
+  contract,
+  tricks,
+  vulnerable,
+}: {
+  contract: Contract;
+  tricks: number;
+  vulnerable: boolean;
+}) {
+  const e = explainScore(contract, tricks, vulnerable);
+  const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
+  return (
+    <section
+      className="flex w-full flex-col gap-1.5 rounded-xl bg-black/25 p-3 text-left text-sm"
+      data-testid="score-explain"
+      aria-label="ที่มาของแต้ม"
+    >
+      <p className="leading-relaxed text-white/85">{e.summary}</p>
+      <dl className="flex flex-col gap-1">
+        {e.lines.map((l) => (
+          <div key={l.label} className="flex items-baseline gap-2">
+            <dt className="flex-1">
+              <span className="font-semibold">{l.label}</span>
+              <span className="block text-xs text-white/65">{l.detail}</span>
+            </dt>
+            <dd className="font-semibold tabular-nums">{signed(l.points)}</dd>
+          </div>
+        ))}
+        <div className="flex items-baseline gap-2 border-t border-white/15 pt-1">
+          <dt className="flex-1 font-semibold">รวม</dt>
+          <dd className="font-bold tabular-nums">{signed(e.total)}</dd>
+        </div>
+      </dl>
+      <Link to="/learn/6" className="self-start text-xs text-amber-200 hover:underline">
+        การคิดแต้ม (คู่มือบทที่ 6)
+      </Link>
+    </section>
   );
 }
 
@@ -197,6 +241,13 @@ export function ResultPanel(props: ResultPanelProps) {
             {result.total > 0 ? `+${result.total}` : result.total}
             <span className="ml-1 text-base font-normal text-white/70">แต้ม</span>
           </p>
+          {props.beginner && (
+            <ScoreExplain
+              contract={contract}
+              tricks={nsTricks}
+              vulnerable={isDeclarerVulnerable(vulnerability)}
+            />
+          )}
           <p className="text-sm text-white/65" data-testid="result-notes">
             {notes.map((note, i) => (
               <Fragment key={i}>

@@ -13,8 +13,14 @@ function useBack(): () => void {
   };
 }
 
-export function PageHeader({ title }: { title: string }) {
-  const back = useBack();
+/**
+ * `to`: a fixed page to go back to. Without it, back goes to where the player came from — wrong
+ * for pages that link to each other (the guide), where history would loop between them.
+ */
+export function PageHeader({ title, to }: { title: string; to?: string }) {
+  const navigate = useNavigate();
+  const historyBack = useBack();
+  const back = to === undefined ? historyBack : () => navigate(to);
   return (
     <header className="flex items-center gap-3 py-4">
       <button

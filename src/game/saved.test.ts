@@ -5,8 +5,8 @@ import type { DdsSolver } from '../solver/dds';
 import { loadDds } from '../solver/dds';
 import type { HandSetup, PlaySolver, PlayStore } from './playStore';
 import { createPlayStore, isHandOver } from './playStore';
-import { createSettingsStore, createStatsStore } from './saved';
-import { DEFAULT_SETTINGS, dealSettingsOf, parseSettings } from './settings';
+import { createLearnStore, createSettingsStore, createStatsStore } from './saved';
+import { DEFAULT_SETTINGS, botSpeedOf, dealSettingsOf, parseSettings } from './settings';
 import type { HandResult } from './stats';
 import { EMPTY_STATS, addResult, parseStats, statTotals, watchHandResults } from './stats';
 import { STORAGE_KEYS, createSafeStorage } from './storage';
@@ -80,6 +80,24 @@ describe('settings', () => {
     });
   });
 
+  it('beginner mode deals easy contracts and slows the bots (SPEC §7.8)', () => {
+    const beginner = {
+      ...DEFAULT_SETTINGS,
+      beginnerMode: true,
+      contractType: 'slam' as const,
+      difficulty: 'exact' as const,
+      vulnerability: 'ns' as const,
+      botSpeed: 'fast' as const,
+    };
+    expect(dealSettingsOf(beginner)).toEqual({
+      contractType: 'noSlam',
+      difficulty: 'cushion',
+      vulnerability: 'ns',
+    });
+    expect(botSpeedOf(beginner)).toBe('slow');
+    expect(botSpeedOf({ ...beginner, beginnerMode: false })).toBe('fast');
+  });
+
   it('saves every change and reads it back in a new session', () => {
     const { s } = fakeStorage();
     const a = createSettingsStore(createSafeStorage(() => s));
@@ -104,6 +122,32 @@ describe('settings', () => {
     expect(store.getState().persistent).toBe(false);
     store.getState().update({ suitOrder: 'rank' });
     expect(store.getState().settings.suitOrder).toBe('rank');
+  });
+});
+
+describe('guide progress', () => {
+  it('saves the first-visit answer and dismissed tips across sessions', () => {
+    const { s } = fakeStorage();
+    const a = createLearnStore(createSafeStorage(() => s));
+    expect(s.getItem(STORAGE_KEYS.learn)).toBeNull();
+    a.getState().markWelcomed();
+    a.getState().dismissTip('contract');
+    a.getState().dismissTip('contract');
+    const b = createLearnStore(createSafeStorage(() => s));
+    expect(b.getState().progress.welcomed).toBe(true);
+    expect(b.getState().progress.tips).toEqual(['contract']);
+  });
+
+  it('keeps what another tab saved', () => {
+    const { s } = fakeStorage();
+    const a = createLearnStore(createSafeStorage(() => s));
+    const b = createLearnStore(createSafeStorage(() => s));
+    a.getState().dismissTip('dummy');
+    b.getState().markRead(3);
+    expect(createLearnStore(createSafeStorage(() => s)).getState().progress).toMatchObject({
+      read: [3],
+      tips: ['dummy'],
+    });
   });
 });
 

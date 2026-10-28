@@ -16,6 +16,9 @@ export type CardMode = 'playable' | 'illegal' | 'idle';
 
 export type PlayHandler = (card: Card, viaKeyboard: boolean) => void;
 
+/** A card that cannot be played now was clicked (beginner mode explains why). */
+export type BlockedHandler = (card: Card) => void;
+
 type CardButtonProps = {
   card: Card;
   mode: CardMode;
@@ -23,14 +26,17 @@ type CardButtonProps = {
   hinted: boolean;
   layout: IndexLayout;
   onPlay: PlayHandler;
+  onBlocked?: BlockedHandler;
   flipInDelay?: number;
 };
 
-function CardButton({ card, mode, hinted, layout, onPlay, flipInDelay }: CardButtonProps) {
+function CardButton(props: CardButtonProps) {
+  const { card, mode, hinted, layout, onPlay, onBlocked, flipInDelay } = props;
   const playable = mode === 'playable';
   const onClick = (e: MouseEvent) => {
     // `detail` is 0 when the click came from the keyboard (Enter / Space).
     if (playable) onPlay(card, e.detail === 0);
+    else onBlocked?.(card);
   };
   let label = cardName(card);
   if (mode === 'illegal') label += ' (ลงไม่ได้)';
@@ -69,13 +75,14 @@ type HandProps = {
   modeOf: (card: Card) => CardMode;
   hintOf: (card: Card) => boolean;
   onPlay: PlayHandler;
+  onBlocked?: BlockedHandler;
 };
 
 /**
  * Cards fanned sideways and overlapped just enough to fit the width (`100cqw` of the wrapper):
  * each step shows at least the corner index.
  */
-export function FannedHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) {
+export function FannedHand({ cards, trump, modeOf, hintOf, onPlay, onBlocked }: HandProps) {
   const order = useSuitOrder();
   const sorted = sortForDisplay(cards, trump, order);
   const gaps = Math.max(sorted.length - 1, 1);
@@ -103,6 +110,7 @@ export function FannedHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) 
               hinted={hintOf(card)}
               layout="stack"
               onPlay={onPlay}
+              onBlocked={onBlocked}
             />
           </motion.div>
         ))}
@@ -112,7 +120,7 @@ export function FannedHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) 
 }
 
 /** Dummy laid out as on a real table: one column per suit, cards running downwards. */
-export function DummyHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) {
+export function DummyHand({ cards, trump, modeOf, hintOf, onPlay, onBlocked }: HandProps) {
   const suitOrder = useSuitOrder();
   const columns = displaySuits(trump, suitOrder)
     .map((suit) => sortForDisplay(cards, trump, suitOrder).filter((c) => c.suit === suit))
@@ -146,6 +154,7 @@ export function DummyHand({ cards, trump, modeOf, hintOf, onPlay }: HandProps) {
                 hinted={hintOf(card)}
                 layout="row"
                 onPlay={onPlay}
+                onBlocked={onBlocked}
                 flipInDelay={0.03 * order++}
               />
             </motion.div>

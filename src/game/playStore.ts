@@ -10,7 +10,7 @@
 // generation is still current before touching state.
 
 import { createStore } from 'zustand/vanilla';
-import type { Card, Contract, Deal, PlayState, Vulnerability } from '../engine';
+import type { Card, Contract, Deal, PlayState, Seat, Vulnerability } from '../engine';
 import {
   applyPlay,
   completedTricks,
@@ -43,6 +43,13 @@ export type HandSetup = {
   readonly deal: Deal;
   readonly contract: Contract;
   readonly vulnerability: Vulnerability;
+  /** Who leads first (default: West, the opening leader). Set for guide exercises. */
+  readonly leader?: Seat;
+  /**
+   * Cards already played when play starts (guide exercises start from an end position, maybe
+   * in the middle of a trick). Undo, restart and rewinds never go back before them.
+   */
+  readonly plays?: readonly Card[];
 };
 
 /** Best cards for the player's position after `at` cards (SPEC §7.2). */
@@ -61,13 +68,16 @@ export const CONTRACT_TYPE_LABEL: Readonly<Record<ContractType, string>> = {
   slam: 'slam',
   nt: 'NT เท่านั้น',
   suit: 'suit เท่านั้น',
+  noSlam: 'partscore / game',
 };
 
 export type PlayStoreState = {
   readonly hand: HandSetup | null;
-  /** `encodeDeal(hand.deal)`, for links. */
+  /** `encodeDeal(hand.deal)`, for links (null for an end position, which has no code). */
   readonly dealCode: string | null;
   readonly play: PlayState | null;
+  /** Number of cards `hand.plays` put on the table at the start; play never goes back before. */
+  readonly startPlays: number;
   /**
    * `analyze` of each position seen, keyed by the number of cards played before it. Only
    * positions on the current line of play are kept (an undo in M9 must drop the later ones).
@@ -107,7 +117,7 @@ export type PlayStoreState = {
    */
   readonly handSerial: number;
 
-  /** Starts playing `hand` from the opening lead (West, a bot). */
+  /** Starts playing `hand` from the opening lead (or from `hand.leader` / `hand.plays`). */
   startHand(hand: HandSetup): void;
   /** The player plays `card` from South or North. False (and no change) if not allowed now. */
   playCard(card: Card): boolean;
@@ -118,7 +128,7 @@ export type PlayStoreState = {
    * Works at any time, also while a bot is thinking. False if there is nothing to undo.
    */
   undo(): boolean;
-  /** Plays the same hand again from the opening lead. */
+  /** Plays the same hand again from the opening lead (or the start position). */
   restart(): void;
   /**
    * Cuts play back to its first `n` cards ("play again from here", SPEC §7.5) and lets the bots
@@ -197,7 +207,7 @@ function lastPlayerCard(play: PlayState): number {
 
 export function canUndo(state: PlayStoreState): boolean {
   if (!state.play) return false;
-  return state.claimed !== null || lastPlayerCard(state.play) >= 0;
+  return state.claimed !== null || lastPlayerCard(state.play) >= state.startPlays;
 }
 
 /** Tricks not yet won by either side (the current trick included). */
@@ -347,6 +357,7 @@ export function createPlayStore(options: PlayStoreOptions) {
       hand: null,
       dealCode: null,
       play: null,
+      startPlays: 0,
       analyses: {},
       botThinking: false,
       trickPause: false,
@@ -368,10 +379,13 @@ export function createPlayStore(options: PlayStoreOptions) {
       startHand(hand) {
         const g = nextGeneration();
         seed = dealSeed(hand.deal);
+        let play = newPlayState(hand.deal, hand.contract, hand.leader);
+        for (const card of hand.plays ?? []) play = applyPlay(play, card);
         set({
           hand,
-          dealCode: encodeDeal(hand.deal),
-          play: newPlayState(hand.deal, hand.contract),
+          dealCode: hand.deal.N.length === 13 ? encodeDeal(hand.deal) : null,
+          play,
+          startPlays: play.plays.length,
           analyses: {},
           botThinking: false,
           trickPause: false,
@@ -447,12 +461,12 @@ export function createPlayStore(options: PlayStoreOptions) {
 
       restart() {
         if (!get().play) return;
-        rewind(0, { hintsUsed: 0, studied: get().studyMode });
+        rewind(get().startPlays, { hintsUsed: 0, studied: get().studyMode });
       },
 
       rewindTo(n) {
-        const { play } = get();
-        if (!play || !Number.isInteger(n) || n < 0 || n > play.plays.length) return false;
+        const { play, startPlays } = get();
+        if (!play || !Number.isInteger(n) || n < startPlays || n > play.plays.length) return false;
         rewind(n);
         return true;
       },
@@ -571,6 +585,7 @@ export function createPlayStore(options: PlayStoreOptions) {
           hand: null,
           dealCode: null,
           play: null,
+          startPlays: 0,
           analyses: {},
           botThinking: false,
           trickPause: false,

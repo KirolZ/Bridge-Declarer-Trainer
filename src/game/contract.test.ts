@@ -33,7 +33,7 @@ function pick(
 
 describe('HCP filter (6.1)', () => {
   it('uses the SPEC minimums', () => {
-    expect(MIN_NS_HCP).toEqual({ any: 20, gameUp: 23, slam: 29, nt: 20, suit: 20 });
+    expect(MIN_NS_HCP).toEqual({ any: 20, gameUp: 23, slam: 29, nt: 20, suit: 20, noSlam: 20 });
   });
 
   it('compares NS HCP with the minimum of the contract type', () => {
@@ -69,13 +69,18 @@ describe('contract types', () => {
     expect(matchesType(c(2, 'S'), 'nt')).toBe(false);
     expect(matchesType(c(2, 'S'), 'suit')).toBe(true);
     expect(matchesType(c(2, 'NT'), 'suit')).toBe(false);
+    expect(matchesType(c(5, 'C'), 'noSlam')).toBe(true);
+    expect(matchesType(c(1, 'NT'), 'noSlam')).toBe(true);
+    expect(matchesType(c(6, 'NT'), 'noSlam')).toBe(false);
+    expect(matchesType(c(7, 'S'), 'noSlam')).toBe(false);
   });
 
-  it('relaxes slam → game → any, and NT / suit → any', () => {
+  it('relaxes slam → game → any, and NT / suit / no slam → any', () => {
     expect(relaxContractType('slam')).toBe('gameUp');
     expect(relaxContractType('gameUp')).toBe('any');
     expect(relaxContractType('nt')).toBe('any');
     expect(relaxContractType('suit')).toBe('any');
+    expect(relaxContractType('noSlam')).toBe('any');
     expect(relaxContractType('any')).toBeNull();
   });
 });
@@ -131,6 +136,13 @@ describe('chooseContract (6.2)', () => {
     expect(pick(table({ NT: 10 }), 'gameUp', 'cushion')).toBe('3NT=430');
     expect(pick(table({ S: 12 }), 'slam', 'cushion')).toBeNull();
     expect(pick(table({ S: 13 }), 'slam', 'cushion')).toBe('6♠=1010');
+  });
+
+  it('gives beginners the best contract below slam (SPEC §7.8)', () => {
+    // 6♠ (cushion on 13 tricks) is left out; 3NT on 10 tricks is the best of the rest.
+    expect(pick(table({ S: 13, NT: 10 }), 'noSlam', 'cushion')).toBe('3NT=430');
+    expect(pick(table({ S: 12 }), 'noSlam', 'cushion')).toBe('5♠=480');
+    expect(pick(table({ NT: 13 }), 'noSlam', 'cushion')).toBeNull();
   });
 
   it('finds nothing when NS takes fewer than 7 tricks everywhere', () => {

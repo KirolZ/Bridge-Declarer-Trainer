@@ -1,12 +1,15 @@
 // The table (SPEC §8): dummy on top, South at the bottom, the defenders left and right and the
 // trick in the middle. The player plays South's and dummy's cards; the store plays the defenders.
 // Practice tools (SPEC §7.2–§7.4, §7.6): hint (H), undo (U), claim, play again, study mode.
+// The `?` button opens the guide chapter about the situation in a side panel (SPEC §7.7); beginner
+// mode (SPEC §7.8) adds tips at the corner and says why a card cannot be played.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Card, Seat } from '../../engine';
 import {
   completedTricks,
   currentTrick,
+  illegalReason,
   legalPlays,
   remainingHands,
   sameCard,
@@ -15,16 +18,27 @@ import {
   tricksNeeded,
   tricksWon,
 } from '../../engine';
+import { coachTip, guideChapterFor } from '../../game/coach';
 import { canUndo, isHandOver, isPlayerTurn, tricksLeft } from '../../game/playStore';
 import { reviewHand } from '../../game/review';
 import { DealingOverlay } from '../DealingOverlay';
-import { gameStore, updateSettings, useDealNew, useGame } from '../gameStore';
+import {
+  gameStore,
+  learnStore,
+  updateSettings,
+  useDealNew,
+  useGame,
+  useLearn,
+  useSettings,
+} from '../gameStore';
+import { GuidePanel } from '../learn/GuidePanel';
 import { ActionBar } from './ActionBar';
 import { ClaimDialog } from './ClaimDialog';
-import type { CardMode, PlayHandler } from './hands';
+import { CoachTipView } from './CoachTip';
+import type { BlockedHandler, CardMode, PlayHandler } from './hands';
 import { DummyHand, FaceDownRow, FannedHand, HiddenHand, OpenHand } from './hands';
 import { InfoBar } from './InfoBar';
-import { SEAT_NAME, SEAT_ROLE, cardName } from './labels';
+import { SEAT_NAME, SEAT_ROLE, cardName, illegalText } from './labels';
 import type { ReviewStatus } from './ResultPanel';
 import { ResultPanel } from './ResultPanel';
 import { ReplayView } from './ReplayView';
@@ -100,6 +114,12 @@ export function PlayTable() {
   const [reviewFailed, setReviewFailed] = useState(false);
   /** Bumped by "ลองใหม่" on a failed review. */
   const [reviewTry, setReviewTry] = useState(0);
+  /** Chapter open in the guide panel, or null when closed. */
+  const [guide, setGuide] = useState<number | null>(null);
+  /** Why the card just clicked cannot be played (beginner mode), for position `at`. */
+  const [blocked, setBlocked] = useState<{ at: number; text: string } | null>(null);
+  const beginner = useSettings((s) => s.settings.beginnerMode);
+  const dismissedTips = useLearn((s) => s.progress.tips);
 
   const seat = play ? toPlay(play) : null;
   const playerTurn = isPlayerTurn(state);
@@ -161,7 +181,13 @@ export function PlayTable() {
     gameStore.getState().rewindTo((trick - 1) * 4);
   }, []);
   const onCloseReplay = useCallback(() => setReplayTrick(null), []);
-  useShortcuts(!claimOpen && !dealing && replayTrick === null, onKeyHint, onKeyUndo);
+  const onCloseGuide = useCallback(() => setGuide(null), []);
+  const onDismissTip = useCallback((id: string) => learnStore.getState().dismissTip(id), []);
+  useShortcuts(
+    !claimOpen && !dealing && replayTrick === null && guide === null,
+    onKeyHint,
+    onKeyUndo,
+  );
 
   if (!hand || !play) return null;
 
@@ -192,12 +218,29 @@ export function PlayTable() {
     keyboard.current = viaKeyboard;
     gameStore.getState().playCard(card);
   };
+  // Beginner mode: say why the card cannot be played now (SPEC §7.8).
+  const onBlocked: BlockedHandler | undefined = beginner
+    ? (card) => {
+        if (trickPause || over || !seat) return;
+        let text: string;
+        if (!playerTurn) text = `รอ ${SEAT_NAME[seat]} ลงก่อน`;
+        else {
+          const reason = illegalReason(play, card);
+          if (!reason) return;
+          text = illegalText(reason, hands.N.some((c) => sameCard(c, card)) ? 'N' : 'S');
+        }
+        setBlocked({ at: plays, text });
+      }
+    : undefined;
+  const blockedText = blocked?.at === plays ? blocked.text : null;
+  const tip = beginner && !over ? coachTip(play, dismissedTips) : null;
   const active = (s: Seat) => !trickPause && !over && seat === s;
 
   let status = '';
   if (over) status = '';
   else if (error) status = error;
   else if (shown?.winner) status = `${SEAT_NAME[shown.winner]} กิน trick นี้`;
+  else if (blockedText) status = blockedText;
   else if (liveHint) {
     const short = liveHint.tricks < needed ? ` — ไม่พอแล้ว (ต้องได้ ${needed})` : '';
     status = `คำใบ้: ใบที่ยกขึ้นยังทำได้ ${liveHint.tricks} trick${short}`;
@@ -231,6 +274,7 @@ export function PlayTable() {
             onHint={onHint}
             onUndo={onUndo}
             onClaim={() => setClaimOpen(true)}
+            onGuide={() => setGuide(guideChapterFor(play, over))}
             onRestart={onRestart}
             onNewHand={() => void dealNew()}
             onStudyMode={onStudyMode}
@@ -258,6 +302,12 @@ export function PlayTable() {
           className="table-felt relative mx-auto flex w-full max-w-4xl flex-1 flex-col"
           style={{ containerType: 'inline-size' }}
         >
+          <CoachTipView
+            tip={tip}
+            contract={play.contract}
+            totalTricks={total}
+            onDismiss={onDismissTip}
+          />
           <div className="table-cards flex flex-1 flex-col justify-between gap-2 p-2 sm:gap-3 sm:p-4">
             <section
               aria-label="North (dummy)"
@@ -278,6 +328,7 @@ export function PlayTable() {
                   modeOf={modeOf('N')}
                   hintOf={hintOf('N')}
                   onPlay={onPlay}
+                  onBlocked={onBlocked}
                 />
               ) : (
                 <FaceDownRow count={hands.N.length} />
@@ -316,7 +367,13 @@ export function PlayTable() {
                 .join(' ')}
             >
               <p
-                className={`min-h-5 text-center text-sm ${liveHint ? 'font-semibold text-emerald-200' : 'text-white/90'}`}
+                className={`min-h-5 text-center text-sm ${
+                  blockedText && status === blockedText
+                    ? 'font-semibold text-amber-200'
+                    : liveHint
+                      ? 'font-semibold text-emerald-200'
+                      : 'text-white/90'
+                }`}
                 data-testid="status"
                 aria-live="polite"
               >
@@ -337,6 +394,7 @@ export function PlayTable() {
                 modeOf={modeOf('S')}
                 hintOf={hintOf('S')}
                 onPlay={onPlay}
+                onBlocked={onBlocked}
               />
               <SeatTag seat="S" active={active('S')} className="sm:absolute sm:top-2 sm:left-3" />
             </section>
@@ -367,6 +425,7 @@ export function PlayTable() {
           claimed={claimed !== null}
           hintsUsed={state.hintsUsed}
           studied={state.studied}
+          beginner={beginner}
           onRetryReview={() => setReviewTry((n) => n + 1)}
           onReplay={setReplayTrick}
           onNewHand={() => void dealNew()}
@@ -386,6 +445,7 @@ export function PlayTable() {
           onPlayFrom={onPlayFrom}
         />
       )}
+      {guide !== null && <GuidePanel chapter={guide} onChapter={setGuide} onClose={onCloseGuide} />}
       <DealingOverlay />
     </div>
   );

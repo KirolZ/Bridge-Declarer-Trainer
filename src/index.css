@@ -65,3 +65,19 @@ body {
     --card-w: min(clamp(40px, 14.5cqw, 80px), max(40px, calc((100svh - 290px) / 7.2)));
   }
 }
+
+/* Card examples in the guide. */
+.learn-cards {
+  --card-w: 46px;
+}
+
+/* Play exercises: end positions of 3–6 cards, sized by the felt's width. */
+.exercise-cards {
+  --card-w: clamp(40px, 13cqw, 64px);
+}
+
+@media (min-width: 640px) {
+  .learn-cards {
+    --card-w: 58px;
+  }
+}

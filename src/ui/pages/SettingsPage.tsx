@@ -44,15 +44,22 @@ type ChoiceProps<T extends string> = {
   options: readonly Option<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** Set when another setting decides this one (beginner mode): shown instead of the note. */
+  lockedBy?: string;
 };
 
 /** A row of radio buttons drawn as a segmented control, with the picked option's note below. */
-function Choice<T extends string>({ name, legend, options, value, onChange }: ChoiceProps<T>) {
-  const note = options.find((o) => o.value === value)?.note;
+function Choice<T extends string>(props: ChoiceProps<T>) {
+  const { name, legend, options, value, onChange, lockedBy } = props;
+  const note = lockedBy ?? options.find((o) => o.value === value)?.note;
   return (
-    <fieldset className="flex flex-col gap-1.5">
+    <fieldset
+      className="flex flex-col gap-1.5"
+      disabled={lockedBy !== undefined}
+      data-locked={lockedBy !== undefined || undefined}
+    >
       <legend className="mb-1.5 font-semibold">{legend}</legend>
-      <div className="flex flex-wrap gap-1.5">
+      <div className={`flex flex-wrap gap-1.5 ${lockedBy ? 'opacity-45' : ''}`}>
         {options.map((o) => (
           <label key={o.value} className="flex-1 basis-[calc(33%-0.375rem)] sm:basis-0">
             <input
@@ -69,7 +76,7 @@ function Choice<T extends string>({ name, legend, options, value, onChange }: Ch
           </label>
         ))}
       </div>
-      {note && <p className="text-sm text-white/70">{note}</p>}
+      {note && <p className={`text-sm ${lockedBy ? 'text-amber-200' : 'text-white/70'}`}>{note}</p>}
     </fieldset>
   );
 }
@@ -86,6 +93,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export function SettingsPage() {
   const settings = useSettings((s) => s.settings);
   const persistent = useSettings((s) => s.persistent);
+  const locked = settings.beginnerMode ? 'โหมดมือใหม่เปิดอยู่' : undefined;
   const set =
     <K extends keyof Settings>(key: K) =>
     (value: Settings[K]) =>
@@ -96,6 +104,25 @@ export function SettingsPage() {
       <PageHeader title="ตั้งค่า" />
       {!persistent && <NotSavedNotice what="ตั้งค่า" />}
 
+      <section className="flex flex-col gap-3 rounded-2xl bg-black/25 p-4">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            name="beginnerMode"
+            checked={settings.beginnerMode}
+            onChange={(e) => updateSettings({ beginnerMode: e.target.checked })}
+            className="mt-1 size-5 shrink-0 accent-amber-300"
+          />
+          <span className="flex flex-col">
+            <span className="font-semibold">โหมดมือใหม่</span>
+            <span className="text-sm text-white/70">
+              contract ง่าย (มีเผื่อ ไม่มี slam), บอทเล่นช้า, บอกเหตุผลเมื่อกดใบที่ลงไม่ได้,
+              ข้อความแนะนำบนโต๊ะ และหน้าสรุปอธิบายแต้มทีละส่วน
+            </span>
+          </span>
+        </label>
+      </section>
+
       <Section title="การแจกไพ่ (มีผลตั้งแต่มือถัดไป)">
         <Choice<ContractType>
           name="contractType"
@@ -103,6 +130,7 @@ export function SettingsPage() {
           options={CONTRACT_TYPES.map((value) => ({ value, label: CONTRACT_TYPE_LABEL[value] }))}
           value={settings.contractType}
           onChange={set('contractType')}
+          lockedBy={locked && `${locked}: partscore หรือ game เท่านั้น ไม่มี slam`}
         />
         <Choice<Difficulty>
           name="difficulty"
@@ -110,6 +138,7 @@ export function SettingsPage() {
           options={DIFFICULTIES.map((value) => ({ value, ...DIFFICULTY[value] }))}
           value={settings.difficulty}
           onChange={set('difficulty')}
+          lockedBy={locked && `${locked}: ใช้แบบมีเผื่อเสมอ`}
         />
         <Choice<Vulnerability>
           name="vulnerability"
@@ -127,6 +156,7 @@ export function SettingsPage() {
           options={BOT_SPEEDS.map((value) => ({ value, label: BOT_SPEED[value] }))}
           value={settings.botSpeed}
           onChange={set('botSpeed')}
+          lockedBy={locked && `${locked}: บอทเล่นช้า`}
         />
         <Choice<SuitOrder>
           name="suitOrder"

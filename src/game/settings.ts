@@ -2,8 +2,11 @@
 
 import type { SuitOrder, Vulnerability } from '../engine';
 
-/** Which contracts a new deal may give (SPEC §7.1 step 4). */
-export type ContractType = 'any' | 'gameUp' | 'slam' | 'nt' | 'suit';
+/**
+ * Which contracts a new deal may give (SPEC §7.1 step 4). `noSlam` (partscore or game) is not a
+ * setting of its own: beginner mode deals with it (SPEC §7.8).
+ */
+export type ContractType = 'any' | 'gameUp' | 'slam' | 'nt' | 'suit' | 'noSlam';
 
 /** `exact`: contract = DD maximum. `cushion`: one level lower when possible. */
 export type Difficulty = 'exact' | 'cushion';
@@ -34,7 +37,10 @@ export type Settings = DealSettings & {
   readonly suitOrder: SuitOrder;
   /** Show the defenders' cards while playing; such hands do not count for the stats. */
   readonly studyMode: boolean;
-  /** Beginner mode (SPEC §7.8). Stored from M11; what it does comes with M12. */
+  /**
+   * Beginner mode (SPEC §7.8): contracts with a cushion and no slams, slow bots, and the table
+   * explains more. Overrides the contract type, difficulty and bot speed while on.
+   */
   readonly beginnerMode: boolean;
 };
 
@@ -58,9 +64,17 @@ export const DEFAULT_SETTINGS: Settings = {
   beginnerMode: false,
 };
 
+/** What the next deal uses: the settings, or in beginner mode an easy contract (SPEC §7.8). */
 export function dealSettingsOf(settings: Settings): DealSettings {
   const { contractType, difficulty, vulnerability } = settings;
+  if (settings.beginnerMode)
+    return { contractType: 'noSlam', difficulty: 'cushion', vulnerability };
   return { contractType, difficulty, vulnerability };
+}
+
+/** Bot speed in effect: always slow in beginner mode (SPEC §7.8). */
+export function botSpeedOf(settings: Settings): BotSpeed {
+  return settings.beginnerMode ? 'slow' : settings.botSpeed;
 }
 
 function pick<T>(value: unknown, options: readonly T[], fallback: T): T {
