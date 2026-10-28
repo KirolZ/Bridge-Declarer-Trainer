@@ -119,7 +119,8 @@ pnpm build && pnpm dlx wrangler pages deploy dist --project-name bridge-trainer
 
 ได้ `https://bridge-trainer.pages.dev` (ถ้าชื่อซ้ำกับคนอื่นให้เปลี่ยนชื่อ project) ครั้งต่อไปสั่งแค่บรรทัดสุดท้าย
 
-**หรือต่อกับ GitHub** ให้ deploy เองทุกครั้งที่ push: dashboard → Workers & Pages → Create → Pages → Connect to Git
+**หรือต่อกับ GitHub** ให้ deploy เองทุกครั้งที่ push: dashboard → Workers & Pages → Create → ลิงก์ล่างสุด
+"Continue to Pages" (ปุ่ม "Continue with GitHub" ด้านบนจะสร้างเป็น Worker ซึ่งไม่ใช่แบบนี้) → Import an existing Git repository
 → เลือก repo แล้วตั้ง
 
 | ช่อง                   | ค่า                                               |
@@ -128,7 +129,7 @@ pnpm build && pnpm dlx wrangler pages deploy dist --project-name bridge-trainer
 | Build command          | `pnpm build`                                      |
 | Build output directory | `dist`                                            |
 | Production branch      | `main`                                            |
-| Environment variables  | `NODE_VERSION` = `20`, `PNPM_VERSION` = `12.15.0` |
+| Environment variables  | `NODE_VERSION` = `24`, `PNPM_VERSION` = `12.15.0` |
 
 (DDS wasm อยู่ใน git แล้ว ที่ `src/solver/dds/dds-wasm.mjs` เครื่อง build ของ Cloudflare จึงไม่ต้องมี Emscripten)
 

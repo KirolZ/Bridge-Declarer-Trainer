@@ -596,4 +596,8 @@ sh install.sh` ได้ healthy, acceptance e2e ผ่าน, สั่งซ�
 - **ไม่ใส่ `Cache-Control` ที่ `/*`** — Pages รวม header จากทุก rule ที่ match ด้วยคอมมา ถ้าใส่ `no-cache` ที่ `/*` จะไปปนกับ
   `immutable` ของ `/assets/*` และค่าเริ่มต้นของ Pages สำหรับ HTML ก็ revalidate อยู่แล้ว
 - **Docker ก็มีไฟล์ `/_headers` ด้วย** (copy มาทั้ง `dist/`) nginx จะเสิร์ฟเป็นไฟล์ธรรมดา ไม่มีผลอะไรและไม่มีความลับ
-- วิธี deploy (Wrangler / Connect to Git) อยู่ใน README — ยังไม่ได้ deploy จริง
+- วิธี deploy (Wrangler / Connect to Git) อยู่ใน README
+- **deploy จริงแล้ว** ที่ https://bridge-trainer.pages.dev (Connect to Git, branch `main`, `NODE_VERSION=24` เพราะ
+  Node 20 หมดระยะซัพพอร์ตแล้ว) — header ครบตรงกับ nginx, acceptance e2e 8 test ผ่านกับเว็บจริง
+  (`E2E_BASE_URL=https://bridge-trainer.pages.dev`) path ที่ไม่มีไฟล์ได้ `index.html` กลับมาแทน 404 (Pages ทำเองเมื่อไม่มี
+  `404.html`) ไม่มีผลเพราะเป็น hash routing
