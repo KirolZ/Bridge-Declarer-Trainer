@@ -129,7 +129,7 @@ export function HomePage() {
         className="pointer-events-none fixed bottom-2 left-3 text-xs text-white/50"
         data-testid="author"
       >
-        สร้างโดย 1Cu
+        Created by 1Cu
       </p>
       <footer className="text-xs text-white/50" data-testid="credits">
         double-dummy solver:{' '}
