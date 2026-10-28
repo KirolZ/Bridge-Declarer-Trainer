@@ -1,0 +1,25 @@
+# Fixed project name: the container keeps the same name whatever folder this file is in
+# (e.g. after uploading a new version somewhere else).
+name: bridge-trainer
+
+services:
+  web:
+    # Fixed image name: an image built on one machine can be docker save/load-ed onto another.
+    image: bridge-trainer-web:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    # The only setting. Change APP_PORT in .env (or the shell) if 8081 is taken.
+    ports:
+      - '${APP_PORT:-8081}:8080'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:8080/healthz > /dev/null || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5

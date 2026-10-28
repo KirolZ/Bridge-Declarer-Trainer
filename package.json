@@ -16,6 +16,7 @@
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "bench": "tsx bench/run.ts",
     "build:dds": "bash scripts/build-dds.sh",
+    "package:images": "node scripts/package-release.mjs",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.core.json && tsc -p tsconfig.node.json",
     "lint": "eslint .",
     "format": "prettier --write .",

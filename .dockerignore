@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.cache
+.release
+.git
+playwright-report
+test-results
+*.tar.gz
+*.tsbuildinfo
+.env

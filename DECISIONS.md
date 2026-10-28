@@ -561,3 +561,30 @@ ddTable` เป็น sync ตาม SPEC §5.1 คะแนนจาก DDS เ
   และศัพท์ทุกคำในอภิธานศัพท์ต้องถูกใช้ในคู่มืออย่างน้อยครั้งหนึ่ง test ไม่ตรวจคำแปลไทย (ตรวจด้วยการอ่าน)
 - **ไม่แก้:** ชื่อบท / topic / ชื่อแบบฝึกไม่มีลิงก์ศัพท์ (เป็นหัวเรื่อง ไม่ใช่เนื้อหา), หน้าแรก "ฝึกเดินไพ่ฝั่ง declarer" (tagline,
   คนไม่รู้จะถูกพาไปบท 1 อยู่แล้ว), ตัวอย่างไพ่ในบท 2 แสดง "NT" ก่อนสอน (บท 2 บอกแล้วว่า trump เรียนบท 3)
+
+## M13 — Deploy + Hardening (2026-10-28)
+
+- **ไฟล์** — `Dockerfile` (root, node:20-alpine + corepack pnpm 12 → `nginxinc/nginx-unprivileged:1.27-alpine`),
+  `docker/nginx.conf` (ตัด proxy `/api` `/socket.io` ของ Blackjack ออก, ไม่มี SPA fallback เพราะเป็น hash routing
+  → path ที่ไม่มีไฟล์ = 404, `/assets/` cache ถาวร, `/healthz`), `docker/security-headers.conf`, `.dockerignore`,
+  `docker-compose.yml`, `docker/install.sh`, `docker/.env.example`, `scripts/package-release.mjs`
+- **CSP** — `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self';
+img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`
+  ไม่ต้องมี `blob:` (Vite สร้าง worker เป็นไฟล์แยก) และไม่ต้อง `'unsafe-inline'` ใน `style-src` (style ของ React /
+  Framer Motion ตั้งผ่าน CSSOM) ลองเอา `'wasm-unsafe-eval'` ออกแล้ว e2e พังจริง (DDS `CompileError`)
+- **header ที่เดียว** — `vite.config.ts` อ่าน `docker/security-headers.conf` (บรรทัด `add_header "..."`) แล้วส่งใน
+  `vite preview` ด้วย e2e ปกติจึงรันใต้ CSP เดียวกับ production ไม่ต้องรอ Docker ถึงจะเจอ CSP ผิด
+- **container แข็งขึ้นกว่า Blackjack** — `read_only: true` + `tmpfs: /tmp`, `cap_drop: [ALL]`, `no-new-privileges`
+  (nginx-unprivileged เขียนแค่ `/tmp`; สคริปต์ ipv6 ตอนเริ่มแค่แจ้งว่าแก้ conf ไม่ได้ ไม่มีผล)
+- **bundle** — `bridge-trainer/{images.tar, docker-compose.yml (ตัด build:), .env.example, install.sh, VERSION, LICENSE-DDS}`
+  ~20 MB ไม่มี secret: `install.sh` แค่ copy `.env.example` → `.env` (`APP_PORT=8081`) ถ้ายังไม่มี พอร์ตที่พิมพ์ตอนจบ
+  ใช้ `APP_PORT` จาก shell ก่อน แล้วค่อย `.env` (ตรงกับลำดับที่ compose ใช้)
+- **e2e ตาม §10** — `e2e/acceptance.spec.ts`: (1) ผู้ใช้ใหม่ "ยังไม่เคย" → อ่านบท 1 จนจบ → บทถัดไป → ผ่านแบบฝึกบท 2 ครบ 3 ข้อ
+  (2) มือจากลิงก์ เล่นตามคำใบ้ 26 ตา → ทำ contract ได้ + "เสีย 0 trick" (ย้ายมาจาก `practice.spec.ts`) + header + license
+  ทั้ง desktop / Pixel 7 ไม่มี error ใน console — 60 test ผ่านทั้งกับ `vite preview` และกับ container (`E2E_BASE_URL`)
+- **ทดสอบติดตั้ง (13.6)** — แตก bundle ใน scratchpad แล้ว `COMPOSE_PROJECT_NAME=bridge-trainer-installtest APP_PORT=18081
+sh install.sh` ได้ healthy, acceptance e2e ผ่าน, สั่งซ้ำ (เส้นทางอัปเดต) ได้, `down` แล้ว stack `bridge-trainer` เดิมไม่ถูกแตะ
+- **เครดิต DDS ในแอป** (ค้างจาก M4) — footer หน้าแรกลิงก์ไป DDS และ `LICENSE-DDS.txt` ซึ่ง plugin เล็ก ๆ ใน
+  `vite.config.ts` ใส่ไว้ใน `dist/` ตอน build (ใช้ได้ทั้ง Docker และ GitHub Pages)
+- **GitHub Pages** — เขียนวิธีใน README (`pnpm dlx gh-pages -d dist`) แต่ไม่ได้ตั้ง workflow / ไม่ได้ deploy จริง
+  (repo ยังไม่มี remote) และ Pages ส่ง CSP เองไม่ได้

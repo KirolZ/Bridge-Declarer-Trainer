@@ -125,6 +125,21 @@ export function HomePage() {
         </p>
       )}
       <DealingOverlay />
+      <footer className="text-xs text-white/50" data-testid="credits">
+        double-dummy solver:{' '}
+        <a
+          href="https://github.com/dds-bridge/dds"
+          target="_blank"
+          rel="noreferrer"
+          className="underline hover:text-white/80"
+        >
+          DDS
+        </a>{' '}
+        โดย Bo Haglund, Soren Hein และคณะ ·{' '}
+        <a href="LICENSE-DDS.txt" target="_blank" className="underline hover:text-white/80">
+          Apache-2.0
+        </a>
+      </footer>
     </main>
   );
 }

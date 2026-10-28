@@ -56,13 +56,72 @@ build ใหม่เฉพาะตอนจะเปลี่ยนเวอ�
 pnpm build:dds
 ```
 
-## Build / Deploy
+## Build
 
 ```sh
-pnpm build        # ได้ dist/ เป็นไฟล์ static (hash routing — host ที่ไหนก็ได้)
+pnpm build        # ได้ dist/ เป็นไฟล์ static (hash routing + asset แบบ relative — วางไว้ที่ไหนก็ได้)
+pnpm preview      # เปิด dist/ ที่ http://localhost:4173 พร้อม security header ชุดเดียวกับ nginx
 ```
 
-วิธี deploy ด้วย Docker และแพ็กไฟล์เดียว จะเพิ่มใน M13
+## Deploy
+
+### Docker (เครื่องที่มี source)
+
+```sh
+docker compose up -d --build      # http://localhost:8081
+docker compose down               # ปิด
+```
+
+ต้องมี Docker Engine 24+ (Compose v2) image ชื่อ `bridge-trainer-web:latest` เป็น nginx แบบ non-root เสิร์ฟ `dist/`
+ที่พอร์ต 8080 ใน container เปลี่ยนพอร์ตข้างนอกด้วย `APP_PORT` (ใน `.env` หรือ shell เช่น `APP_PORT=9000 docker compose up -d`)
+ไม่มี secret หรือข้อมูลที่ต้องเก็บ — สถิติ / ตั้งค่าอยู่ในเบราว์เซอร์ของแต่ละคน
+
+### ไฟล์เดียว (เครื่องที่ไม่มี source / ไม่มี Node)
+
+```sh
+pnpm package:images               # build image แล้วได้ bridge-trainer-deploy.tar.gz (~20 MB)
+```
+
+อัปโหลดไฟล์นี้ไปเครื่องปลายทาง (มีแค่ Docker ก็พอ) แล้ว:
+
+```sh
+tar -xzf bridge-trainer-deploy.tar.gz && sh bridge-trainer/install.sh
+```
+
+`install.sh` โหลด image, สร้าง `.env` (มีแค่ `APP_PORT=8081`) ถ้ายังไม่มี แล้ว `docker compose up -d --wait`
+อัปเดตเวอร์ชันใหม่ก็สั่งแบบเดิม (project name ตายตัว `bridge-trainer` จึงแทนที่ container เดิมไม่ว่าแตกไว้โฟลเดอร์ไหน)
+ถ้าจะลองติดตั้งคู่กับตัวที่รันอยู่ ให้แยก project และพอร์ต:
+`COMPOSE_PROJECT_NAME=bridge-trainer-test APP_PORT=18081 sh bridge-trainer/install.sh`
+
+### GitHub Pages (หรือ static host อื่น)
+
+`dist/` ใช้ได้เลยเพราะเป็น hash routing และ path แบบ relative เช่น push `dist/` ขึ้น branch `gh-pages`:
+
+```sh
+pnpm build && pnpm dlx gh-pages -d dist
+```
+
+แล้วตั้ง Settings → Pages → Deploy from a branch → `gh-pages` / root
+(GitHub Pages ตั้ง header เองไม่ได้ จึงไม่มี CSP แบบใน Docker — แอปทำงานเหมือนเดิม)
+
+### ให้คนใน LAN เข้า
+
+Docker เปิดพอร์ตบนทุก network interface อยู่แล้ว เครื่องอื่นในวงเดียวกันเข้าที่ `http://<IP ของเครื่องนี้>:8081`
+(ดู IP ด้วย `ipconfig` บน Windows หรือ `ip addr` บน Linux) ถ้าเข้าไม่ได้ให้เปิดพอร์ตใน firewall เช่น Windows:
+
+```powershell
+New-NetFirewallRule -DisplayName "Bridge Trainer" -Direction Inbound -Protocol TCP -LocalPort 8081 -Action Allow
+```
+
+ตอน dev ใช้ `pnpm dev --host` หรือ `pnpm preview --host` ให้ Vite รับจากเครื่องอื่น
+
+### Security headers
+
+`docker/security-headers.conf` เป็นที่เดียวที่กำหนด header (nginx ใช้ และ `vite preview` อ่านไฟล์เดียวกัน
+e2e จึงเจอ CSP ที่ผิดก่อน deploy): CSP ให้โหลดทุกอย่างจาก origin เดียวกัน, `worker-src 'self'` สำหรับ solver worker,
+`'wasm-unsafe-eval'` ให้ DDS compile WebAssembly ได้, ห้ามฝังใน frame, ไม่เรียก network ภายนอก
+
+e2e กับ container: `E2E_BASE_URL=http://localhost:8081 pnpm test:e2e`
 
 ## โครงสร้าง
 
@@ -78,6 +137,8 @@ pnpm build        # ได้ dist/ เป็นไฟล์ static (hash routin
 | `src/ui`     | React components + pages                                    |
 | `bench/`     | สคริปต์วัดความเร็ว solver                                   |
 | `e2e/`       | Playwright                                                  |
+| `docker/`    | nginx config, security headers, `install.sh`                |
+| `scripts/`   | build DDS wasm, แพ็ก deploy ไฟล์เดียว                       |
 
 `engine` / `solver` / `bot` ห้ามใช้ React, DOM, Zustand หรือ import `ui/` `game/` `worker/`
 บังคับสองชั้น: ESLint (`no-restricted-imports`, `no-restricted-globals`, ห้าม `Math.random`)

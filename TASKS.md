@@ -251,11 +251,11 @@
 
 ## M13 — Deploy + Hardening
 
-- [ ] **13.1** `Dockerfile` + `docker/nginx.conf` + security headers (CSP มี `worker-src`) ยกจาก Blackjack
-- [ ] **13.2** `docker-compose.yml` (`name: bridge-trainer`, image `bridge-trainer-web:latest`, `${APP_PORT:-8081}:8080`)
-- [ ] **13.3** `pnpm package:images` → `bridge-trainer-deploy.tar.gz` + `docker/install.sh` (ปรับจาก Blackjack: image เดียว, ไม่ต้องสุ่ม secret)
-- [ ] **13.4** e2e ตาม SPEC §10 (ผู้ใช้ใหม่เข้าคู่มือ → ผ่านแบบฝึกบทที่ 2; เล่นตามคำใบ้จนจบ → ทำ contract ได้ + เสีย 0 trick, desktop + มือถือ, ไม่มี error ใน console)
-- [ ] **13.5** README: วิธีรัน dev / test / bench / deploy (Docker, ไฟล์เดียว, GitHub Pages) + เปิดให้คนใน LAN เข้า
-- [ ] **13.6** ทดสอบติดตั้งจาก bundle ในโฟลเดอร์ชั่วคราวด้วย project name แยก (อย่าไปทับ stack จริง)
+- [x] **13.1** `Dockerfile` + `docker/nginx.conf` + security headers (CSP มี `worker-src`) ยกจาก Blackjack
+- [x] **13.2** `docker-compose.yml` (`name: bridge-trainer`, image `bridge-trainer-web:latest`, `${APP_PORT:-8081}:8080`)
+- [x] **13.3** `pnpm package:images` → `bridge-trainer-deploy.tar.gz` + `docker/install.sh` (ปรับจาก Blackjack: image เดียว, ไม่ต้องสุ่ม secret)
+- [x] **13.4** e2e ตาม SPEC §10 (ผู้ใช้ใหม่เข้าคู่มือ → ผ่านแบบฝึกบทที่ 2; เล่นตามคำใบ้จนจบ → ทำ contract ได้ + เสีย 0 trick, desktop + มือถือ, ไม่มี error ใน console)
+- [x] **13.5** README: วิธีรัน dev / test / bench / deploy (Docker, ไฟล์เดียว, GitHub Pages) + เปิดให้คนใน LAN เข้า
+- [x] **13.6** ทดสอบติดตั้งจาก bundle ในโฟลเดอร์ชั่วคราวด้วย project name แยก (อย่าไปทับ stack จริง)
 
 **เสร็จเมื่อ:** ครบ Definition of Done ใน SPEC §11

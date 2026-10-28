@@ -19,36 +19,9 @@ const CORNER = { position: { x: 6, y: 6 } };
 
 const playable = (page: Page) => page.locator('[data-playable="true"]');
 const trickCards = (page: Page) => page.locator('[data-trick-card]');
-const hintButton = (page: Page) => page.getByRole('button', { name: /^คำใบ้/ });
 const undoButton = (page: Page) => page.getByRole('button', { name: 'ย้อน' });
 
-test('following the hint every turn makes the contract', async ({ page }) => {
-  test.setTimeout(150_000);
-  const errors = collectErrors(page);
-  await page.goto(HAND);
-  const result = page.getByTestId('result');
-
-  let turns = 0;
-  for (;;) {
-    await expect(playable(page).first().or(result)).toBeVisible({ timeout: 15_000 });
-    if (await result.isVisible()) break;
-    await hintButton(page).click();
-    const hinted = page.locator('[data-hint="true"]');
-    await expect(hinted.first()).toBeVisible();
-    // Best play keeps the 9 tricks the contract needs.
-    await expect(page.getByTestId('status')).toContainText('ยังทำได้ 9 trick');
-    turns++;
-    await expect(page.getByTestId('hints-used')).toHaveText(String(turns));
-    await hinted.first().click(CORNER);
-  }
-
-  expect(turns).toBe(26);
-  await expect(result).toHaveAttribute('data-made', 'true');
-  await expect(page.getByTestId('result-tricks')).toContainText('ได้ 9 trick (DD ทำได้ 9)');
-  await expect(page.getByTestId('review')).toContainText('เสีย 0 trick');
-  await expect(page.getByTestId('result-notes')).toContainText('ใช้คำใบ้ 26 ครั้ง');
-  expect(errors).toEqual([]);
-});
+// Following the hint every turn to the end: acceptance.spec.ts (SPEC §10).
 
 test('H shows a hint, U takes a card back even while the bot is thinking', async ({ page }) => {
   const errors = collectErrors(page);
