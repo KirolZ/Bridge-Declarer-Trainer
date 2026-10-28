@@ -29,10 +29,38 @@ function ddsLicense(): Plugin {
   };
 }
 
+/**
+ * Cloudflare Pages reads `_headers` from the output folder, so it sends the same headers as nginx.
+ * No `Cache-Control` on `/*`: Pages joins headers from every matching rule, which would break the
+ * `/assets/*` one, and its default for HTML already revalidates.
+ */
+function cloudflareHeaders(): Plugin {
+  return {
+    name: 'cloudflare-headers',
+    apply: 'build',
+    generateBundle() {
+      const lines = Object.entries(securityHeaders()).map(([name, value]) => `  ${name}: ${value}`);
+      this.emitFile({
+        type: 'asset',
+        fileName: '_headers',
+        source: [
+          '# Generated from docker/security-headers.conf by vite.config.ts. Do not edit.',
+          '/*',
+          ...lines,
+          '',
+          '/assets/*',
+          '  Cache-Control: public, max-age=31536000, immutable',
+          '',
+        ].join('\n'),
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  // Relative asset paths so dist/ works from any sub-path (nginx, GitHub Pages).
+  // Relative asset paths so dist/ works from any sub-path (nginx, GitHub Pages, Cloudflare Pages).
   base: './',
-  plugins: [react(), tailwindcss(), ddsLicense()],
+  plugins: [react(), tailwindcss(), ddsLicense(), cloudflareHeaders()],
   worker: { format: 'es' },
   server: { port: 5173 },
   preview: { port: 4173, headers: securityHeaders() },

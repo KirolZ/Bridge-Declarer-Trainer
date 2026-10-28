@@ -588,3 +588,12 @@ sh install.sh` ได้ healthy, acceptance e2e ผ่าน, สั่งซ�
   `vite.config.ts` ใส่ไว้ใน `dist/` ตอน build (ใช้ได้ทั้ง Docker และ GitHub Pages)
 - **GitHub Pages** — เขียนวิธีใน README (`pnpm dlx gh-pages -d dist`) แต่ไม่ได้ตั้ง workflow และยังไม่ได้ deploy จริง
   (การ push ขึ้น GitHub ให้เจ้าของ repo สั่งเอง) และ Pages ส่ง CSP เองไม่ได้
+
+## Cloudflare Pages (2026-10-28)
+
+- **`_headers` สร้างตอน build** — plugin `cloudflareHeaders` ใน `vite.config.ts` แปลง `docker/security-headers.conf`
+  เป็น `dist/_headers` (header ยังมีที่กำหนดที่เดียว ไม่ทำเป็น `public/_headers` ที่ต้องแก้คู่กัน)
+- **ไม่ใส่ `Cache-Control` ที่ `/*`** — Pages รวม header จากทุก rule ที่ match ด้วยคอมมา ถ้าใส่ `no-cache` ที่ `/*` จะไปปนกับ
+  `immutable` ของ `/assets/*` และค่าเริ่มต้นของ Pages สำหรับ HTML ก็ revalidate อยู่แล้ว
+- **Docker ก็มีไฟล์ `/_headers` ด้วย** (copy มาทั้ง `dist/`) nginx จะเสิร์ฟเป็นไฟล์ธรรมดา ไม่มีผลอะไรและไม่มีความลับ
+- วิธี deploy (Wrangler / Connect to Git) อยู่ใน README — ยังไม่ได้ deploy จริง

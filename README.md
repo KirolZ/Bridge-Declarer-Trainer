@@ -104,6 +104,36 @@ pnpm build && pnpm dlx gh-pages -d dist
 แล้วตั้ง Settings → Pages → Deploy from a branch → `gh-pages` / root
 (GitHub Pages ตั้ง header เองไม่ได้ จึงไม่มี CSP แบบใน Docker — แอปทำงานเหมือนเดิม)
 
+### Cloudflare Pages
+
+ต่างจาก GitHub Pages ตรงที่ได้ security header ครบแบบ Docker เพราะ `pnpm build` สร้าง `dist/_headers`
+จาก `docker/security-headers.conf` ให้เอง (Cloudflare อ่านไฟล์นี้แล้วส่ง header ตามนั้น) ไม่ต้องตั้งอะไรเพิ่ม
+
+**อัปโหลดจากเครื่อง** ด้วย Wrangler:
+
+```sh
+pnpm dlx wrangler login                                   # ครั้งแรกครั้งเดียว — เปิด browser ให้ login
+pnpm dlx wrangler pages project create bridge-trainer --production-branch main   # ครั้งแรกครั้งเดียว
+pnpm build && pnpm dlx wrangler pages deploy dist --project-name bridge-trainer
+```
+
+ได้ `https://bridge-trainer.pages.dev` (ถ้าชื่อซ้ำกับคนอื่นให้เปลี่ยนชื่อ project) ครั้งต่อไปสั่งแค่บรรทัดสุดท้าย
+
+**หรือต่อกับ GitHub** ให้ deploy เองทุกครั้งที่ push: dashboard → Workers & Pages → Create → Pages → Connect to Git
+→ เลือก repo แล้วตั้ง
+
+| ช่อง                   | ค่า                                               |
+| ---------------------- | ------------------------------------------------- |
+| Framework preset       | None                                              |
+| Build command          | `pnpm build`                                      |
+| Build output directory | `dist`                                            |
+| Production branch      | `main`                                            |
+| Environment variables  | `NODE_VERSION` = `20`, `PNPM_VERSION` = `12.15.0` |
+
+(DDS wasm อยู่ใน git แล้ว ที่ `src/solver/dds/dds-wasm.mjs` เครื่อง build ของ Cloudflare จึงไม่ต้องมี Emscripten)
+
+ตรวจ header หลัง deploy: `curl -sI https://bridge-trainer.pages.dev/ | grep -i content-security`
+
 ### ให้คนใน LAN เข้า
 
 Docker เปิดพอร์ตบนทุก network interface อยู่แล้ว เครื่องอื่นในวงเดียวกันเข้าที่ `http://<IP ของเครื่องนี้>:8081`
@@ -117,8 +147,8 @@ New-NetFirewallRule -DisplayName "Bridge Trainer" -Direction Inbound -Protocol T
 
 ### Security headers
 
-`docker/security-headers.conf` เป็นที่เดียวที่กำหนด header (nginx ใช้ และ `vite preview` อ่านไฟล์เดียวกัน
-e2e จึงเจอ CSP ที่ผิดก่อน deploy): CSP ให้โหลดทุกอย่างจาก origin เดียวกัน, `worker-src 'self'` สำหรับ solver worker,
+`docker/security-headers.conf` เป็นที่เดียวที่กำหนด header (nginx ใช้, `vite preview` อ่านไฟล์เดียวกัน
+e2e จึงเจอ CSP ที่ผิดก่อน deploy, และ `pnpm build` แปลงเป็น `dist/_headers` ให้ Cloudflare Pages): CSP ให้โหลดทุกอย่างจาก origin เดียวกัน, `worker-src 'self'` สำหรับ solver worker,
 `'wasm-unsafe-eval'` ให้ DDS compile WebAssembly ได้, ห้ามฝังใน frame, ไม่เรียก network ภายนอก
 
 e2e กับ container: `E2E_BASE_URL=http://localhost:8081 pnpm test:e2e`
