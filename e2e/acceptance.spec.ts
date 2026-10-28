@@ -128,4 +128,5 @@ test('the DDS license ships with the app and the home page credits it', async ({
   await expect(
     page.getByTestId('credits').getByRole('link', { name: 'Apache-2.0' }),
   ).toHaveAttribute('href', 'LICENSE-DDS.txt');
+  await expect(page.getByTestId('author')).toHaveText('สร้างโดย 1Cu');
 });
