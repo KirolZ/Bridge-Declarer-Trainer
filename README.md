@@ -108,6 +108,8 @@ pnpm build && pnpm dlx gh-pages -d dist
 
 ต่างจาก GitHub Pages ตรงที่ได้ security header ครบแบบ Docker เพราะ `pnpm build` สร้าง `dist/_headers`
 จาก `docker/security-headers.conf` ให้เอง (Cloudflare อ่านไฟล์นี้แล้วส่ง header ตามนั้น) ไม่ต้องตั้งอะไรเพิ่ม
+ต่างจาก Docker อย่างเดียวคือ CSP ยอมให้ Cloudflare Web Analytics (`static.cloudflareinsights.com`,
+`cloudflareinsights.com`) เปิด analytics ได้ที่ project → Metrics → Web Analytics (ไม่ใช้ cookie)
 
 **อัปโหลดจากเครื่อง** ด้วย Wrangler:
 
@@ -151,6 +153,7 @@ New-NetFirewallRule -DisplayName "Bridge Trainer" -Direction Inbound -Protocol T
 `docker/security-headers.conf` เป็นที่เดียวที่กำหนด header (nginx ใช้, `vite preview` อ่านไฟล์เดียวกัน
 e2e จึงเจอ CSP ที่ผิดก่อน deploy, และ `pnpm build` แปลงเป็น `dist/_headers` ให้ Cloudflare Pages): CSP ให้โหลดทุกอย่างจาก origin เดียวกัน, `worker-src 'self'` สำหรับ solver worker,
 `'wasm-unsafe-eval'` ให้ DDS compile WebAssembly ได้, ห้ามฝังใน frame, ไม่เรียก network ภายนอก
+(ยกเว้นบน Cloudflare Pages ที่ยอมให้ Web Analytics)
 
 e2e กับ container: `E2E_BASE_URL=http://localhost:8081 pnpm test:e2e`
 

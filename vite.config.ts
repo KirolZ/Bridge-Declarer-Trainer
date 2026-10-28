@@ -30,7 +30,28 @@ function ddsLicense(): Plugin {
 }
 
 /**
- * Cloudflare Pages reads `_headers` from the output folder, so it sends the same headers as nginx.
+ * Cloudflare Web Analytics: Pages injects a beacon script from the first host, which reports to
+ * the second. Allowed on Cloudflare only; the Docker CSP stays same-origin.
+ */
+const CLOUDFLARE_ANALYTICS: Record<string, string> = {
+  'script-src': 'https://static.cloudflareinsights.com',
+  'connect-src': 'https://cloudflareinsights.com',
+};
+
+function withSources(csp: string, extra: Record<string, string>): string {
+  return csp
+    .split(';')
+    .map((d) => d.trim())
+    .map((d) => {
+      const source = extra[d.split(/\s+/)[0]!];
+      return source ? `${d} ${source}` : d;
+    })
+    .join('; ');
+}
+
+/**
+ * Cloudflare Pages reads `_headers` from the output folder, so it sends the same headers as nginx
+ * (plus the Web Analytics hosts in the CSP).
  * No `Cache-Control` on `/*`: Pages joins headers from every matching rule, which would break the
  * `/assets/*` one, and its default for HTML already revalidates.
  */
@@ -39,7 +60,11 @@ function cloudflareHeaders(): Plugin {
     name: 'cloudflare-headers',
     apply: 'build',
     generateBundle() {
-      const lines = Object.entries(securityHeaders()).map(([name, value]) => `  ${name}: ${value}`);
+      const headers = securityHeaders();
+      const csp = headers['Content-Security-Policy'];
+      if (!csp) throw new Error('docker/security-headers.conf has no Content-Security-Policy');
+      headers['Content-Security-Policy'] = withSources(csp, CLOUDFLARE_ANALYTICS);
+      const lines = Object.entries(headers).map(([name, value]) => `  ${name}: ${value}`);
       this.emitFile({
         type: 'asset',
         fileName: '_headers',

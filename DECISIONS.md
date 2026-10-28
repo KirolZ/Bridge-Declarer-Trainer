@@ -601,3 +601,6 @@ sh install.sh` ได้ healthy, acceptance e2e ผ่าน, สั่งซ�
   Node 20 หมดระยะซัพพอร์ตแล้ว) — header ครบตรงกับ nginx, acceptance e2e 8 test ผ่านกับเว็บจริง
   (`E2E_BASE_URL=https://bridge-trainer.pages.dev`) path ที่ไม่มีไฟล์ได้ `index.html` กลับมาแทน 404 (Pages ทำเองเมื่อไม่มี
   `404.html`) ไม่มีผลเพราะเป็น hash routing
+- **Web Analytics** — CSP ใน `_headers` เพิ่ม `https://static.cloudflareinsights.com` ใน `script-src` และ
+  `https://cloudflareinsights.com` ใน `connect-src` (Pages แทรก beacon script เองตอนเปิด analytics ถ้าไม่เพิ่ม CSP จะบล็อก
+  และ console มี error) เพิ่มเฉพาะ Cloudflare — CSP ของ Docker ยังเป็น same-origin ล้วน
