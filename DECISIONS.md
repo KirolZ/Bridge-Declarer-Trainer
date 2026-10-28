@@ -586,5 +586,5 @@ img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; fo
 sh install.sh` ได้ healthy, acceptance e2e ผ่าน, สั่งซ้ำ (เส้นทางอัปเดต) ได้, `down` แล้ว stack `bridge-trainer` เดิมไม่ถูกแตะ
 - **เครดิต DDS ในแอป** (ค้างจาก M4) — footer หน้าแรกลิงก์ไป DDS และ `LICENSE-DDS.txt` ซึ่ง plugin เล็ก ๆ ใน
   `vite.config.ts` ใส่ไว้ใน `dist/` ตอน build (ใช้ได้ทั้ง Docker และ GitHub Pages)
-- **GitHub Pages** — เขียนวิธีใน README (`pnpm dlx gh-pages -d dist`) แต่ไม่ได้ตั้ง workflow / ไม่ได้ deploy จริง
-  (repo ยังไม่มี remote) และ Pages ส่ง CSP เองไม่ได้
+- **GitHub Pages** — เขียนวิธีใน README (`pnpm dlx gh-pages -d dist`) แต่ไม่ได้ตั้ง workflow และยังไม่ได้ deploy จริง
+  (การ push ขึ้น GitHub ให้เจ้าของ repo สั่งเอง) และ Pages ส่ง CSP เองไม่ได้
