@@ -113,6 +113,35 @@ test('menu: play this hand again, and study mode shows the defenders', async ({ 
   expect(errors).toEqual([]);
 });
 
+// M16: the new-deal button is "แจกไพ่ใหม่", not "มือใหม่" (read as beginner mode, §7.8).
+test('แจกไพ่ใหม่ deals a new hand from the menu and from the result panel', async ({ page }) => {
+  const errors = collectErrors(page);
+  const newDeal = (page: Page) => expect(page).not.toHaveURL(/GNA8WobYT233o4lpzA/);
+
+  await page.goto(HAND);
+  await expect(playable(page).first()).toBeVisible();
+  await page.getByRole('button', { name: 'เมนู' }).click();
+  await expect(page.getByRole('menuitem', { name: 'มือใหม่', exact: true })).toHaveCount(0);
+  await page.getByRole('menuitem', { name: 'แจกไพ่ใหม่' }).click();
+  await newDeal(page);
+  await expect(playable(page).first()).toBeVisible();
+
+  await page.goto(HAND);
+  await expect(playable(page).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Claim' }).click();
+  const dialog = page.getByTestId('claim-dialog');
+  for (let i = 0; i < 4; i++) await dialog.getByRole('button', { name: 'ลด' }).click();
+  await dialog.getByRole('button', { name: 'Claim 9 trick' }).click();
+  const result = page.getByTestId('result');
+  await expect(result).toBeVisible();
+  await expect(result.getByRole('button', { name: 'มือใหม่', exact: true })).toHaveCount(0);
+  await result.getByRole('button', { name: 'แจกไพ่ใหม่' }).click();
+  await newDeal(page);
+  await expect(result).toBeHidden();
+  await expect(playable(page).first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test.describe('phone width', () => {
   test.use({ viewport: { width: 360, height: 740 } });
 

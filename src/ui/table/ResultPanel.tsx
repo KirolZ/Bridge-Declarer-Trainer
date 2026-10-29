@@ -277,7 +277,7 @@ export function ResultPanel(props: ResultPanelProps) {
               onClick={props.onNewHand}
               className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
             >
-              มือใหม่
+              แจกไพ่ใหม่
             </button>
             <button type="button" onClick={props.onRestart} className={SECONDARY}>
               เล่นมือนี้ใหม่

@@ -97,7 +97,7 @@ function GameMenu({ studyMode, onRestart, onNewHand, onStudyMode }: MenuProps) {
             เล่นมือนี้ใหม่
           </button>
           <button type="button" role="menuitem" className={MENU_ITEM} onClick={pick(onNewHand)}>
-            มือใหม่
+            แจกไพ่ใหม่
           </button>
           <button
             type="button"
