@@ -223,7 +223,7 @@ export function PlayTable() {
   const onPlay: PlayHandler = pick.onPlay;
   const picked = pick.picked;
   const pending: PendingPlay | null =
-    picked && seat ? { seat, card: picked, onConfirm: pick.confirm, onCancel: pick.cancel } : null;
+    picked && seat ? { seat, card: picked, onConfirm: pick.confirm } : null;
   // Beginner mode: say why the card cannot be played now (SPEC §7.8).
   const onBlocked: BlockedHandler | undefined = beginner
     ? (card) => {

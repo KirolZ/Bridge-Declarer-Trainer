@@ -50,14 +50,14 @@ export type PendingPlay = {
   seat: Seat;
   card: Card;
   onConfirm: (viaKeyboard: boolean) => void;
-  onCancel: () => void;
 };
 
 /**
  * The picked card, faded in its slot with a gold outline like the rest of the table's highlights:
- * tap it to play it, or ✕ at its corner to let go. The slot of the hand to play is always empty.
+ * tap it to play it (a tap elsewhere on the table lets go, see cardPick.ts). The slot of the hand to
+ * play is always empty.
  */
-function PendingCard({ seat, card, onConfirm, onCancel }: PendingPlay) {
+function PendingCard({ seat, card, onConfirm }: PendingPlay) {
   return (
     <motion.div
       data-testid="confirm-play"
@@ -95,15 +95,6 @@ function PendingCard({ seat, card, onConfirm, onCancel }: PendingPlay) {
             แตะเพื่อลง
           </span>
         </span>
-      </button>
-      <button
-        type="button"
-        aria-label="ยกเลิก"
-        title="ยกเลิก (Esc)"
-        onClick={onCancel}
-        className="absolute -top-3 -right-3 flex size-7 items-center justify-center rounded-full bg-black/75 text-sm text-white shadow ring-1 ring-white/40 hover:bg-black/90 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-      >
-        ✕
       </button>
     </motion.div>
   );

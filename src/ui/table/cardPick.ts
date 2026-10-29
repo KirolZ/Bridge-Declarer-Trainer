@@ -1,6 +1,7 @@
 // "Pick, then confirm" card play (setting `cardPlay: 'confirm'`): the first click on a card picks
 // it and shows it waiting in its trick slot (TrickArea); tapping it there or clicking the card again
-// plays it, and ✕ / Esc / a click elsewhere on the table lets go of it. With `cardPlay: 'tap'` a click plays the card at once, as before.
+// plays it, and a click elsewhere on the table or Esc lets go of it. With `cardPlay: 'tap'` a click
+// plays the card at once, as before.
 
 import type { MouseEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -15,7 +16,6 @@ export type CardPick = {
   /** Pass to the hands: picks a card, or plays it when picking is off or it is already picked. */
   onPlay: PlayHandler;
   confirm: (viaKeyboard: boolean) => void;
-  cancel: () => void;
   /** Put on the table (felt): a click anywhere on it but a card to play or the waiting card cancels. */
   onTableClick: (e: MouseEvent) => void;
 };
@@ -60,5 +60,5 @@ export function useCardPick(at: string | null, play: PlayHandler): CardPick {
     if (picked && !(e.target as Element).closest(KEEPS_PICK)) setPick(null);
   };
 
-  return { picked, onPlay, confirm, cancel, onTableClick };
+  return { picked, onPlay, confirm, onTableClick };
 }

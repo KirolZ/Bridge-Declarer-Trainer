@@ -90,9 +90,7 @@ function Board({
   const trump = play.contract.strain;
   const picked = pick?.picked ?? null;
   const pending =
-    pick && picked && active
-      ? { seat: active, card: picked, onConfirm: pick.confirm, onCancel: pick.cancel }
-      : null;
+    pick && picked && active ? { seat: active, card: picked, onConfirm: pick.confirm } : null;
   return (
     <div
       className="table-felt mx-auto w-full max-w-2xl"

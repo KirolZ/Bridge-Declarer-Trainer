@@ -55,12 +55,9 @@ test('confirm mode: pick, change, cancel, then play with the button or a second 
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(width);
 
-  // ✕ lets go of it; Esc as well.
-  await bar(page).getByRole('button', { name: 'ยกเลิก' }).click();
-  await expect(picked(page)).toHaveCount(0);
-  await expect(bar(page)).toHaveCount(0);
-  await page.locator(`[data-card="${first}"]`).click(CORNER);
+  // Esc lets go of it.
   await page.keyboard.press('Escape');
+  await expect(picked(page)).toHaveCount(0);
   await expect(bar(page)).toHaveCount(0);
 
   // A tap anywhere else on the table lets go of it too, and plays nothing.
