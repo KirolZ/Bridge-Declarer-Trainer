@@ -287,14 +287,17 @@ export function ResultPanel(props: ResultPanelProps) {
             </button>
           </div>
           <div className="flex w-full gap-2">
-            <button
-              type="button"
-              onClick={props.onUndo}
-              aria-keyshortcuts="U"
-              className={SECONDARY}
-            >
-              {t.result.undo(claimed)}
-            </button>
+            {/* Undo is for beginner mode only (M22). */}
+            {props.beginner && (
+              <button
+                type="button"
+                onClick={props.onUndo}
+                aria-keyshortcuts="U"
+                className={SECONDARY}
+              >
+                {t.result.undo(claimed)}
+              </button>
+            )}
             <Link to="/" className={SECONDARY}>
               {t.common.home}
             </Link>

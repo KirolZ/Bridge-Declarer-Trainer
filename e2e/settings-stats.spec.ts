@@ -125,6 +125,12 @@ test('the app still works when the browser blocks storage', async ({ page }) => 
 
 test('a hand finished again after undo is not counted twice', async ({ page }) => {
   test.setTimeout(120_000);
+  // Undo is for beginner mode only (M22).
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('seeded')) return;
+    sessionStorage.setItem('seeded', '1');
+    localStorage.setItem('bridge-trainer.settings.v1', JSON.stringify({ beginnerMode: true }));
+  });
   await page.goto(HAND);
   await claimNothing(page);
   await page.getByTestId('result').getByRole('button', { name: 'ย้อน claim' }).click();

@@ -70,8 +70,8 @@ export const CH14: Chapter<Bilingual> = {
       kind: 'list',
       items: [
         {
-          th: '**ย้อน** (ปุ่ม U): เอาใบล่าสุดของคุณกลับมา พร้อมใบของบอทที่ลงตามหลัง ย้อนได้ไม่จำกัด',
-          en: "**Undo** (the U key): takes back your last card, and the bots' cards played after it. Undo as often as you like",
+          th: '**ย้อน** (ปุ่ม U, มีเฉพาะ**โหมดมือใหม่**): เอาใบล่าสุดของคุณกลับมา พร้อมใบของบอทที่ลงตามหลัง ย้อนได้ไม่จำกัด',
+          en: "**Undo** (the U key, in **beginner mode** only): takes back your last card, and the bots' cards played after it. Undo as often as you like",
         },
         {
           th: '**เล่นมือนี้ใหม่** (ในเมนู): เริ่มมือเดิมตั้งแต่ [[opening-lead|ใบนำแรก]] บอทเล่นเหมือนเดิมทุกครั้งถ้าคุณเล่นเหมือนเดิม จึงลองแผนอื่นกับไพ่ชุดเดิมได้',

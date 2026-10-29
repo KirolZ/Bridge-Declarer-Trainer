@@ -79,8 +79,11 @@ function SeatTag({ seat, active, thinking, className }: SeatTagProps) {
   );
 }
 
-/** Keys for the practice tools; ignored while typing or with a modifier held. */
-function useShortcuts(enabled: boolean, onHint: () => void, onUndo: () => void) {
+/**
+ * Keys for the practice tools; ignored while typing or with a modifier held. No `onUndo`: U does
+ * nothing (undo is for beginner mode only, M22).
+ */
+function useShortcuts(enabled: boolean, onHint: () => void, onUndo?: () => void) {
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
@@ -90,7 +93,7 @@ function useShortcuts(enabled: boolean, onHint: () => void, onUndo: () => void) 
       }
       // `code` is the physical key, so H / U also work with the Thai keyboard layout.
       if (e.code === 'KeyH') onHint();
-      else if (e.code === 'KeyU') onUndo();
+      else if (e.code === 'KeyU' && onUndo) onUndo();
       else return;
       e.preventDefault();
     };
@@ -195,7 +198,7 @@ export function PlayTable() {
   useShortcuts(
     !claimOpen && !dealing && replayTrick === null && guide === null,
     onKeyHint,
-    onKeyUndo,
+    beginner ? onKeyUndo : undefined,
   );
 
   if (!hand || !play) return null;
@@ -276,6 +279,7 @@ export function PlayTable() {
             canHint={playerTurn}
             hintLoading={state.hintLoading}
             hintsUsed={state.hintsUsed}
+            showUndo={beginner}
             canUndo={canUndo(state)}
             canClaim={playerTurn && !state.claimChecking}
             studyMode={studyMode}

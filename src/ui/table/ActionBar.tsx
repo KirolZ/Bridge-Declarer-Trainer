@@ -1,6 +1,6 @@
 // Practice buttons on the info panel (SPEC §8): hint, undo, claim, `?` (the guide chapter about
 // the situation, SPEC §7.7) and the menu (play this hand again, new hand, study mode, settings,
-// home). Keys: H = hint, U = undo (handled by the table).
+// home). Keys: H = hint, U = undo (handled by the table). Undo is for beginner mode only (M22).
 
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -134,6 +134,8 @@ type ActionBarProps = MenuProps & {
   canHint: boolean;
   hintLoading: boolean;
   hintsUsed: number;
+  /** Undo is there in beginner mode only (M22). */
+  showUndo: boolean;
   canUndo: boolean;
   canClaim: boolean;
   onHint: () => void;
@@ -144,7 +146,8 @@ type ActionBarProps = MenuProps & {
 };
 
 export function ActionBar(props: ActionBarProps) {
-  const { canHint, hintLoading, hintsUsed, canUndo, canClaim, onHint, onUndo, onClaim } = props;
+  const { canHint, hintLoading, hintsUsed, showUndo, canUndo, canClaim, onHint, onUndo, onClaim } =
+    props;
   const t = useT();
   return (
     <nav
@@ -170,9 +173,11 @@ export function ActionBar(props: ActionBarProps) {
           </span>
         )}
       </ActionButton>
-      <ActionButton onClick={onUndo} disabled={!canUndo} shortcut="U" label={t.table.undo}>
-        <span aria-hidden="true">↶</span> {t.table.undo}
-      </ActionButton>
+      {showUndo && (
+        <ActionButton onClick={onUndo} disabled={!canUndo} shortcut="U" label={t.table.undo}>
+          <span aria-hidden="true">↶</span> {t.table.undo}
+        </ActionButton>
+      )}
       <ActionButton onClick={onClaim} disabled={!canClaim} label="Claim">
         Claim
       </ActionButton>
