@@ -122,3 +122,40 @@ test('the setting switches between confirm and tap-to-play', async ({ page }) =>
   await expect(onTrick(page, code)).toBeVisible();
   await expect(bar(page)).toHaveCount(0);
 });
+
+test('a picked dummy card: its gold frame fits the card, stays above the next column, hides nothing', async ({
+  page,
+}) => {
+  await seedSettings(page, { cardPlay: 'confirm' });
+  await page.goto(HAND);
+  await expect(playable(page).first()).toBeVisible({ timeout: 15_000 });
+  // Dummy's top spade: more spades below it, and another column to its right.
+  await playable(page).first().click(CORNER);
+  await expect(picked(page)).toHaveCount(1);
+  const fit = await picked(page).evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const column = el.closest('[data-suit]')!;
+    const nextColumn = column.nextElementSibling!;
+    const below = column.querySelectorAll('[data-card]')[1]!.getBoundingClientRect();
+    const zOf = (e: Element) => Number(getComputedStyle(e).zIndex) || 0;
+    return {
+      radius: parseFloat(getComputedStyle(el).borderTopLeftRadius),
+      width: box.width,
+      right: box.right,
+      nextLeft: nextColumn.getBoundingClientRect().left,
+      above: zOf(column) > zOf(nextColumn),
+      // The next card down in the column still shows its corner index.
+      belowOnTop: document
+        .elementFromPoint(below.left + 6, below.top + 6)
+        ?.closest('[data-card]')
+        ?.getAttribute('data-card'),
+      belowCode: column.querySelectorAll('[data-card]')[1]!.getAttribute('data-card'),
+    };
+  });
+  // The card face's corner is 10% of its width (SVG rx 9 + half the stroke, out of 100).
+  expect(fit.radius).toBeCloseTo(fit.width * 0.1, 0);
+  expect(fit.above).toBe(true);
+  expect(fit.belowOnTop).toBe(fit.belowCode);
+  // Slid into the gap without covering the next column's cards.
+  expect(fit.right).toBeLessThanOrEqual(fit.nextLeft + 0.5);
+});

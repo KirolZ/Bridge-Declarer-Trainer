@@ -56,7 +56,8 @@ function CardButton(props: CardButtonProps) {
       aria-label={label}
       onClick={onClick}
       className={[
-        'block rounded-[6px] transition duration-150 outline-none',
+        // Same corner as the card face (rx 9 + half the 2-unit stroke, out of 100), so rings fit at any size.
+        'block rounded-[calc(var(--card-w)*0.1)] transition duration-150 outline-none',
         // A picked card glows gold like its copy waiting on the table: South's lifted (within the room the hand
         // keeps above it); dummy's slid sideways into the gap, as lifting it hides the card above.
         picked && 'shadow-[0_0_0_3px_#fcd34d,0_0_18px_5px_rgba(252,211,77,0.65)]',
@@ -153,6 +154,9 @@ export function DummyHand(props: HandProps) {
           style={{
             width: 'var(--card-w)',
             height: `calc(var(--card-w) * 1.4 * (1 + ${step * (col.length - 1)}) + var(--card-w) * 0.12)`,
+            // A picked card slides into the gap: lift its whole column (not the card, which would hide the
+            // cards below it) so its glow is not drawn under the next column.
+            zIndex: picked && col.some((c) => sameCard(c, picked)) ? 1 : undefined,
           }}
         >
           {col.map((card, i) => (
