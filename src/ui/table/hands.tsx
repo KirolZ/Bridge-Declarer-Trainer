@@ -18,6 +18,9 @@ export type PlayHandler = (card: Card, viaKeyboard: boolean) => void;
 /** A card that cannot be played now was clicked (beginner mode explains why). */
 export type BlockedHandler = (card: Card) => void;
 
+/** Frame colours (the ring below and the card's edge, so the two read as one band). */
+const FRAME = { picked: '#fcd34d', hinted: '#34d399' } as const;
+
 type CardButtonProps = {
   card: Card;
   mode: CardMode;
@@ -75,7 +78,12 @@ function CardButton(props: CardButtonProps) {
         .filter(Boolean)
         .join(' ')}
     >
-      <PlayingCard card={card} layout={layout} flipInDelay={flipInDelay} />
+      <PlayingCard
+        card={card}
+        layout={layout}
+        flipInDelay={flipInDelay}
+        frame={picked ? FRAME.picked : hinted ? FRAME.hinted : undefined}
+      />
     </button>
   );
 }

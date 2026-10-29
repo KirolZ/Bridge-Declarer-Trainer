@@ -159,3 +159,53 @@ test('a picked dummy card: its gold frame fits the card, stays above the next co
   // Slid into the gap without covering the next column's cards.
   expect(fit.right).toBeLessThanOrEqual(fit.nextLeft + 0.5);
 });
+
+test('framed cards: no drop shadow inside the frame, gold edge, and a glow that pulses by opacity only', async ({
+  page,
+}) => {
+  await seedSettings(page, { cardPlay: 'confirm' });
+  await page.goto(HAND);
+  await expect(playable(page).first()).toBeVisible({ timeout: 15_000 });
+  await playable(page).first().click(CORNER);
+  await expect(bar(page)).toBeVisible();
+
+  // The card's shadow (3px down) would paint over the inside of the frame; its edge takes the frame's colour.
+  const framed = (button: string) =>
+    page.locator(button).evaluate((el) => {
+      const svg = el.querySelector('svg')!;
+      const edges = svg.querySelectorAll('rect');
+      return {
+        filter: getComputedStyle(svg.parentElement!).filter,
+        edge: edges[edges.length - 1]!.getAttribute('stroke'),
+      };
+    });
+  for (const button of ['[data-picked="true"]', '[data-testid="confirm-play-button"]']) {
+    expect(await framed(button)).toEqual({ filter: 'none', edge: '#fcd34d' });
+  }
+  // Cards without a frame keep their shadow.
+  const plain = await page
+    .locator('[data-card]:not([data-picked])')
+    .first()
+    .evaluate((el) => getComputedStyle(el.querySelector('svg')!.parentElement!).filter);
+  expect(plain).not.toBe('none');
+
+  // The waiting card: corner = 10% of its width; solid ring, while only the glow layer's opacity moves.
+  const sample = () =>
+    page.getByTestId('confirm-play-button').evaluate((el) => {
+      const [glow, ring] = [el.children[0]!, el.children[1]!];
+      return {
+        radius: parseFloat(getComputedStyle(ring).borderTopLeftRadius),
+        width: ring.getBoundingClientRect().width,
+        ring: getComputedStyle(ring).boxShadow,
+        glowShadow: getComputedStyle(glow).boxShadow,
+        glowOpacity: Number(getComputedStyle(glow).opacity),
+      };
+    });
+  const a = await sample();
+  await page.waitForTimeout(450);
+  const b = await sample();
+  expect(a.radius).toBeCloseTo(a.width * 0.1, 0);
+  expect(b.ring).toBe(a.ring);
+  expect(b.glowShadow).toBe(a.glowShadow);
+  expect(b.glowOpacity).not.toBe(a.glowOpacity);
+});

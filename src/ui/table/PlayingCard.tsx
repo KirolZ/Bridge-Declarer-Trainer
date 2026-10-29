@@ -15,6 +15,7 @@ const SUIT_PATHS: Record<Suit, string> = {
 };
 
 const SUIT_COLOR = { red: '#c0262d', black: '#1c1c1c' } as const;
+const EDGE_COLOR = '#d6d3c4';
 
 function suitColor(suit: Suit): string {
   return SUIT_INFO[suit].red ? SUIT_COLOR.red : SUIT_COLOR.black;
@@ -59,59 +60,70 @@ function CornerIndex({ card, layout }: { card: Card; layout: IndexLayout }) {
   );
 }
 
-export function CardFace({ card, layout = 'stack' }: { card: Card; layout?: IndexLayout }) {
+type CardFaceProps = {
+  card: Card;
+  layout?: IndexLayout;
+  /** Edge colour matching a frame drawn around the card (default: the plain grey edge). */
+  edge?: string;
+  /** Classes for the face under the edge (e.g. fading it while the edge stays solid). */
+  faceClassName?: string;
+};
+
+/** The card's edge: 2 units wide on the outline, so its outer corner is 10% of the width. */
+function Edge({ color }: { color: string }) {
+  return (
+    <rect x="1" y="1" width="98" height="138" rx="9" fill="none" stroke={color} strokeWidth="2" />
+  );
+}
+
+export function CardFace({ card, layout = 'stack', edge, faceClassName }: CardFaceProps) {
   const isFace = card.rank >= 11 && card.rank <= 13;
   const label = rankLabel(card.rank);
   return (
     <svg viewBox="0 0 100 140" className="block h-full w-full" aria-hidden="true">
-      <rect
-        x="1"
-        y="1"
-        width="98"
-        height="138"
-        rx="9"
-        fill="#fdfcf7"
-        stroke="#d6d3c4"
-        strokeWidth="2"
-      />
-      <g fill={suitColor(card.suit)}>
-        <CornerIndex card={card} layout={layout} />
-        <g transform="rotate(180 50 70)">
+      <g className={faceClassName}>
+        <rect x="1" y="1" width="98" height="138" rx="9" fill="#fdfcf7" />
+        {!edge && <Edge color={EDGE_COLOR} />}
+        <g fill={suitColor(card.suit)}>
           <CornerIndex card={card} layout={layout} />
-        </g>
-        {isFace ? (
-          <>
-            <rect
-              x="28"
-              y="38"
-              width="44"
-              height="64"
-              rx="5"
-              fill="none"
-              stroke={suitColor(card.suit)}
-              strokeWidth="2.5"
+          <g transform="rotate(180 50 70)">
+            <CornerIndex card={card} layout={layout} />
+          </g>
+          {isFace ? (
+            <>
+              <rect
+                x="28"
+                y="38"
+                width="44"
+                height="64"
+                rx="5"
+                fill="none"
+                stroke={suitColor(card.suit)}
+                strokeWidth="2.5"
+              />
+              <text
+                x="50"
+                y="80"
+                fontSize="36"
+                fontWeight="700"
+                textAnchor="middle"
+                fontFamily="Georgia, 'Times New Roman', serif"
+              >
+                {label}
+              </text>
+              <SuitShape suit={card.suit} x={42} y={84} size={16} />
+            </>
+          ) : (
+            <SuitShape
+              suit={card.suit}
+              x={card.rank === 14 ? 24 : 31}
+              y={card.rank === 14 ? 42 : 50}
+              size={card.rank === 14 ? 52 : 38}
             />
-            <text
-              x="50"
-              y="80"
-              fontSize="36"
-              fontWeight="700"
-              textAnchor="middle"
-              fontFamily="Georgia, 'Times New Roman', serif"
-            >
-              {label}
-            </text>
-            <SuitShape suit={card.suit} x={42} y={84} size={16} />
-          </>
-        ) : (
-          <SuitShape
-            suit={card.suit}
-            x={card.rank === 14 ? 24 : 31}
-            y={card.rank === 14 ? 42 : 50}
-            size={card.rank === 14 ? 52 : 38}
-          />
-        )}
+          )}
+        </g>
       </g>
+      {edge && <Edge color={edge} />}
     </svg>
   );
 }
@@ -166,9 +178,18 @@ type PlayingCardProps = {
   flipInDelay?: number;
   /** Width relative to `--card-w` (default 1). */
   scale?: number;
+  /**
+   * Colour of a frame drawn around the card: the edge takes it and the drop shadow goes, since the
+   * shadow (3px down) would paint over the inside of the frame and leave an uneven gap.
+   */
+  frame?: string;
+  /** See `CardFace`. */
+  faceClassName?: string;
 };
 
-export function PlayingCard({ card, layout, flipInDelay, scale = 1 }: PlayingCardProps) {
+export function PlayingCard(props: PlayingCardProps) {
+  const { card, layout, flipInDelay, scale = 1, frame, faceClassName } = props;
+  const shadow = frame ? '' : ' drop-shadow-md';
   const flip = flipInDelay !== undefined;
   return (
     <div
@@ -182,11 +203,13 @@ export function PlayingCard({ card, layout, flipInDelay, scale = 1 }: PlayingCar
         animate={{ rotateY: card ? 0 : 180 }}
         transition={{ duration: 0.45, ease: 'easeInOut', delay: flipInDelay ?? 0 }}
       >
-        <div className="absolute inset-0 drop-shadow-md" style={{ backfaceVisibility: 'hidden' }}>
-          {card && <CardFace card={card} layout={layout} />}
+        <div className={`absolute inset-0${shadow}`} style={{ backfaceVisibility: 'hidden' }}>
+          {card && (
+            <CardFace card={card} layout={layout} edge={frame} faceClassName={faceClassName} />
+          )}
         </div>
         <div
-          className="absolute inset-0 drop-shadow-md"
+          className={`absolute inset-0${shadow}`}
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
           <CardBack />

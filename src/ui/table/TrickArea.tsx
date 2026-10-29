@@ -76,22 +76,25 @@ function PendingCard({ seat, card, onConfirm }: PendingPlay) {
         title={t.table.tapToPlay}
         // `detail` is 0 when the click came from the keyboard (Enter / Space).
         onClick={(e) => onConfirm(e.detail === 0)}
-        className="group relative block cursor-pointer rounded-[6px] outline-none focus-visible:ring-4 focus-visible:ring-white"
+        className="group relative block cursor-pointer rounded-[calc(var(--card-w)*0.085)] outline-none focus-visible:ring-4 focus-visible:ring-white"
       >
+        {/* The glow pulses by opacity only (composited, no repaint each frame); the ring stays solid. */}
         <motion.span
-          className="block rounded-[6px]"
-          animate={{
-            boxShadow: [
-              '0 0 0 2px #fcd34d, 0 0 6px 1px rgba(252,211,77,0.35)',
-              '0 0 0 3px #fcd34d, 0 0 18px 5px rgba(252,211,77,0.7)',
-            ],
-          }}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-[calc(var(--card-w)*0.085)] shadow-[0_0_18px_5px_rgba(252,211,77,0.7)]"
+          initial={{ opacity: 0.3 }}
+          animate={{ opacity: [0.3, 1] }}
           transition={{ duration: 0.9, repeat: Infinity, repeatType: 'reverse' }}
-        >
-          <span className="block opacity-80 transition-opacity group-hover:opacity-100">
-            <PlayingCard card={card} scale={TRICK_SCALE} />
-          </span>
-        </motion.span>
+        />
+        {/* Corner = 10% of the card's width (TRICK_SCALE × --card-w), as on the card face. */}
+        <span className="relative block rounded-[calc(var(--card-w)*0.085)] shadow-[0_0_0_3px_#fcd34d]">
+          <PlayingCard
+            card={card}
+            scale={TRICK_SCALE}
+            frame="#fcd34d"
+            faceClassName="opacity-80 transition-opacity group-hover:opacity-100"
+          />
+        </span>
         <span className="pointer-events-none absolute inset-x-0 -bottom-2.5 flex justify-center">
           <span className="rounded-full bg-amber-300 px-2 py-px text-[11px] font-semibold sm:text-xs whitespace-nowrap text-black shadow-[0_0_10px_rgba(252,211,77,0.6)]">
             {t.table.tapToPlay}
