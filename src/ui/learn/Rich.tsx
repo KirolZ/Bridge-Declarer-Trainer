@@ -9,7 +9,7 @@ import type { Suit } from '../../engine';
 import { SUIT_INFO } from '../../engine';
 import type { Inline } from '../../learn';
 import { glossaryEntry, parseInline } from '../../learn';
-import { useT } from '../gameStore';
+import { useLanguage, useT } from '../gameStore';
 import { CardText } from '../table/hands';
 
 /** Opens the term sheet; null outside a `TermSheetProvider` (terms then link to the glossary). */
@@ -34,8 +34,9 @@ const TERM_CLASS =
 
 function TermLink({ id, label }: { id: string; label: string | null }) {
   const open = useContext(OpenTerm);
-  const text = label ?? glossaryEntry(id)?.term ?? id;
-  if (!glossaryEntry(id)) return <>{text}</>;
+  const entry = glossaryEntry(id, useLanguage());
+  const text = label ?? entry?.term ?? id;
+  if (!entry) return <>{text}</>;
   if (!open) {
     return (
       <Link to={`/learn/glossary?t=${id}`} className={TERM_CLASS}>
@@ -85,7 +86,8 @@ export function Rich({ text }: { text: string }) {
 
 /** The definition of a term, at the bottom of the screen. Esc, ✕ or a click elsewhere closes it. */
 function TermSheet({ id, onClose }: { id: string; onClose: () => void }) {
-  const entry = glossaryEntry(id);
+  const lang = useLanguage();
+  const entry = glossaryEntry(id, lang);
   const t = useT();
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -124,7 +126,8 @@ function TermSheet({ id, onClose }: { id: string; onClose: () => void }) {
       >
         <div className="flex items-start gap-3">
           <h2 id={titleId} className="flex-1 text-lg font-bold">
-            {entry.term} <span className="font-normal text-white/70">({entry.thai})</span>
+            {entry.term}
+            {lang === 'th' && <span className="font-normal text-white/70"> ({entry.thai})</span>}
           </h2>
           <button
             type="button"

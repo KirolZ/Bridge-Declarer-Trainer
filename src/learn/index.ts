@@ -2,6 +2,7 @@
 
 export * from './types';
 export * from './markup';
+export * from './localize';
 export * from './glossary';
 export * from './chapters';
 export * from './exercises';

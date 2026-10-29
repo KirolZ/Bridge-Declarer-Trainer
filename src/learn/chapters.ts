@@ -1,7 +1,9 @@
 // Chapters of the beginner's guide (SPEC §7.7), in reading order, one file per chapter in
 // chapters/chNN.ts. A chapter with no blocks would show as "coming soon".
 
-import type { Chapter } from './types';
+import type { Language } from '../game/settings';
+import { localize, perLanguage } from './localize';
+import type { Bilingual, Chapter } from './types';
 import { CH1 } from './chapters/ch01';
 import { CH2 } from './chapters/ch02';
 import { CH3 } from './chapters/ch03';
@@ -17,7 +19,7 @@ import { CH12 } from './chapters/ch12';
 import { CH13 } from './chapters/ch13';
 import { CH14 } from './chapters/ch14';
 
-export const CHAPTERS: readonly Chapter[] = [
+const SOURCE: readonly Chapter<Bilingual>[] = [
   CH1,
   CH2,
   CH3,
@@ -34,6 +36,14 @@ export const CHAPTERS: readonly Chapter[] = [
   CH14,
 ];
 
-export function chapterOf(n: number): Chapter | undefined {
-  return CHAPTERS.find((c) => c.n === n);
+/** Every chapter in one language. */
+export const chaptersIn = perLanguage((lang): readonly Chapter[] =>
+  SOURCE.map((c) => localize(c, lang) as Chapter),
+);
+
+/** The chapters in Thai (the source language). */
+export const CHAPTERS = chaptersIn('th');
+
+export function chapterOf(n: number, lang: Language = 'th'): Chapter | undefined {
+  return chaptersIn(lang).find((c) => c.n === n);
 }

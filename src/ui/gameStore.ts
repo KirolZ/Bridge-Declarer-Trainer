@@ -85,9 +85,14 @@ export function useExercise<T>(selector: (state: PlayStoreState) => T): T {
   return useStore(exerciseStore, selector);
 }
 
+/** The language of the screens (a setting, SPEC §7.6). */
+export function useLanguage(): Settings['language'] {
+  return useStore(settingsStore, (s) => s.settings.language);
+}
+
 /** The screens' text in the language of the settings (SPEC §7.6). */
 export function useT(): Messages {
-  return MESSAGES[useStore(settingsStore, (s) => s.settings.language)];
+  return MESSAGES[useLanguage()];
 }
 
 /** Suit order for the hands on show (a setting). */

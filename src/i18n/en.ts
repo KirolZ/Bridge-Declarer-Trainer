@@ -354,8 +354,8 @@ export const en: Messages = {
   },
 
   exercise: {
-    hand: (role) => `${role} hand`,
-    pickCards: (role) => `${role} hand — tap to pick cards`,
+    hand: (role) => `Hand of ${role}`,
+    pickCards: (role) => `${role} — tap the cards that can be played`,
     check: 'Check',
     right: 'Correct!',
     legalShown: 'Answer: the cards marked ✓ are the ones that can be played',

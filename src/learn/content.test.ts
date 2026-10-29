@@ -2,10 +2,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { SEATS, parseHand, trickWinner } from '../engine';
-import { CHAPTERS } from './chapters';
+import { CHAPTERS, chaptersIn } from './chapters';
 import { trickPlays } from './exercise';
-import { EXERCISES } from './exercises';
-import { GLOSSARY, glossaryEntry } from './glossary';
+import { EXERCISES, exercisesIn } from './exercises';
+import { GLOSSARY, glossaryEntry, glossaryIn } from './glossary';
+import { isBilingual, localize } from './localize';
 import { parseCardList, parseInline, termIds } from './markup';
 import {
   EMPTY_PROGRESS,
@@ -226,55 +227,171 @@ describe('glossary', () => {
     for (const id of linked) expect(glossaryEntry(id), id).toBeDefined();
   });
 
-  it('links every term the first time a reader meets it (TASKS 12.9)', () => {
-    // Reading order: each chapter, then its exercises (instruction, options, hint, explanation).
-    // Headings are left out: the text right under a heading explains it.
-    const pieces = CHAPTERS.flatMap((c) => [
-      ...c.blocks
-        .filter((b) => b.kind !== 'h')
-        .flatMap(blockTexts)
-        .map((text) => ({ where: `ch${c.n}`, text })),
-      ...EXERCISES.filter((e) => e.chapter === c.n).flatMap((e) =>
-        [
-          e.instruction,
-          ...(e.kind === 'choice' ? e.options : []),
-          e.hint,
-          e.explanation,
-          ...(e.kind === 'play' ? e.wrong.map((w) => w.why) : []),
-        ].map((text) => ({ where: e.id, text })),
-      ),
-    ]);
-    // "NT (No Trump)" → nt, no trump; "NS / EW" → ns, ew. Longest first, so "opening lead" is not
-    // also read as "lead".
-    const names = GLOSSARY.flatMap((e) =>
-      [...e.term.replace(/[()]/g, '/').split('/'), ...(e.aliases ?? [])]
-        .map((n) => n.trim().toLowerCase())
-        .filter(Boolean)
-        .map((name) => ({ id: e.id, re: new RegExp(`(?<![a-z])${name}s?(?![a-z])`, 'g') })),
-    ).sort((a, b) => b.re.source.length - a.re.source.length);
+  // English (M18): "game" is also the everyday word ("a card game", "this game" = the app), so
+  // its first plain use is not a missing link there.
+  it.each([
+    ['th', []],
+    ['en', ['game']],
+  ] as const)(
+    'links every term the first time a reader meets it (TASKS 12.9, %s)',
+    (lang, everyday) => {
+      const CHAPTERS = chaptersIn(lang);
+      const EXERCISES = exercisesIn(lang);
+      const GLOSSARY = glossaryIn(lang);
+      // Reading order: each chapter, then its exercises (instruction, options, hint, explanation).
+      // Headings are left out: the text right under a heading explains it.
+      const pieces = CHAPTERS.flatMap((c) => [
+        ...c.blocks
+          .filter((b) => b.kind !== 'h')
+          .flatMap(blockTexts)
+          .map((text) => ({ where: `ch${c.n}`, text })),
+        ...EXERCISES.filter((e) => e.chapter === c.n).flatMap((e) =>
+          [
+            e.instruction,
+            ...(e.kind === 'choice' ? e.options : []),
+            e.hint,
+            e.explanation,
+            ...(e.kind === 'play' ? e.wrong.map((w) => w.why) : []),
+          ].map((text) => ({ where: e.id, text })),
+        ),
+      ]);
+      // "NT (No Trump)" → nt, no trump; "NS / EW" → ns, ew. Longest first, so "opening lead" is not
+      // also read as "lead".
+      const names = GLOSSARY.flatMap((e) =>
+        [...e.term.replace(/[()]/g, '/').split('/'), ...(e.aliases ?? [])]
+          .map((n) => n.trim().toLowerCase())
+          .filter(Boolean)
+          .map((name) => ({ id: e.id, re: new RegExp(`(?<![a-z])${name}s?(?![a-z])`, 'g') })),
+      ).sort((a, b) => b.re.source.length - a.re.source.length);
 
-    const seen = new Set<string>();
-    const unlinked: string[] = [];
-    for (const { where, text } of pieces) {
-      const linked = new Set(termIds(text));
-      let plain = parseInline(text)
-        .map((p) => (p.t === 'text' || p.t === 'strong' ? p.text : ' '))
-        .join(' ')
-        .toLowerCase();
-      const used = new Set(linked);
-      for (const { id, re } of names) {
-        if (plain.match(re)) used.add(id);
-        plain = plain.replace(re, ' ');
+      const seen = new Set<string>();
+      const unlinked: string[] = [];
+      for (const { where, text } of pieces) {
+        const linked = new Set(termIds(text));
+        let plain = parseInline(text)
+          .map((p) => (p.t === 'text' || p.t === 'strong' ? p.text : ' '))
+          .join(' ')
+          .toLowerCase();
+        const used = new Set(linked);
+        for (const { id, re } of names) {
+          if (plain.match(re)) used.add(id);
+          plain = plain.replace(re, ' ');
+        }
+        for (const id of used) {
+          if (seen.has(id)) continue;
+          seen.add(id);
+          if (!linked.has(id) && !(everyday as readonly string[]).includes(id))
+            unlinked.push(`${id} (${where})`);
+        }
       }
-      for (const id of used) {
-        if (seen.has(id)) continue;
-        seen.add(id);
-        if (!linked.has(id)) unlinked.push(`${id} (${where})`);
+      expect(unlinked).toEqual([]);
+      // Every glossary term is met somewhere in the guide.
+      expect(GLOSSARY.filter((e) => !seen.has(e.id)).map((e) => e.id)).toEqual([]);
+    },
+  );
+});
+
+describe('the guide in English (M18)', () => {
+  const chapters = chaptersIn('en');
+  const exercises = exercisesIn('en');
+  const glossary = glossaryIn('en');
+  /** Every text of the English guide, with where it is. */
+  const texts = [
+    ...chapters.flatMap((c) =>
+      [c.title, c.topic, ...c.blocks.flatMap(blockTexts)].map((text) => ({
+        where: `ch${c.n}`,
+        text,
+      })),
+    ),
+    ...exercises.flatMap((e) =>
+      [
+        e.title,
+        e.instruction,
+        e.explanation,
+        e.hint,
+        ...(e.kind === 'choice' ? e.options : []),
+        ...(e.kind === 'play' ? e.wrong.map((w) => w.why) : []),
+      ].map((text) => ({ where: e.id, text })),
+    ),
+    ...glossary.map((e) => ({ where: e.id, text: e.text })),
+  ];
+
+  it('has the same chapters, exercises and terms as the Thai guide', () => {
+    expect(chapters.map((c) => [c.n, c.blocks.map((b) => b.kind)])).toEqual(
+      CHAPTERS.map((c) => [c.n, c.blocks.map((b) => b.kind)]),
+    );
+    expect(exercises.map((e) => [e.id, e.kind])).toEqual(EXERCISES.map((e) => [e.id, e.kind]));
+    expect(glossary.map((e) => e.id)).toEqual(GLOSSARY.map((e) => e.id));
+  });
+
+  it('is all English, nothing left empty', () => {
+    for (const { where, text } of texts) {
+      expect(text.trim(), where).not.toBe('');
+      expect(text, where).not.toMatch(/[\u0E00-\u0E7F]/);
+    }
+  });
+
+  it('links only glossary terms that exist, and never nests markup in bold', () => {
+    for (const { where, text } of texts) {
+      for (const id of termIds(text))
+        expect(glossaryEntry(id, 'en'), `${where} [[${id}]]`).toBeDefined();
+      for (const p of parseInline(text)) {
+        if (p.t === 'strong') expect(p.text, where).not.toMatch(/\{|\[\[/);
       }
     }
-    expect(unlinked).toEqual([]);
-    // Every glossary term is met somewhere in the guide.
-    expect(GLOSSARY.filter((e) => !seen.has(e.id)).map((e) => e.id)).toEqual([]);
+  });
+
+  it('shows the same cards and suits as the Thai text it translates', () => {
+    // A translation that names another card would teach the wrong thing.
+    const cards = (text: string) =>
+      parseInline(text)
+        .flatMap((p) =>
+          p.t === 'card' ? [`${p.card.suit}${p.card.rank}`] : p.t === 'suit' ? [p.suit] : [],
+        )
+        .sort();
+    const pairs: [string, string][] = [];
+    const walk = (th: unknown, en: unknown) => {
+      if (typeof th === 'string' && typeof en === 'string') pairs.push([th, en]);
+      else if (typeof th === 'object' && th !== null && typeof en === 'object' && en !== null)
+        for (const k of Object.keys(th)) walk((th as never)[k], (en as never)[k]);
+    };
+    walk(CHAPTERS, chapters);
+    walk(EXERCISES, exercises);
+    walk(GLOSSARY, glossary);
+    expect(pairs.length).toBeGreaterThan(400);
+    for (const [th, en] of pairs) expect(cards(en), en).toEqual(cards(th));
+  });
+
+  it('trick captions name the winner the rules give', () => {
+    const said = /(North|East|South|West)(?: \(dummy\))? (?:wins|takes)/g;
+    const names: Record<string, string> = { N: 'North', E: 'East', S: 'South', W: 'West' };
+    for (const c of chapters) {
+      for (const b of c.blocks) {
+        if (b.kind !== 'trick' || parseCardList(b.cards).length < 4) continue;
+        const winner = trickWinner(trickPlays(b.leader, parseCardList(b.cards)), b.trump);
+        const named = [...(b.caption ?? '').matchAll(said)].map((m) => m[1]);
+        expect(named.length, `chapter ${c.n}: ${b.caption}`).toBeGreaterThan(0);
+        for (const n of named) expect(n, `chapter ${c.n}: ${b.caption}`).toBe(names[winner]);
+      }
+    }
+  });
+
+  it('keeps the Thai gloss of each term only for the Thai screens', () => {
+    expect(glossary.map((e) => e.thai)).toEqual(GLOSSARY.map((e) => e.thai));
+    expect(glossary.find((e) => e.id === 'trick')?.text).toMatch(/^A round in which/);
+  });
+
+  it('localizes only { th, en } texts', () => {
+    expect(isBilingual({ th: 'ก', en: 'a' })).toBe(true);
+    expect(isBilingual({ N: 'A', S: 'K' })).toBe(false);
+    expect(isBilingual({ th: 'ก', en: 'a', x: 1 })).toBe(false);
+    expect(
+      localize({ t: { th: 'ก', en: 'a' }, cards: 'SA', l: [{ th: 'ข', en: 'b' }] }, 'en'),
+    ).toEqual({
+      t: 'a',
+      cards: 'SA',
+      l: ['b'],
+    });
   });
 });
 

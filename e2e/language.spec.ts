@@ -1,10 +1,10 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-// TASKS M17: the screens in English. The flag switch on the home page, then every screen of a
-// hand (table, menu, claim, result, replay), settings and stats show no Thai — except the
-// language names, which are always written in their own language (`lang="th"`). The guide's
-// content is still Thai until M18, so its pages are not checked here.
+// TASKS M17–M18: the screens in English. The flag switch on the home page, then every screen of a
+// hand (table, menu, claim, result, replay), settings, stats and the guide (chapters, the four
+// kinds of exercise, the glossary, the `?` panel) show no Thai — except the language names, which
+// are always written in their own language (`lang="th"`).
 const HAND = '/#/play/GNA8WobYT233o4lpzA/3H';
 const CORNER = { position: { x: 6, y: 6 } };
 
@@ -168,6 +168,92 @@ test('switching back to Thai', async ({ page }) => {
   await expect(
     page.getByRole('group', { name: 'ภาษา' }).getByRole('radio', { name: 'ไทย' }),
   ).toBeChecked();
+});
+
+test('the guide in English: chapters, terms, the four kinds of exercise, glossary, ? panel', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const errors = collectErrors(page);
+  await switchToEnglish(page);
+
+  await page.goto('/#/learn');
+  await expect(page.locator('[data-chapter="1"]')).toContainText('What is bridge?');
+  await expect(page.getByTestId('learn-progress')).toContainText('Read 0/14 chapters');
+  await noThai(page);
+
+  // A lesson, and a term opened from it: no Thai gloss on the English screens.
+  await page.locator('[data-chapter="2"]').click();
+  await expect(page.getByRole('heading', { name: 'Tricks and following suit' })).toBeVisible();
+  await noThai(page);
+  await page.locator('[data-term="trick"]').first().click();
+  const sheet = page.getByTestId('term-sheet');
+  await expect(sheet).toContainText('A round in which everyone plays one card');
+  await noThai(page);
+  await page.keyboard.press('Escape');
+
+  // Pick the legal cards: a wrong pick says why, in English.
+  await page.goto('/#/learn/ex/ch2-follow-suit');
+  await page.locator('[data-card="SA"]').click();
+  await page.locator('[data-card="HA"]').click();
+  await page.getByRole('button', { name: 'Check' }).click();
+  const feedback = page.getByTestId('feedback');
+  await expect(feedback).toHaveAttribute('data-tone', 'wrong');
+  await expect(feedback.locator('[data-reason="illegal"]')).toContainText(
+    'You must play ♥ while the hand still has ♥',
+  );
+  await noThai(page);
+  await page.locator('[data-card="SA"]').click();
+  await page.locator('[data-card="H8"]').click();
+  await page.getByRole('button', { name: 'Check' }).click();
+  await expect(feedback).toHaveAttribute('data-tone', 'ok');
+  await noThai(page);
+
+  // Who wins the trick.
+  await page.goto('/#/learn/ex/ch2-who-wins');
+  await page.getByRole('button', { name: 'North' }).click();
+  await expect(feedback).toHaveAttribute('data-tone', 'ok');
+  await noThai(page);
+
+  // A question.
+  await page.goto('/#/learn/ex/ch4-trump-suit');
+  await page.getByRole('button', { name: 'No trumps' }).click();
+  await page.getByRole('button', { name: 'Show the answer' }).click();
+  await expect(feedback).toHaveAttribute('data-tone', 'info');
+  await noThai(page);
+
+  // Play it out: a miss names the mistake, then the answer card by card.
+  await page.goto('/#/learn/ex/ch10-finesse-aq');
+  await page.locator('[data-playable="true"][data-card="S2"]').click(CORNER);
+  await page.locator('[data-playable="true"][data-card="SA"]').click(CORNER);
+  for (;;) {
+    const card = page.locator('[data-playable="true"]').first();
+    await expect(card.or(feedback)).toBeVisible({ timeout: 15_000 });
+    if (await feedback.isVisible()) break;
+    await card.click(CORNER);
+  }
+  await expect(feedback).toHaveAttribute('data-tone', 'wrong');
+  await expect(page.getByTestId('mistake')).toContainText('better:');
+  await expect(page.getByTestId('mistake')).toContainText('is still there');
+  await noThai(page);
+  await page.getByRole('button', { name: 'Show the answer' }).click();
+  const next = page.getByRole('button', { name: 'Next →' });
+  for (let i = 1; i <= 12; i++) await next.click();
+  await expect(page.getByTestId('solution')).toContainText('Done: NS took 3 tricks');
+  await noThai(page);
+
+  // The glossary: English explanations, no Thai gloss.
+  await page.goto('/#/learn/glossary');
+  await expect(page.locator('[data-term-entry="trick"]')).toContainText('A round in which');
+  await noThai(page);
+
+  // The guide beside the table.
+  await page.goto(HAND);
+  await expect(page.locator('[data-playable="true"]').first()).toBeVisible();
+  await page.getByTestId('guide-button').click();
+  await expect(page.getByTestId('guide-panel')).toContainText('Declarer, dummy and the defenders');
+  await noThai(page);
+  expect(errors).toEqual([]);
 });
 
 test.describe('phone width', () => {

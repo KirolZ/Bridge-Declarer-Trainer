@@ -5,8 +5,16 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import type { Chapter, Exercise } from '../../learn';
-import { CHAPTERS, EXERCISES, GLOSSARY, chapterOf, exerciseById, exercisesOf } from '../../learn';
-import { learnStore, useLearn, useT } from '../gameStore';
+import {
+  CHAPTERS,
+  EXERCISES,
+  chapterOf,
+  chaptersIn,
+  exerciseById,
+  exercisesOf,
+  glossaryIn,
+} from '../../learn';
+import { learnStore, useLanguage, useLearn, useT } from '../gameStore';
 import { Blocks } from '../learn/examples';
 import { AnswerExerciseView, LegalExerciseView, PRIMARY, SECONDARY } from '../learn/ExerciseViews';
 import { PlayExerciseView } from '../learn/PlayExerciseView';
@@ -67,6 +75,7 @@ export function LearnPage() {
   const read = progress.read.filter((n) => chapterOf(n)).length;
   const passed = passedCount(EXERCISES, progress.passed);
   const t = useT();
+  const lang = useLanguage();
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-8">
@@ -104,7 +113,7 @@ export function LearnPage() {
       </section>
 
       <ol className="flex flex-col gap-2">
-        {CHAPTERS.map((c) => (
+        {chaptersIn(lang).map((c) => (
           <ChapterItem
             key={c.n}
             chapter={c}
@@ -200,7 +209,8 @@ function useSeen(onSeen: () => void, enabled: boolean) {
 
 export function LessonPage() {
   const { chapter: param = '' } = useParams();
-  const chapter = /^\d+$/.test(param) ? chapterOf(Number(param)) : undefined;
+  const lang = useLanguage();
+  const chapter = /^\d+$/.test(param) ? chapterOf(Number(param), lang) : undefined;
   const progress = useLearn((s) => s.progress);
   const n = chapter?.n ?? 0;
   const written = (chapter?.blocks.length ?? 0) > 0;
@@ -213,9 +223,9 @@ export function LessonPage() {
   }, [n]);
 
   if (!chapter) return <NotFound what={t.learn.thisChapter} />;
-  const exercises = exercisesOf(n);
-  const prev = chapterOf(n - 1);
-  const next = chapterOf(n + 1);
+  const exercises = exercisesOf(n, lang);
+  const prev = chapterOf(n - 1, lang);
+  const next = chapterOf(n + 1, lang);
 
   return (
     <TermSheetProvider>
@@ -318,7 +328,8 @@ function ExerciseBody({ ex, onPass }: { ex: Exercise; onPass: () => void }) {
 
 export function ExercisePage() {
   const { id = '' } = useParams();
-  const ex = exerciseById(id);
+  const lang = useLanguage();
+  const ex = exerciseById(id, lang);
   const passed = useLearn((s) => s.progress.passed.includes(id));
   const [hint, setHint] = useState(false);
   const onPass = useCallback(() => learnStore.getState().markPassed(id), [id]);
@@ -402,6 +413,7 @@ export function GlossaryPage() {
   const [params] = useSearchParams();
   const focus = params.get('t');
   const t = useT();
+  const lang = useLanguage();
 
   useEffect(() => {
     if (!focus) return;
@@ -414,7 +426,7 @@ export function GlossaryPage() {
         <LearnHeader back="/learn" backLabel={t.learn.backToGuide} title={t.learn.glossary} />
         <p className="text-white/75">{t.learn.glossaryIntro}</p>
         <dl className="flex flex-col gap-2">
-          {GLOSSARY.map((e) => (
+          {glossaryIn(lang).map((e) => (
             <div
               key={e.id}
               id={`term-${e.id}`}
@@ -423,7 +435,8 @@ export function GlossaryPage() {
               className={`scroll-mt-4 rounded-xl px-3 py-2.5 ${focus === e.id ? 'bg-amber-300/15 ring-2 ring-amber-300' : 'bg-black/25'}`}
             >
               <dt className="font-bold">
-                {e.term} <span className="font-normal text-white/70">({e.thai})</span>
+                {e.term}
+                {lang === 'th' && <span className="font-normal text-white/70"> ({e.thai})</span>}
                 {e.aliases && (
                   <span className="block text-sm font-normal text-white/60">
                     {t.learn.related} {e.aliases.join(', ')}
