@@ -35,6 +35,8 @@ import { GuidePanel } from '../learn/GuidePanel';
 import { ActionBar } from './ActionBar';
 import { ClaimDialog } from './ClaimDialog';
 import { CoachTipView } from './CoachTip';
+import { useCardPick } from './cardPick';
+import { ConfirmPlayBar } from './ConfirmPlayBar';
 import type { BlockedHandler, CardMode, PlayHandler } from './hands';
 import { DummyHand, FaceDownRow, FannedHand, HiddenHand, OpenHand } from './hands';
 import { InfoBar } from './InfoBar';
@@ -125,6 +127,10 @@ export function PlayTable() {
   const playerTurn = isPlayerTurn(state);
   const plays = play?.plays.length ?? 0;
   const over = isHandOver(state);
+  const pick = useCardPick(playerTurn ? `${epoch}:${plays}` : null, (card, viaKeyboard) => {
+    keyboard.current = viaKeyboard;
+    gameStore.getState().playCard(card);
+  });
 
   // Post-hand review (SPEC §7.5): fetch any analysis still missing once the hand is over.
   const { analyses, claimed } = state;
@@ -214,10 +220,12 @@ export function PlayTable() {
     (owner: Seat) =>
     (card: Card): boolean =>
       liveHint !== null && seat === owner && liveHint.cards.some((c) => sameCard(c, card));
-  const onPlay: PlayHandler = (card, viaKeyboard) => {
-    keyboard.current = viaKeyboard;
-    gameStore.getState().playCard(card);
-  };
+  const onPlay: PlayHandler = pick.onPlay;
+  const picked = pick.picked;
+  const confirmBar = (side: 'above' | 'below') =>
+    picked && (
+      <ConfirmPlayBar card={picked} side={side} onConfirm={pick.confirm} onCancel={pick.cancel} />
+    );
   // Beginner mode: say why the card cannot be played now (SPEC §7.8).
   const onBlocked: BlockedHandler | undefined = beginner
     ? (card) => {
@@ -241,6 +249,7 @@ export function PlayTable() {
   else if (error) status = error;
   else if (shown?.winner) status = `${SEAT_NAME[shown.winner]} กิน trick นี้`;
   else if (blockedText) status = blockedText;
+  else if (picked) status = `ยืนยันด้วยปุ่ม "ลง" หรือกด ${cardName(picked)} อีกครั้ง`;
   else if (liveHint) {
     const short = liveHint.tricks < needed ? ` — ไม่พอแล้ว (ต้องได้ ${needed})` : '';
     status = `คำใบ้: ใบที่ยกขึ้นยังทำได้ ${liveHint.tricks} trick${short}`;
@@ -327,12 +336,14 @@ export function PlayTable() {
                   trump={trump}
                   modeOf={modeOf('N')}
                   hintOf={hintOf('N')}
+                  picked={picked}
                   onPlay={onPlay}
                   onBlocked={onBlocked}
                 />
               ) : (
                 <FaceDownRow count={hands.N.length} />
               )}
+              {seat === 'N' && confirmBar('below')}
             </section>
 
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
@@ -370,9 +381,11 @@ export function PlayTable() {
                 className={`min-h-5 text-center text-sm ${
                   blockedText && status === blockedText
                     ? 'font-semibold text-amber-200'
-                    : liveHint
-                      ? 'font-semibold text-emerald-200'
-                      : 'text-white/90'
+                    : picked
+                      ? 'font-semibold text-sky-200'
+                      : liveHint
+                        ? 'font-semibold text-emerald-200'
+                        : 'text-white/90'
                 }`}
                 data-testid="status"
                 aria-live="polite"
@@ -393,9 +406,11 @@ export function PlayTable() {
                 trump={trump}
                 modeOf={modeOf('S')}
                 hintOf={hintOf('S')}
+                picked={picked}
                 onPlay={onPlay}
                 onBlocked={onBlocked}
               />
+              {seat === 'S' && confirmBar('above')}
               <SeatTag seat="S" active={active('S')} className="sm:absolute sm:top-2 sm:left-3" />
             </section>
           </div>

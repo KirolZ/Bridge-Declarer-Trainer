@@ -22,6 +22,12 @@ export type Pace = { readonly cardMs: number; readonly trickMs: number };
 
 export type BotSpeed = 'slow' | 'normal' | 'fast';
 
+/**
+ * How a click on a card plays it. `tap`: at once. `confirm`: the first click picks the card, and it
+ * is played by the confirm button or by clicking it again (guards against a slip of the finger).
+ */
+export type CardPlay = 'tap' | 'confirm';
+
 export const BOT_PACE: Readonly<Record<BotSpeed, Pace>> = {
   slow: { cardMs: 1000, trickMs: 1400 },
   normal: { cardMs: 500, trickMs: 800 },
@@ -37,6 +43,7 @@ export type Settings = DealSettings & {
   readonly suitOrder: SuitOrder;
   /** Show the defenders' cards while playing; such hands do not count for the stats. */
   readonly studyMode: boolean;
+  readonly cardPlay: CardPlay;
   /**
    * Beginner mode (SPEC §7.8): contracts with a cushion and no slams, slow bots, and the table
    * explains more. Overrides the contract type, difficulty and bot speed while on.
@@ -49,6 +56,7 @@ export const DIFFICULTIES: readonly Difficulty[] = ['exact', 'cushion'];
 export const VULNERABILITIES: readonly Vulnerability[] = ['none', 'ns'];
 export const BOT_SPEEDS: readonly BotSpeed[] = ['slow', 'normal', 'fast'];
 export const SUIT_ORDER_OPTIONS: readonly SuitOrder[] = ['alternate', 'rank'];
+export const CARD_PLAY_OPTIONS: readonly CardPlay[] = ['tap', 'confirm'];
 
 export const DEFAULT_DEAL_SETTINGS: DealSettings = {
   contractType: 'any',
@@ -61,6 +69,7 @@ export const DEFAULT_SETTINGS: Settings = {
   botSpeed: 'normal',
   suitOrder: 'alternate',
   studyMode: false,
+  cardPlay: 'tap',
   beginnerMode: false,
 };
 
@@ -99,6 +108,7 @@ export function parseSettings(raw: unknown): Settings {
     botSpeed: pick(o.botSpeed, BOT_SPEEDS, d.botSpeed),
     suitOrder: pick(o.suitOrder, SUIT_ORDER_OPTIONS, d.suitOrder),
     studyMode: flag(o.studyMode, d.studyMode),
+    cardPlay: pick(o.cardPlay, CARD_PLAY_OPTIONS, d.cardPlay),
     beginnerMode: flag(o.beginnerMode, d.beginnerMode),
   };
 }

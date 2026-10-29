@@ -4,9 +4,10 @@
 import type { ReactNode } from 'react';
 import type { SuitOrder, Vulnerability } from '../../engine';
 import { CONTRACT_TYPE_LABEL } from '../../game/playStore';
-import type { BotSpeed, ContractType, Difficulty, Settings } from '../../game/settings';
+import type { BotSpeed, CardPlay, ContractType, Difficulty, Settings } from '../../game/settings';
 import {
   BOT_SPEEDS,
+  CARD_PLAY_OPTIONS,
   CONTRACT_TYPES,
   DIFFICULTIES,
   SUIT_ORDER_OPTIONS,
@@ -36,6 +37,14 @@ const BOT_SPEED: Readonly<Record<BotSpeed, string>> = {
 const SUIT_ORDER: Readonly<Record<SuitOrder, Omit<Option<SuitOrder>, 'value'>>> = {
   alternate: { label: 'สลับดำ-แดง', note: 'trump ขึ้นก่อน แบบที่ dummy วางบนโต๊ะจริง' },
   rank: { label: '♠ ♥ ♦ ♣', note: 'ลำดับเดิมตลอด ไม่ขึ้นกับ contract' },
+};
+
+const CARD_PLAY: Readonly<Record<CardPlay, Omit<Option<CardPlay>, 'value'>>> = {
+  tap: { label: 'แตะแล้วลงเลย', note: 'แตะไพ่ครั้งเดียว ไพ่ลงทันที' },
+  confirm: {
+    label: 'แตะเลือก แล้วกด "ลง"',
+    note: 'แตะครั้งแรกเพื่อเลือก (ไพ่มีกรอบสีฟ้า) แล้วกดปุ่ม "ลง" หรือแตะใบเดิมซ้ำ กันลงผิดใบ — ✕ หรือ Esc เพื่อยกเลิก',
+  },
 };
 
 type ChoiceProps<T extends string> = {
@@ -150,6 +159,13 @@ export function SettingsPage() {
       </Section>
 
       <Section title="ระหว่างเล่น">
+        <Choice<CardPlay>
+          name="cardPlay"
+          legend="การลงไพ่"
+          options={CARD_PLAY_OPTIONS.map((value) => ({ value, ...CARD_PLAY[value] }))}
+          value={settings.cardPlay}
+          onChange={set('cardPlay')}
+        />
         <Choice<BotSpeed>
           name="botSpeed"
           legend="ความเร็วบอท"

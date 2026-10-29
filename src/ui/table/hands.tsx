@@ -4,7 +4,7 @@
 import { motion } from 'framer-motion';
 import type { MouseEvent } from 'react';
 import type { Card, Strain } from '../../engine';
-import { SUIT_INFO, cardCode, rankLabel } from '../../engine';
+import { SUIT_INFO, cardCode, rankLabel, sameCard } from '../../engine';
 import { useSuitOrder } from '../gameStore';
 import type { IndexLayout } from './PlayingCard';
 import { cardName } from './labels';
@@ -24,6 +24,8 @@ type CardButtonProps = {
   mode: CardMode;
   /** One of the best cards of a hint (SPEC §7.2). */
   hinted: boolean;
+  /** Picked, waiting for the player to confirm it (setting `cardPlay: 'confirm'`). */
+  picked: boolean;
   layout: IndexLayout;
   onPlay: PlayHandler;
   onBlocked?: BlockedHandler;
@@ -31,7 +33,7 @@ type CardButtonProps = {
 };
 
 function CardButton(props: CardButtonProps) {
-  const { card, mode, hinted, layout, onPlay, onBlocked, flipInDelay } = props;
+  const { card, mode, hinted, picked, layout, onPlay, onBlocked, flipInDelay } = props;
   const playable = mode === 'playable';
   const onClick = (e: MouseEvent) => {
     // `detail` is 0 when the click came from the keyboard (Enter / Space).
@@ -40,6 +42,7 @@ function CardButton(props: CardButtonProps) {
   };
   let label = cardName(card);
   if (mode === 'illegal') label += ' (ลงไม่ได้)';
+  else if (picked) label += ' (เลือกอยู่ — กดอีกครั้งเพื่อลง)';
   else if (hinted) label += ' (คำใบ้)';
   return (
     <button
@@ -47,16 +50,23 @@ function CardButton(props: CardButtonProps) {
       data-card={cardCode(card)}
       data-playable={playable ? 'true' : undefined}
       data-hint={hinted ? 'true' : undefined}
+      data-picked={picked ? 'true' : undefined}
       aria-disabled={!playable}
       tabIndex={playable ? 0 : -1}
       aria-label={label}
       onClick={onClick}
       className={[
         'block rounded-[6px] transition duration-150 outline-none',
+        // A picked card stands out in a colour of its own: South's lifted (within the room the hand
+        // keeps above it); dummy's slid sideways into the gap, as lifting it hides the card above.
+        picked && 'shadow-[0_0_0_3px_#38bdf8,0_0_18px_5px_rgba(56,189,248,0.7)]',
+        picked && (layout === 'stack' ? '-translate-y-[11%]' : 'translate-x-[12%]'),
         // Lifted as well as outlined, so a hint does not rely on colour alone.
-        hinted && '-translate-y-[9%] shadow-[0_0_0_3px_#34d399,0_0_16px_4px_rgba(52,211,153,0.6)]',
-        playable &&
-          'cursor-pointer hover:-translate-y-[9%] focus-visible:-translate-y-[9%] focus-visible:ring-4 focus-visible:ring-amber-300',
+        !picked &&
+          hinted &&
+          '-translate-y-[9%] shadow-[0_0_0_3px_#34d399,0_0_16px_4px_rgba(52,211,153,0.6)]',
+        playable && 'cursor-pointer focus-visible:ring-4 focus-visible:ring-amber-300',
+        playable && !picked && 'hover:-translate-y-[9%] focus-visible:-translate-y-[9%]',
         // Dimmed but opaque: overlapped cards must not show through each other.
         mode === 'illegal' && 'cursor-not-allowed brightness-60 saturate-50',
         mode === 'idle' && 'cursor-default',
@@ -74,6 +84,8 @@ type HandProps = {
   trump: Strain;
   modeOf: (card: Card) => CardMode;
   hintOf: (card: Card) => boolean;
+  /** The card picked for confirmation, if any. */
+  picked?: Card | null;
   onPlay: PlayHandler;
   onBlocked?: BlockedHandler;
 };
@@ -82,7 +94,8 @@ type HandProps = {
  * Cards fanned sideways and overlapped just enough to fit the width (`100cqw` of the wrapper):
  * each step shows at least the corner index.
  */
-export function FannedHand({ cards, trump, modeOf, hintOf, onPlay, onBlocked }: HandProps) {
+export function FannedHand(props: HandProps) {
+  const { cards, trump, modeOf, hintOf, picked, onPlay, onBlocked } = props;
   const order = useSuitOrder();
   const sorted = sortForDisplay(cards, trump, order);
   const gaps = Math.max(sorted.length - 1, 1);
@@ -108,6 +121,7 @@ export function FannedHand({ cards, trump, modeOf, hintOf, onPlay, onBlocked }: 
               card={card}
               mode={modeOf(card)}
               hinted={hintOf(card)}
+              picked={!!picked && sameCard(picked, card)}
               layout="stack"
               onPlay={onPlay}
               onBlocked={onBlocked}
@@ -120,7 +134,8 @@ export function FannedHand({ cards, trump, modeOf, hintOf, onPlay, onBlocked }: 
 }
 
 /** Dummy laid out as on a real table: one column per suit, cards running downwards. */
-export function DummyHand({ cards, trump, modeOf, hintOf, onPlay, onBlocked }: HandProps) {
+export function DummyHand(props: HandProps) {
+  const { cards, trump, modeOf, hintOf, picked, onPlay, onBlocked } = props;
   const suitOrder = useSuitOrder();
   const columns = displaySuits(trump, suitOrder)
     .map((suit) => sortForDisplay(cards, trump, suitOrder).filter((c) => c.suit === suit))
@@ -152,6 +167,7 @@ export function DummyHand({ cards, trump, modeOf, hintOf, onPlay, onBlocked }: H
                 card={card}
                 mode={modeOf(card)}
                 hinted={hintOf(card)}
+                picked={!!picked && sameCard(picked, card)}
                 layout="row"
                 onPlay={onPlay}
                 onBlocked={onBlocked}

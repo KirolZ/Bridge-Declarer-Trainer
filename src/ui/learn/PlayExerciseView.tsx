@@ -26,6 +26,9 @@ import { exerciseStore, useExercise } from '../gameStore';
 import type { CardMode, PlayHandler } from '../table/hands';
 import { CardText, DummyHand, FannedHand, OpenHand } from '../table/hands';
 import { SEAT_NAME, SEAT_ROLE } from '../table/labels';
+import type { CardPick } from '../table/cardPick';
+import { useCardPick } from '../table/cardPick';
+import { ConfirmPlayBar } from '../table/ConfirmPlayBar';
 import { TrickArea } from '../table/TrickArea';
 import { Explanation, Feedback, PRIMARY, SECONDARY } from './ExerciseViews';
 import { Rich, SuitSymbol } from './Rich';
@@ -38,6 +41,8 @@ type BoardProps = {
   thinking?: boolean;
   modeOf?: (seat: Seat) => (card: Card) => CardMode;
   onPlay?: PlayHandler;
+  /** The card picked for confirmation (setting `cardPlay: 'confirm'`). */
+  pick?: CardPick;
   /** Remounts the trick area (no animation after a restart). */
   trickKey: string | number;
 };
@@ -75,6 +80,7 @@ function Board({
   thinking,
   modeOf = idle,
   onPlay = () => {},
+  pick,
   trickKey,
 }: BoardProps) {
   const done = completedTricks(play);
@@ -83,18 +89,26 @@ function Board({
   const trickNumber = Math.min(done.length + (showLast ? 0 : 1), total);
   const hands = remainingHands(play);
   const trump = play.contract.strain;
+  const picked = pick?.picked ?? null;
+  const confirmBar = (side: 'above' | 'below') =>
+    pick &&
+    picked && (
+      <ConfirmPlayBar card={picked} side={side} onConfirm={pick.confirm} onCancel={pick.cancel} />
+    );
   return (
     <div className="table-felt mx-auto w-full max-w-2xl" style={{ containerType: 'inline-size' }}>
       <div className="exercise-cards flex flex-col gap-2 p-2 sm:p-3">
-        <section aria-label="North (dummy)" className="flex flex-col items-center gap-1">
+        <section aria-label="North (dummy)" className="relative flex flex-col items-center gap-1">
           <SeatLabel seat="N" active={active === 'N'} />
           <DummyHand
             cards={hands.N}
             trump={trump}
             modeOf={modeOf('N')}
             hintOf={noHint}
+            picked={picked}
             onPlay={onPlay}
           />
+          {active === 'N' && confirmBar('below')}
         </section>
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
           {(['W', 'E'] as const).map((s) => (
@@ -117,14 +131,16 @@ function Board({
             />
           </div>
         </div>
-        <section aria-label="South (คุณ)" className="flex flex-col items-center gap-1">
+        <section aria-label="South (คุณ)" className="relative flex flex-col items-center gap-1">
           <FannedHand
             cards={hands.S}
             trump={trump}
             modeOf={modeOf('S')}
             hintOf={noHint}
+            picked={picked}
             onPlay={onPlay}
           />
+          {active === 'S' && confirmBar('above')}
           <SeatLabel seat="S" active={active === 'S'} />
         </section>
       </div>
@@ -266,6 +282,10 @@ export function PlayExerciseView({ ex, onPass }: { ex: PlayExercise; onPass: () 
     [over, play, analyses, ex],
   );
   const passed = outcome?.passed === true;
+  const pick = useCardPick(
+    ready && isPlayerTurn(state) ? `${pbn}:${epoch}:${play.plays.length}` : null,
+    (card) => exerciseStore.getState().playCard(card),
+  );
 
   useEffect(() => {
     if (passed) onPass();
@@ -341,9 +361,7 @@ export function PlayExerciseView({ ex, onPass }: { ex: PlayExercise; onPass: () 
       if (!playerTurn || seat !== owner) return 'idle';
       return legal.some((c) => sameCard(c, card)) ? 'playable' : 'illegal';
     };
-  const onPlay: PlayHandler = (card) => {
-    exerciseStore.getState().playCard(card);
-  };
+  const onPlay = pick.onPlay;
   const active = !state.trickPause && !over ? seat : null;
   const goal = ex.goal.nsTricks;
 
@@ -357,6 +375,7 @@ export function PlayExerciseView({ ex, onPass }: { ex: PlayExercise; onPass: () 
         thinking={state.botThinking && active !== null && sideOf(active) === 'EW'}
         modeOf={modeOf}
         onPlay={onPlay}
+        pick={pick}
         trickKey={epoch}
       />
       {!over && (

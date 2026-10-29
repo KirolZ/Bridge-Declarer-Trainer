@@ -73,6 +73,8 @@ describe('settings', () => {
         suitOrder: 'rank',
       }),
     ).toEqual({ ...DEFAULT_SETTINGS, contractType: 'slam', suitOrder: 'rank' });
+    expect(parseSettings({ cardPlay: 'confirm' }).cardPlay).toBe('confirm');
+    expect(parseSettings({ cardPlay: 'swipe' }).cardPlay).toBe('tap');
     expect(dealSettingsOf({ ...DEFAULT_SETTINGS, vulnerability: 'ns' })).toEqual({
       contractType: 'any',
       difficulty: 'exact',
