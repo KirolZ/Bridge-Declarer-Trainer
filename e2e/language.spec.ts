@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-// TASKS M17: the screens in English. The TH / EN switch on the home page, then every screen of a
+// TASKS M17: the screens in English. The flag switch on the home page, then every screen of a
 // hand (table, menu, claim, result, replay), settings and stats show no Thai — except the
 // language names, which are always written in their own language (`lang="th"`). The guide's
 // content is still Thai until M18, so its pages are not checked here.
@@ -46,6 +46,10 @@ const noSideScroll = (page: Page) =>
 async function switchToEnglish(page: Page) {
   await page.goto('/');
   const lang = page.getByTestId('language-switch');
+  // Flags, not letters (17.10): drawn as SVG, named for screen readers.
+  await expect(lang.locator('svg[data-flag="th"]')).toBeVisible();
+  await expect(lang.locator('svg[data-flag="en"]')).toBeVisible();
+  await expect(lang).not.toContainText(/TH|EN/);
   await expect(lang.getByRole('button', { name: 'ไทย' })).toHaveAttribute('aria-pressed', 'true');
   await lang.getByRole('button', { name: 'English' }).click();
   await expect(lang.getByRole('button', { name: 'English' })).toHaveAttribute(

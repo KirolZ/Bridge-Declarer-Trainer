@@ -13,6 +13,3 @@ export const MESSAGES: Readonly<Record<Language, Messages>> = { th, en };
 
 /** Each language named in its own words, as language pickers show them. */
 export const LANGUAGE_NAME: Readonly<Record<Language, string>> = { th: 'ไทย', en: 'English' };
-
-/** Short code on the home page switch. */
-export const LANGUAGE_CODE: Readonly<Record<Language, string>> = { th: 'TH', en: 'EN' };

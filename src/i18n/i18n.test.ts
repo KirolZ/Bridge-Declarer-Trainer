@@ -8,7 +8,7 @@ import type { Card, IllegalReason, Seat } from '../engine';
 import { SEATS } from '../engine';
 import { glossaryEntry, parseInline } from '../learn';
 import type { Messages } from '.';
-import { LANGUAGE_CODE, LANGUAGE_NAME, MESSAGES, en, th } from '.';
+import { LANGUAGE_NAME, MESSAGES, en, th } from '.';
 
 const THAI = /[฀-๿]/;
 
@@ -166,6 +166,5 @@ describe('dictionaries', () => {
 
   it('names each language in its own words', () => {
     expect(LANGUAGE_NAME).toEqual({ th: 'ไทย', en: 'English' });
-    expect(LANGUAGE_CODE).toEqual({ th: 'TH', en: 'EN' });
   });
 });

@@ -6,10 +6,11 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SUIT_INFO, SUITS } from '../../engine/card';
 import { LANGUAGES } from '../../game/settings';
-import { LANGUAGE_CODE, LANGUAGE_NAME } from '../../i18n';
+import { LANGUAGE_NAME } from '../../i18n';
 import { CHAPTERS, chapterOf, isFirstVisit } from '../../learn';
 import { getSolver } from '../../worker';
 import { DealingOverlay } from '../DealingOverlay';
+import { Flag } from '../Flag';
 import {
   learnStore,
   updateSettings,
@@ -26,8 +27,8 @@ const PRIMARY =
   'rounded-xl bg-amber-400 px-8 py-3 text-lg font-semibold text-black shadow-lg hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60';
 
 /**
- * TH / EN at the top of the page (SPEC §8). Each button is named in its own language, so a player
- * who switched by mistake can find the way back.
+ * A flag per language at the top of the page (SPEC §8). Each button is named in its own language
+ * (screen readers, tooltip), so a player who switched by mistake can find the way back.
  */
 function LanguageSwitch() {
   const t = useT();
@@ -37,7 +38,7 @@ function LanguageSwitch() {
       role="group"
       aria-label={t.common.language}
       data-testid="language-switch"
-      className="absolute top-3 right-3 flex gap-0.5 rounded-lg bg-black/30 p-0.5 text-sm"
+      className="absolute top-3 right-3 flex gap-1 rounded-lg bg-black/30 p-1"
     >
       {LANGUAGES.map((l) => (
         <button
@@ -48,11 +49,13 @@ function LanguageSwitch() {
           aria-label={LANGUAGE_NAME[l]}
           title={LANGUAGE_NAME[l]}
           onClick={() => updateSettings({ language: l })}
-          className={`h-8 min-w-10 rounded-md px-2 font-semibold focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none ${
-            language === l ? 'bg-amber-300 text-black' : 'text-white/75 hover:bg-white/15'
+          className={`grid h-9 w-11 place-items-center rounded-md transition focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none ${
+            language === l
+              ? 'bg-amber-300'
+              : 'opacity-55 grayscale-[40%] hover:bg-white/15 hover:opacity-100 hover:grayscale-0'
           }`}
         >
-          {LANGUAGE_CODE[l]}
+          <Flag language={l} className="h-5 w-7 rounded-[3px] shadow-sm ring-1 ring-black/25" />
         </button>
       ))}
     </div>
