@@ -94,7 +94,11 @@ function Board({
       ? { seat: active, card: picked, onConfirm: pick.confirm, onCancel: pick.cancel }
       : null;
   return (
-    <div className="table-felt mx-auto w-full max-w-2xl" style={{ containerType: 'inline-size' }}>
+    <div
+      className="table-felt mx-auto w-full max-w-2xl"
+      style={{ containerType: 'inline-size' }}
+      onClick={pick?.onTableClick}
+    >
       <div className="exercise-cards flex flex-col gap-2 p-2 sm:p-3">
         <section aria-label="North (dummy)" className="flex flex-col items-center gap-1">
           <SeatLabel seat="N" active={active === 'N'} />

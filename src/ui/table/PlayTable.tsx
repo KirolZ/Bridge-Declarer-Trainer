@@ -307,6 +307,7 @@ export function PlayTable() {
       <main className="flex flex-1 flex-col p-2 sm:p-4">
         <div
           className="table-felt relative mx-auto flex w-full max-w-4xl flex-1 flex-col"
+          onClick={pick.onTableClick}
           style={{ containerType: 'inline-size' }}
         >
           <CoachTipView

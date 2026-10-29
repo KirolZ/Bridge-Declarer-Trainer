@@ -63,6 +63,14 @@ test('confirm mode: pick, change, cancel, then play with the button or a second 
   await page.keyboard.press('Escape');
   await expect(bar(page)).toHaveCount(0);
 
+  // A tap anywhere else on the table lets go of it too, and plays nothing.
+  await page.locator(`[data-card="${first}"]`).click(CORNER);
+  await expect(bar(page)).toBeVisible();
+  await page.getByRole('region', { name: 'West' }).click();
+  await expect(bar(page)).toHaveCount(0);
+  await expect(picked(page)).toHaveCount(0);
+  await expect(onTrick(page, first)).toHaveCount(0);
+
   // Picking another card moves the pick; tapping it on the table plays it.
   await page.locator(`[data-card="${first}"]`).click(CORNER);
   await page.locator(`[data-card="${last}"]`).click(CORNER);

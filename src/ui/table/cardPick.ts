@@ -1,7 +1,8 @@
 // "Pick, then confirm" card play (setting `cardPlay: 'confirm'`): the first click on a card picks
 // it and shows it waiting in its trick slot (TrickArea); tapping it there or clicking the card again
-// plays it, and ✕ / Esc lets go of it. With `cardPlay: 'tap'` a click plays the card at once, as before.
+// plays it, and ✕ / Esc / a click elsewhere on the table lets go of it. With `cardPlay: 'tap'` a click plays the card at once, as before.
 
+import type { MouseEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import type { Card } from '../../engine';
 import { sameCard } from '../../engine';
@@ -15,7 +16,12 @@ export type CardPick = {
   onPlay: PlayHandler;
   confirm: (viaKeyboard: boolean) => void;
   cancel: () => void;
+  /** Put on the table (felt): a click anywhere on it but a card to play or the waiting card cancels. */
+  onTableClick: (e: MouseEvent) => void;
 };
+
+/** What a click on the table may hit without letting go of the pick. */
+const KEEPS_PICK = '[data-playable="true"], [data-testid="confirm-play"]';
 
 /**
  * `at` names the position the pick belongs to (e.g. epoch and number of cards played), or null
@@ -50,5 +56,9 @@ export function useCardPick(at: string | null, play: PlayHandler): CardPick {
     return () => window.removeEventListener('keydown', onKey);
   }, [picked, cancel]);
 
-  return { picked, onPlay, confirm, cancel };
+  const onTableClick = (e: MouseEvent) => {
+    if (picked && !(e.target as Element).closest(KEEPS_PICK)) setPick(null);
+  };
+
+  return { picked, onPlay, confirm, cancel, onTableClick };
 }
