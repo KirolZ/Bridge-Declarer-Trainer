@@ -8,7 +8,7 @@ import type { Card, PlayedCard, Seat } from '../../engine';
 import { cardCode } from '../../engine';
 import { useT } from '../gameStore';
 import { SEAT_NAME } from './labels';
-import { PlayingCard } from './PlayingCard';
+import { FramePlate, PlayingCard } from './PlayingCard';
 
 /** Trick cards are a little smaller than the hands, to keep the table short. */
 const TRICK_SCALE = 0.85;
@@ -78,22 +78,18 @@ function PendingCard({ seat, card, onConfirm }: PendingPlay) {
         onClick={(e) => onConfirm(e.detail === 0)}
         className="group relative block cursor-pointer rounded-[calc(var(--card-w)*0.085)] outline-none focus-visible:ring-4 focus-visible:ring-white"
       >
-        {/* The glow pulses by opacity only (composited, no repaint each frame); the ring stays solid. */}
+        {/* The glow pulses by opacity only (composited, no repaint each frame); the frame stays solid. */}
         <motion.span
           aria-hidden="true"
+          data-glow=""
           className="pointer-events-none absolute inset-0 rounded-[calc(var(--card-w)*0.085)] shadow-[0_0_18px_5px_rgba(252,211,77,0.7)]"
           initial={{ opacity: 0.3 }}
           animate={{ opacity: [0.3, 1] }}
           transition={{ duration: 0.9, repeat: Infinity, repeatType: 'reverse' }}
         />
-        {/* Corner = 10% of the card's width (TRICK_SCALE × --card-w), as on the card face. */}
-        <span className="relative block rounded-[calc(var(--card-w)*0.085)] shadow-[0_0_0_3px_#fcd34d]">
-          <PlayingCard
-            card={card}
-            scale={TRICK_SCALE}
-            frame="#fcd34d"
-            faceClassName="opacity-80 transition-opacity group-hover:opacity-100"
-          />
+        <FramePlate color="#fcd34d" scale={TRICK_SCALE} />
+        <span className="relative block opacity-80 transition-opacity group-hover:opacity-100">
+          <PlayingCard card={card} scale={TRICK_SCALE} shadow={false} />
         </span>
         <span className="pointer-events-none absolute inset-x-0 -bottom-2.5 flex justify-center">
           <span className="rounded-full bg-amber-300 px-2 py-px text-[11px] font-semibold sm:text-xs whitespace-nowrap text-black shadow-[0_0_10px_rgba(252,211,77,0.6)]">

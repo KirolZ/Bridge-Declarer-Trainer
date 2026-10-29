@@ -160,7 +160,7 @@ test('a picked dummy card: its gold frame fits the card, stays above the next co
   expect(fit.right).toBeLessThanOrEqual(fit.nextLeft + 0.5);
 });
 
-test('framed cards: no drop shadow inside the frame, gold edge, and a glow that pulses by opacity only', async ({
+test('framed cards: a frame ring under the card, no drop shadow, and a glow that pulses by opacity only', async ({
   page,
 }) => {
   await seedSettings(page, { cardPlay: 'confirm' });
@@ -169,18 +169,34 @@ test('framed cards: no drop shadow inside the frame, gold edge, and a glow that 
   await playable(page).first().click(CORNER);
   await expect(bar(page)).toBeVisible();
 
-  // The card's shadow (3px down) would paint over the inside of the frame; its edge takes the frame's colour.
+  // The frame lies under the card, 3px out and 2px in under its edge, so the card's edge blends into
+  // gold rather than the table; the card's shadow (3px down) would darken the frame, so it goes.
   const framed = (button: string) =>
     page.locator(button).evaluate((el) => {
+      const frame = el.querySelector('[data-frame]')!;
       const svg = el.querySelector('svg')!;
-      const edges = svg.querySelectorAll('rect');
+      const f = frame.getBoundingClientRect();
+      const c = svg.getBoundingClientRect();
+      const style = getComputedStyle(frame);
       return {
+        out: [c.left - f.left, c.top - f.top, f.right - c.right, f.bottom - c.bottom].map(
+          Math.round,
+        ),
+        border: style.borderTopWidth,
+        colour: style.borderTopColor,
+        radius: parseFloat(style.borderTopLeftRadius) - c.width * 0.1,
+        cardOnTop: !!(frame.compareDocumentPosition(svg) & Node.DOCUMENT_POSITION_FOLLOWING),
         filter: getComputedStyle(svg.parentElement!).filter,
-        edge: edges[edges.length - 1]!.getAttribute('stroke'),
       };
     });
   for (const button of ['[data-picked="true"]', '[data-testid="confirm-play-button"]']) {
-    expect(await framed(button)).toEqual({ filter: 'none', edge: '#fcd34d' });
+    const f = await framed(button);
+    expect(f.out).toEqual([3, 3, 3, 3]);
+    expect(f.border).toBe('5px');
+    expect(f.colour).toBe('rgb(252, 211, 77)');
+    expect(f.radius).toBeCloseTo(3, 0);
+    expect(f.cardOnTop).toBe(true);
+    expect(f.filter).toBe('none');
   }
   // Cards without a frame keep their shadow.
   const plain = await page
@@ -189,14 +205,13 @@ test('framed cards: no drop shadow inside the frame, gold edge, and a glow that 
     .evaluate((el) => getComputedStyle(el.querySelector('svg')!.parentElement!).filter);
   expect(plain).not.toBe('none');
 
-  // The waiting card: corner = 10% of its width; solid ring, while only the glow layer's opacity moves.
+  // The waiting card: the frame stays put while only the glow layer's opacity moves.
   const sample = () =>
     page.getByTestId('confirm-play-button').evaluate((el) => {
-      const [glow, ring] = [el.children[0]!, el.children[1]!];
+      const glow = el.querySelector('[data-glow]')!;
+      const frame = el.querySelector('[data-frame]')!;
       return {
-        radius: parseFloat(getComputedStyle(ring).borderTopLeftRadius),
-        width: ring.getBoundingClientRect().width,
-        ring: getComputedStyle(ring).boxShadow,
+        frame: getComputedStyle(frame).border,
         glowShadow: getComputedStyle(glow).boxShadow,
         glowOpacity: Number(getComputedStyle(glow).opacity),
       };
@@ -204,8 +219,7 @@ test('framed cards: no drop shadow inside the frame, gold edge, and a glow that 
   const a = await sample();
   await page.waitForTimeout(450);
   const b = await sample();
-  expect(a.radius).toBeCloseTo(a.width * 0.1, 0);
-  expect(b.ring).toBe(a.ring);
+  expect(b.frame).toBe(a.frame);
   expect(b.glowShadow).toBe(a.glowShadow);
   expect(b.glowOpacity).not.toBe(a.glowOpacity);
 });

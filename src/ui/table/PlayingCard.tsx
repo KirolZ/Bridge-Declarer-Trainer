@@ -15,7 +15,6 @@ const SUIT_PATHS: Record<Suit, string> = {
 };
 
 const SUIT_COLOR = { red: '#c0262d', black: '#1c1c1c' } as const;
-const EDGE_COLOR = '#d6d3c4';
 
 function suitColor(suit: Suit): string {
   return SUIT_INFO[suit].red ? SUIT_COLOR.red : SUIT_COLOR.black;
@@ -60,70 +59,59 @@ function CornerIndex({ card, layout }: { card: Card; layout: IndexLayout }) {
   );
 }
 
-type CardFaceProps = {
-  card: Card;
-  layout?: IndexLayout;
-  /** Edge colour matching a frame drawn around the card (default: the plain grey edge). */
-  edge?: string;
-  /** Classes for the face under the edge (e.g. fading it while the edge stays solid). */
-  faceClassName?: string;
-};
-
-/** The card's edge: 2 units wide on the outline, so its outer corner is 10% of the width. */
-function Edge({ color }: { color: string }) {
-  return (
-    <rect x="1" y="1" width="98" height="138" rx="9" fill="none" stroke={color} strokeWidth="2" />
-  );
-}
-
-export function CardFace({ card, layout = 'stack', edge, faceClassName }: CardFaceProps) {
+export function CardFace({ card, layout = 'stack' }: { card: Card; layout?: IndexLayout }) {
   const isFace = card.rank >= 11 && card.rank <= 13;
   const label = rankLabel(card.rank);
   return (
     <svg viewBox="0 0 100 140" className="block h-full w-full" aria-hidden="true">
-      <g className={faceClassName}>
-        <rect x="1" y="1" width="98" height="138" rx="9" fill="#fdfcf7" />
-        {!edge && <Edge color={EDGE_COLOR} />}
-        <g fill={suitColor(card.suit)}>
+      <rect
+        x="1"
+        y="1"
+        width="98"
+        height="138"
+        rx="9"
+        fill="#fdfcf7"
+        stroke="#d6d3c4"
+        strokeWidth="2"
+      />
+      <g fill={suitColor(card.suit)}>
+        <CornerIndex card={card} layout={layout} />
+        <g transform="rotate(180 50 70)">
           <CornerIndex card={card} layout={layout} />
-          <g transform="rotate(180 50 70)">
-            <CornerIndex card={card} layout={layout} />
-          </g>
-          {isFace ? (
-            <>
-              <rect
-                x="28"
-                y="38"
-                width="44"
-                height="64"
-                rx="5"
-                fill="none"
-                stroke={suitColor(card.suit)}
-                strokeWidth="2.5"
-              />
-              <text
-                x="50"
-                y="80"
-                fontSize="36"
-                fontWeight="700"
-                textAnchor="middle"
-                fontFamily="Georgia, 'Times New Roman', serif"
-              >
-                {label}
-              </text>
-              <SuitShape suit={card.suit} x={42} y={84} size={16} />
-            </>
-          ) : (
-            <SuitShape
-              suit={card.suit}
-              x={card.rank === 14 ? 24 : 31}
-              y={card.rank === 14 ? 42 : 50}
-              size={card.rank === 14 ? 52 : 38}
-            />
-          )}
         </g>
+        {isFace ? (
+          <>
+            <rect
+              x="28"
+              y="38"
+              width="44"
+              height="64"
+              rx="5"
+              fill="none"
+              stroke={suitColor(card.suit)}
+              strokeWidth="2.5"
+            />
+            <text
+              x="50"
+              y="80"
+              fontSize="36"
+              fontWeight="700"
+              textAnchor="middle"
+              fontFamily="Georgia, 'Times New Roman', serif"
+            >
+              {label}
+            </text>
+            <SuitShape suit={card.suit} x={42} y={84} size={16} />
+          </>
+        ) : (
+          <SuitShape
+            suit={card.suit}
+            x={card.rank === 14 ? 24 : 31}
+            y={card.rank === 14 ? 42 : 50}
+            size={card.rank === 14 ? 52 : 38}
+          />
+        )}
       </g>
-      {edge && <Edge color={edge} />}
     </svg>
   );
 }
@@ -178,18 +166,13 @@ type PlayingCardProps = {
   flipInDelay?: number;
   /** Width relative to `--card-w` (default 1). */
   scale?: number;
-  /**
-   * Colour of a frame drawn around the card: the edge takes it and the drop shadow goes, since the
-   * shadow (3px down) would paint over the inside of the frame and leave an uneven gap.
-   */
-  frame?: string;
-  /** See `CardFace`. */
-  faceClassName?: string;
+  /** Off for a card sitting on a frame plate: the shadow (3px down) would darken the frame below it. */
+  shadow?: boolean;
 };
 
 export function PlayingCard(props: PlayingCardProps) {
-  const { card, layout, flipInDelay, scale = 1, frame, faceClassName } = props;
-  const shadow = frame ? '' : ' drop-shadow-md';
+  const { card, layout, flipInDelay, scale = 1, shadow = true } = props;
+  const side = `absolute inset-0${shadow ? ' drop-shadow-md' : ''}`;
   const flip = flipInDelay !== undefined;
   return (
     <div
@@ -203,18 +186,42 @@ export function PlayingCard(props: PlayingCardProps) {
         animate={{ rotateY: card ? 0 : 180 }}
         transition={{ duration: 0.45, ease: 'easeInOut', delay: flipInDelay ?? 0 }}
       >
-        <div className={`absolute inset-0${shadow}`} style={{ backfaceVisibility: 'hidden' }}>
-          {card && (
-            <CardFace card={card} layout={layout} edge={frame} faceClassName={faceClassName} />
-          )}
+        <div className={side} style={{ backfaceVisibility: 'hidden' }}>
+          {card && <CardFace card={card} layout={layout} />}
         </div>
         <div
-          className={`absolute inset-0${shadow}`}
+          className={side}
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
           <CardBack />
         </div>
       </motion.div>
     </div>
+  );
+}
+
+/** How far a frame reaches out from the card, and in under its edge, in px. */
+const FRAME_OUT = 3;
+const FRAME_IN = 2;
+
+/**
+ * A frame for a highlighted card: a ring lying under the card, from 3px outside to 2px under its edge,
+ * so the card's soft edge blends into the frame colour rather than into the table (which showed as a dark
+ * seam between the two). Only a ring, not a plate, so a faded card is not tinted all over. Put it before
+ * the card inside a positioned parent; the card's own wrapper is positioned too, so it paints on top.
+ */
+export function FramePlate({ color, scale = 1 }: { color: string; scale?: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      data-frame=""
+      className="pointer-events-none absolute"
+      style={{
+        inset: -FRAME_OUT,
+        border: `${FRAME_OUT + FRAME_IN}px solid ${color}`,
+        // The card's corner (10% of its width) grown by the reach outside.
+        borderRadius: `calc(var(--card-w) * ${scale * 0.1} + ${FRAME_OUT}px)`,
+      }}
+    />
   );
 }

@@ -7,7 +7,7 @@ import type { Card, Strain } from '../../engine';
 import { SUIT_INFO, cardCode, rankLabel, sameCard } from '../../engine';
 import { useSuitOrder, useT } from '../gameStore';
 import type { IndexLayout } from './PlayingCard';
-import { PlayingCard } from './PlayingCard';
+import { FramePlate, PlayingCard } from './PlayingCard';
 import { displaySuits, dummyStep, sortForDisplay } from './layout';
 
 /** `playable`: may be played now; `illegal`: this hand is to play but not this card. */
@@ -18,7 +18,7 @@ export type PlayHandler = (card: Card, viaKeyboard: boolean) => void;
 /** A card that cannot be played now was clicked (beginner mode explains why). */
 export type BlockedHandler = (card: Card) => void;
 
-/** Frame colours (the ring below and the card's edge, so the two read as one band). */
+/** Frame colours (`FramePlate`). */
 const FRAME = { picked: '#fcd34d', hinted: '#34d399' } as const;
 
 type CardButtonProps = {
@@ -37,6 +37,7 @@ type CardButtonProps = {
 function CardButton(props: CardButtonProps) {
   const { card, mode, hinted, picked, layout, onPlay, onBlocked, flipInDelay } = props;
   const playable = mode === 'playable';
+  const frame = picked ? FRAME.picked : hinted ? FRAME.hinted : undefined;
   const t = useT();
   const onClick = (e: MouseEvent) => {
     // `detail` is 0 when the click came from the keyboard (Enter / Space).
@@ -60,15 +61,14 @@ function CardButton(props: CardButtonProps) {
       onClick={onClick}
       className={[
         // Same corner as the card face (rx 9 + half the 2-unit stroke, out of 100), so rings fit at any size.
-        'block rounded-[calc(var(--card-w)*0.1)] transition duration-150 outline-none',
+        'relative block rounded-[calc(var(--card-w)*0.1)] transition duration-150 outline-none',
         // A picked card glows gold like its copy waiting on the table: South's lifted (within the room the hand
         // keeps above it); dummy's slid sideways into the gap, as lifting it hides the card above.
-        picked && 'shadow-[0_0_0_3px_#fcd34d,0_0_18px_5px_rgba(252,211,77,0.65)]',
+        // The glow is the button's; the solid frame is the `FramePlate` under the card.
+        picked && 'shadow-[0_0_18px_5px_rgba(252,211,77,0.65)]',
         picked && (layout === 'stack' ? '-translate-y-[11%]' : 'translate-x-[12%]'),
         // Lifted as well as outlined, so a hint does not rely on colour alone.
-        !picked &&
-          hinted &&
-          '-translate-y-[9%] shadow-[0_0_0_3px_#34d399,0_0_16px_4px_rgba(52,211,153,0.6)]',
+        !picked && hinted && '-translate-y-[9%] shadow-[0_0_16px_4px_rgba(52,211,153,0.6)]',
         playable && 'cursor-pointer focus-visible:ring-4 focus-visible:ring-amber-300',
         playable && !picked && 'hover:-translate-y-[9%] focus-visible:-translate-y-[9%]',
         // Dimmed but opaque: overlapped cards must not show through each other.
@@ -78,12 +78,8 @@ function CardButton(props: CardButtonProps) {
         .filter(Boolean)
         .join(' ')}
     >
-      <PlayingCard
-        card={card}
-        layout={layout}
-        flipInDelay={flipInDelay}
-        frame={picked ? FRAME.picked : hinted ? FRAME.hinted : undefined}
-      />
+      {frame && <FramePlate color={frame} />}
+      <PlayingCard card={card} layout={layout} flipInDelay={flipInDelay} shadow={!frame} />
     </button>
   );
 }
