@@ -198,6 +198,15 @@ test('framed cards: a frame ring under the card, no drop shadow, and a glow that
     expect(f.cardOnTop).toBe(true);
     expect(f.filter).toBe('none');
   }
+  // The waiting card is faded by a veil, not by opacity: a see-through card shows the frame under its edge.
+  const opaque = await page.getByTestId('confirm-play-button').evaluate((el) => {
+    let node: Element | null = el.querySelector('svg');
+    for (; node && node !== el; node = node.parentElement) {
+      if (Number(getComputedStyle(node).opacity) < 1) return false;
+    }
+    return !!el.querySelector('[data-veil]');
+  });
+  expect(opaque).toBe(true);
   // Cards without a frame keep their shadow.
   const plain = await page
     .locator('[data-card]:not([data-picked])')

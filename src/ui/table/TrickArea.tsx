@@ -88,8 +88,15 @@ function PendingCard({ seat, card, onConfirm }: PendingPlay) {
           transition={{ duration: 0.9, repeat: Infinity, repeatType: 'reverse' }}
         />
         <FramePlate color="#fcd34d" scale={TRICK_SCALE} />
-        <span className="relative block opacity-80 transition-opacity group-hover:opacity-100">
+        {/* Faded by a felt-coloured veil, not by opacity: a see-through card would show the frame under its
+            edge as a pale band. Same look as 80% opacity over the middle of the felt (#1f8a55). */}
+        <span className="relative block">
           <PlayingCard card={card} scale={TRICK_SCALE} shadow={false} />
+          <span
+            aria-hidden="true"
+            data-veil=""
+            className="pointer-events-none absolute inset-0 rounded-[calc(var(--card-w)*0.085)] bg-[#1f8a55]/20 transition-opacity group-hover:opacity-0"
+          />
         </span>
         <span className="pointer-events-none absolute inset-x-0 -bottom-2.5 flex justify-center">
           <span className="rounded-full bg-amber-300 px-2 py-px text-[11px] font-semibold sm:text-xs whitespace-nowrap text-black shadow-[0_0_10px_rgba(252,211,77,0.6)]">
