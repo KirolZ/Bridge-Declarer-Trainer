@@ -260,6 +260,14 @@
 
 **เสร็จเมื่อ:** ครบ Definition of Done ใน SPEC §11
 
+## งานหลัง M13 ก่อนมีกฎลง task (บันทึกย้อนหลัง)
+
+> งานเหล่านี้ commit ก่อนมี `.claude/CLAUDE.md` จึงไม่มี task ของตัวเอง บันทึกไว้ให้ตามย้อนหลังได้ (รายละเอียด Cloudflare อยู่ใน DECISIONS "Cloudflare Pages")
+
+- [x] หน้าแรก: เครดิตผู้สร้าง มุมล่างซ้าย — `7b304ac`, `668fa1e` (2026-10-28)
+- [x] พื้นหลัง: ตรึง gradient กับหน้าจอ หน้ายาวไม่เห็นรอยต่อ — `e5ef5d2` (2026-10-28)
+- [x] Cloudflare Pages: build สร้าง `_headers` จาก security headers ของ nginx, deploy จริง, CSP อนุญาต Web Analytics — `3196446`, `d264eb8`, `86e5431` (2026-10-28)
+
 ## M14 — ยืนยันก่อนลงไพ่
 
 > ที่มา (2026-10-29): ผู้ใช้รายงานว่าอยากได้ปุ่มยืนยันไพ่ที่เลือกก่อนลงจริง กันลงผิดจากที่คิด ต้องใช้ได้ดีทั้ง PC และมือถือ
@@ -280,3 +288,18 @@
 > lint / typecheck / format ผ่าน
 >
 > **ส่งต่อ:** ค่าเริ่มต้นยังเป็น `tap` ถ้าเปลี่ยนเป็น `confirm` ต้องแก้ e2e เดิมที่กดไพ่ครั้งเดียว (ดู DECISIONS M14)
+
+## M15 — กฎการทำงานหลัง M13 (`.claude/`)
+
+> ที่มา (2026-10-29): ผู้ใช้ขอให้สร้าง `.claude` วางกฎว่างานหลังจากนี้ทำแบบเดียวกับตอนจบ milestone และต้องลง task ทุกครั้ง เพื่อตรวจย้อนหลังได้
+> ขอระหว่างทำ M14 จึงทำต่อบน branch `feature/confirm-card-play` (commit แยกจาก M14)
+
+- [x] **15.1** `.claude/CLAUDE.md`: ทุกงาน = milestone ใหม่, เริ่มด้วย branch + ลง task ก่อนเขียนโค้ด, จด DECISIONS / แก้ SPEC / บท 14, ปิดงานด้วย check ครบ + ดูหน้าจอ + บันทึกสถานะ + commit `Mxx:` หนึ่งครั้ง, push / merge เฉพาะเมื่อผู้ใช้สั่ง
+- [x] **15.2** skill `/start-task` และ `/finish-task` ใน `.claude/skills/` (ขั้นตอนเปิด / ปิดงานแบบทำตามได้ทีละข้อ)
+- [x] **15.3** บันทึกย้อนหลังงานหลัง M13 ที่ commit ไปก่อนมีกฎ (หัวข้อ "งานหลัง M13 ก่อนมีกฎลง task")
+- [x] **15.4** ใช้กฎกับ M14 เป็นงานแรก (task, สถานะ, DECISIONS, SPEC, commit `M14:`)
+
+**เสร็จเมื่อ:** Claude Code เห็น skill `start-task` / `finish-task` ในโปรเจกต์นี้, `pnpm format:check` ผ่าน (รวมไฟล์ใน `.claude/`) และ M14 ปิดตามกฎครบ
+
+> **สถานะ (2026-10-29):** M15 เสร็จ — `.claude/CLAUDE.md`, `.claude/skills/start-task/SKILL.md`, `.claude/skills/finish-task/SKILL.md`
+> (ดู DECISIONS M15) Claude Code โหลด skill ทั้งสองแล้ว, format / lint / typecheck ผ่าน, M14 commit `bc1ad63`
