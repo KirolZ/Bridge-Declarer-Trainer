@@ -341,6 +341,13 @@ export const th = {
     soon: 'เร็ว ๆ นี้',
     read: 'อ่านแล้ว',
     exercisesDone: (done: number, total: number) => `แบบฝึก ${done}/${total}`,
+    /** Parts of the chapter list (M21). */
+    partRead: (read: number, total: number) => `อ่านแล้ว ${read}/${total}`,
+    showPart: (n: number) => `ดู ${n} บท`,
+    hidePart: 'ซ่อน',
+    rulesDone: 'อ่านกฎครบแล้ว — เล่นได้เลย',
+    rulesDoneNote:
+      'เทคนิคการเล่นในบทที่ 7–13 ค่อยกลับมาอ่านหลังจากลองเล่นสักพักก็ได้ ระหว่างเล่นกดปุ่ม ? บนโต๊ะเพื่อเปิดคู่มือได้ตลอด',
     backToChapters: 'กลับไปรายการบท',
     pending: (topic: string) => `บทนี้ยังเขียนไม่เสร็จ — เรื่องที่จะมี: ${topic}`,
     exercises: 'แบบฝึก',

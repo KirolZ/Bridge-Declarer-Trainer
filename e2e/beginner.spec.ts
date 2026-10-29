@@ -97,6 +97,10 @@ test('beginner mode: tips, why a card cannot be played, the ? panel, the score e
   await expect(
     panel.getByRole('heading', { name: 'Declarer, dummy และฝั่งป้องกัน' }),
   ).toBeVisible();
+  // The chapter picker groups the chapters by part (M21).
+  await expect(panel.locator('optgroup')).toHaveCount(3);
+  await expect(panel.locator('optgroup').first()).toHaveAttribute('label', 'กฎการเล่น');
+  await expect(panel.locator('optgroup[label="เทคนิคการเล่น"] option')).toHaveCount(7);
   await panel.getByRole('button', { name: 'บทถัดไป →' }).click();
   await expect(panel).toHaveAttribute('data-chapter', '6');
   await noSideScroll(page);

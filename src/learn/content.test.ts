@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { SEATS, parseHand, trickWinner } from '../engine';
-import { CHAPTERS, chaptersIn } from './chapters';
+import { CHAPTERS, PARTS, chaptersIn, partOf, partsIn } from './chapters';
 import { trickPlays } from './exercise';
 import { EXERCISES, exercisesIn } from './exercises';
 import { GLOSSARY, glossaryEntry, glossaryIn } from './glossary';
@@ -98,6 +98,24 @@ describe('chapters', () => {
       expect(c.title.trim()).not.toBe('');
       expect(c.topic.trim()).not.toBe('');
     }
+  });
+
+  it('fall into parts (M21): every chapter in exactly one, in reading order', () => {
+    expect(PARTS.map((p) => p.id)).toEqual(['rules', 'technique', 'app']);
+    expect(PARTS.flatMap((p) => p.chapters)).toEqual(CHAPTERS.map((c) => c.n));
+    // The rules are what a new player needs before the first hand: chapters 1–6.
+    expect(PARTS[0]!.chapters).toEqual([1, 2, 3, 4, 5, 6]);
+    for (const p of PARTS) {
+      expect(p.title.trim()).not.toBe('');
+      expect(p.note.trim()).not.toBe('');
+    }
+    expect(partOf(6)?.id).toBe('rules');
+    expect(partOf(7)?.id).toBe('technique');
+    expect(partOf(14)?.id).toBe('app');
+    expect(partOf(15)).toBeUndefined();
+    expect(partsIn('en').map((p) => [p.id, p.chapters])).toEqual(
+      PARTS.map((p) => [p.id, p.chapters]),
+    );
   });
 
   describe.each(CHAPTERS.filter((c) => c.blocks.length > 0).map((c) => [c.n, c] as const))(
@@ -199,6 +217,7 @@ describe('glossary', () => {
         ...(e.kind === 'play' ? e.wrong.map((w) => w.why) : []),
       ]),
       ...GLOSSARY.map((e) => e.text),
+      ...PARTS.flatMap((p) => [p.title, p.note]),
     ];
     const unknown = new Set<string>();
     for (const text of texts) {
@@ -314,6 +333,7 @@ describe('the guide in English (M18)', () => {
       ].map((text) => ({ where: e.id, text })),
     ),
     ...glossary.map((e) => ({ where: e.id, text: e.text })),
+    ...partsIn('en').flatMap((p) => [p.title, p.note].map((text) => ({ where: p.id, text }))),
   ];
 
   it('has the same chapters, exercises and terms as the Thai guide', () => {

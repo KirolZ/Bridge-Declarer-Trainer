@@ -4,7 +4,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useId, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { chapterOf, chaptersIn } from '../../learn';
+import { chapterOf, chaptersIn, partsIn } from '../../learn';
 import { useLanguage, useT } from '../gameStore';
 import { Blocks } from './examples';
 import { TermSheetProvider } from './Rich';
@@ -67,10 +67,14 @@ export function GuidePanel({ chapter: n, onChapter, onClose }: GuidePanelProps) 
               aria-label={t.learn.pickChapter}
               className="mt-0.5 w-full truncate rounded-md bg-black/30 px-2 py-1 text-sm text-white"
             >
-              {chapters.map((c) => (
-                <option key={c.n} value={c.n}>
-                  {t.learn.chapter(c.n)}: {c.title}
-                </option>
+              {partsIn(lang).map((p) => (
+                <optgroup key={p.id} label={p.title}>
+                  {p.chapters.map((m) => (
+                    <option key={m} value={m}>
+                      {t.learn.chapter(m)}: {chapterOf(m, lang)?.title}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>

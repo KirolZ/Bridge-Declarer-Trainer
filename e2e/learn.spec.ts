@@ -40,7 +40,8 @@ test('chapter list, a lesson with terms and examples, progress kept', async ({ p
   await page.goto('/');
   await page.getByRole('link', { name: 'คู่มือ' }).click();
   await expect(page.getByTestId('learn-progress')).toContainText('อ่านแล้ว 0/14 บท');
-  await expect(page.locator('[data-chapter]')).toHaveCount(14);
+  // A new player sees the rules and chapter 14; the technique part is folded (M21).
+  await expect(page.locator('[data-chapter]')).toHaveCount(7);
   await noSideScroll(page);
 
   await page.locator('[data-chapter="2"]').click();
@@ -70,6 +71,74 @@ test('chapter list, a lesson with terms and examples, progress kept', async ({ p
   await expect(page.getByTestId('learn-progress')).toContainText('อ่านแล้ว 1/14 บท');
   await page.reload();
   await expect(page.locator('[data-chapter="2"]')).toHaveAttribute('data-read', 'true');
+  expect(errors).toEqual([]);
+});
+
+test('the chapter list in parts: rules, technique folded until the rules are read (M21)', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto('/#/learn');
+  const rules = page.locator('[data-part="rules"]');
+  const technique = page.locator('[data-part="technique"]');
+  const app = page.locator('[data-part="app"]');
+  await expect(rules.getByRole('heading', { name: 'กฎการเล่น' })).toBeVisible();
+  await expect(rules).toContainText('อ่าน 6 บทนี้ก็เล่นเกมนี้ได้แล้ว');
+  await expect(rules).toContainText('อ่านแล้ว 0/6');
+  await expect(rules.locator('[data-chapter]')).toHaveCount(6);
+  await expect(app.locator('[data-chapter]')).toHaveCount(1);
+  await expect(app.locator('[data-chapter="14"]')).toBeVisible();
+
+  // Folded: one bar, no chapters; it opens and folds by hand.
+  const toggle = page.getByTestId('part-toggle');
+  await expect(technique.getByRole('heading', { name: 'เทคนิคการเล่น' })).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle).toContainText('ดู 7 บท');
+  await expect(technique.locator('[data-chapter]')).toHaveCount(0);
+  await noSideScroll(page);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(technique.locator('[data-chapter]')).toHaveCount(7);
+  // Opened by hand, it stays open after a chapter and back.
+  await technique.locator('[data-chapter="8"]').click();
+  await expect(page.getByText('บทที่ 8 / 14 · เทคนิคการเล่น')).toBeVisible();
+  await page.getByRole('link', { name: 'กลับไปรายการบท' }).first().click();
+  await expect(technique.locator('[data-chapter]')).toHaveCount(7);
+  await toggle.click();
+  await expect(technique.locator('[data-chapter]')).toHaveCount(0);
+
+  // With the rules read, the technique part opens by itself (also after a reload).
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'bridge-trainer.learn.v1',
+      JSON.stringify({ welcomed: true, read: [1, 2, 3, 4, 5, 6] }),
+    ),
+  );
+  await page.reload();
+  await expect(rules).toContainText('อ่านแล้ว 6/6');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(technique.locator('[data-chapter]')).toHaveCount(7);
+  await expect(page.locator('[data-chapter]')).toHaveCount(14);
+  await noSideScroll(page);
+  expect(errors).toEqual([]);
+});
+
+test('the last rules chapter says the rules are enough, and deals a hand (M21)', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  const errors = collectErrors(page);
+  await page.goto('/#/learn/5');
+  await expect(page.getByText('บทที่ 5 / 14 · กฎการเล่น')).toBeVisible();
+  await expect(page.getByTestId('rules-done')).toHaveCount(0);
+  await page.goto('/#/learn/6');
+  const done = page.getByTestId('rules-done');
+  await expect(done).toContainText('อ่านกฎครบแล้ว — เล่นได้เลย');
+  await expect(done).toContainText('บทที่ 7–13');
+  await done.scrollIntoViewIfNeeded();
+  await noSideScroll(page);
+  await done.getByRole('button', { name: 'เริ่มเล่น' }).click();
+  await expect(page).toHaveURL(/#\/play\//, { timeout: 30_000 });
   expect(errors).toEqual([]);
 });
 

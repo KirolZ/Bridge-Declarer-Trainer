@@ -190,8 +190,9 @@ test('framed cards: a frame ring under the card, no drop shadow, and a glow that
       };
     });
   for (const button of ['[data-picked="true"]', '[data-testid="confirm-play-button"]']) {
+    // The picked card is still lifting just after the click: measure once it has settled.
+    await expect.poll(async () => (await framed(button)).out).toEqual([3, 3, 3, 3]);
     const f = await framed(button);
-    expect(f.out).toEqual([3, 3, 3, 3]);
     expect(f.border).toBe('5px');
     expect(f.colour).toBe('rgb(252, 211, 77)');
     expect(f.radius).toBeCloseTo(3, 0);

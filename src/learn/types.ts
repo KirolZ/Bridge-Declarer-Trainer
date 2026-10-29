@@ -72,6 +72,22 @@ export type Chapter<T extends Text = Rich> = {
   readonly blocks: readonly Block<T>[];
 };
 
+/**
+ * A part of the guide (M21): the chapters a new player must read to play (`rules`), the ways to
+ * play well (`technique`, folded until the rules are read) and how to use this game (`app`).
+ */
+export type PartId = 'rules' | 'technique' | 'app';
+
+export type Part<T extends Text = Rich> = {
+  readonly id: PartId;
+  /** Short, also shown above a chapter's title. */
+  readonly title: T;
+  /** One line under the title in the chapter list. */
+  readonly note: T;
+  /** Chapter numbers, in reading order. */
+  readonly chapters: readonly number[];
+};
+
 export type GlossaryEntry<T extends Text = Rich> = {
   /** Used in links: `[[id]]`, `#/learn/glossary?t=<id>`. */
   readonly id: string;

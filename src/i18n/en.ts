@@ -326,6 +326,12 @@ export const en: Messages = {
     soon: 'Coming soon',
     read: 'Read',
     exercisesDone: (done, total) => `Exercises ${done}/${total}`,
+    partRead: (read, total) => `${read}/${total} read`,
+    showPart: (n) => `Show ${n} chapters`,
+    hidePart: 'Hide',
+    rulesDone: 'You know the rules now — go and play',
+    rulesDoneNote:
+      'The playing technique in chapters 7–13 can wait until you have played a few hands. While you play, the ? button on the table opens the guide at any time.',
     backToChapters: 'Back to the chapters',
     pending: (topic) => `This chapter is not written yet — it will cover: ${topic}`,
     exercises: 'Exercises',

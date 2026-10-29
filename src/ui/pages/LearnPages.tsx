@@ -2,19 +2,23 @@
 // #/learn/ex/<id> (an exercise) and #/learn/glossary[?t=<term>].
 
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Language } from '../../game/settings';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import type { Chapter, Exercise } from '../../learn';
+import type { Chapter, Exercise, Part } from '../../learn';
 import {
   CHAPTERS,
   EXERCISES,
   chapterOf,
-  chaptersIn,
   exerciseById,
   exercisesOf,
   glossaryIn,
+  partById,
+  partOf,
+  partsIn,
 } from '../../learn';
-import { learnStore, useLanguage, useLearn, useT } from '../gameStore';
+import { learnStore, useDealNew, useGame, useLanguage, useLearn, useT } from '../gameStore';
+import { DealingOverlay } from '../DealingOverlay';
 import { Blocks } from '../learn/examples';
 import { AnswerExerciseView, LegalExerciseView, PRIMARY, SECONDARY } from '../learn/ExerciseViews';
 import { PlayExerciseView } from '../learn/PlayExerciseView';
@@ -112,16 +116,15 @@ export function LearnPage() {
         <p className="text-sm text-white/70">{t.learn.readInOrder}</p>
       </section>
 
-      <ol className="flex flex-col gap-2">
-        {chaptersIn(lang).map((c) => (
-          <ChapterItem
-            key={c.n}
-            chapter={c}
-            read={progress.read.includes(c.n)}
-            passed={progress.passed}
-          />
-        ))}
-      </ol>
+      {partsIn(lang).map((p) => (
+        <PartSection
+          key={p.id}
+          part={p}
+          lang={lang}
+          readList={progress.read}
+          passed={progress.passed}
+        />
+      ))}
       <Link
         to="/learn/glossary"
         className="rounded-2xl bg-black/25 px-4 py-3 hover:bg-black/40 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
@@ -130,6 +133,119 @@ export function LearnPage() {
         <span className="block text-sm text-white/70">{t.learn.glossaryNote}</span>
       </Link>
     </main>
+  );
+}
+
+/**
+ * Whether the technique part was opened or folded by hand in this visit (M21). Kept outside the
+ * page, so going into a chapter and back does not fold it again; a reload starts afresh.
+ */
+let techniqueOpenedByHand: boolean | undefined;
+
+/**
+ * One part of the chapter list (M21). The technique part is folded for a new player, so the list
+ * shows that six chapters are enough to play; it opens once the rules are read (or a technique
+ * chapter is), and can be opened by hand at any time.
+ */
+function PartSection({
+  part,
+  lang,
+  readList,
+  passed,
+}: {
+  part: Part;
+  lang: Language;
+  readList: readonly number[];
+  passed: readonly string[];
+}) {
+  const t = useT();
+  const headingId = useId();
+  const listId = useId();
+  const foldable = part.id === 'technique';
+  const rulesRead = partById('rules').chapters.every((n) => readList.includes(n));
+  const read = part.chapters.filter((n) => readList.includes(n)).length;
+  const [openByHand, setOpenByHand] = useState(techniqueOpenedByHand);
+  const open = !foldable || (openByHand ?? (rulesRead || read > 0));
+  const toggle = () => {
+    techniqueOpenedByHand = !open;
+    setOpenByHand(!open);
+  };
+
+  return (
+    <section
+      aria-labelledby={headingId}
+      data-part={part.id}
+      data-open={open || undefined}
+      className="flex flex-col gap-2"
+    >
+      <div className="flex items-end gap-3 px-1 pt-2">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <h2 id={headingId} className="text-lg leading-tight font-bold">
+            {part.title}
+          </h2>
+          <p className="text-sm text-white/70">{part.note}</p>
+        </div>
+        <span
+          className={`shrink-0 text-sm tabular-nums ${read === part.chapters.length ? 'text-amber-300' : 'text-white/70'}`}
+        >
+          {t.learn.partRead(read, part.chapters.length)}
+        </span>
+      </div>
+      {foldable && (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          aria-controls={listId}
+          data-testid="part-toggle"
+          className="flex items-center justify-between gap-2 rounded-2xl bg-black/25 px-4 py-3 text-left font-semibold hover:bg-black/40 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
+        >
+          <span>{open ? t.learn.hidePart : t.learn.showPart(part.chapters.length)}</span>
+          <span aria-hidden="true">{open ? '▴' : '▾'}</span>
+        </button>
+      )}
+      {open && (
+        <ol id={listId} className="flex flex-col gap-2">
+          {part.chapters.map((n) => {
+            const c = chapterOf(n, lang);
+            return (
+              c && <ChapterItem key={n} chapter={c} read={readList.includes(n)} passed={passed} />
+            );
+          })}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+/** At the end of the last rules chapter (M21): the rules are enough, go and play. */
+function RulesDone() {
+  const t = useT();
+  const dealNew = useDealNew();
+  const dealing = useGame((s) => s.dealing);
+  const dealError = useGame((s) => s.dealError);
+  return (
+    <section
+      data-testid="rules-done"
+      className="flex flex-col gap-3 rounded-2xl border border-amber-300/40 bg-amber-400/10 p-4"
+    >
+      <h2 className="text-lg font-bold text-amber-200">{t.learn.rulesDone}</h2>
+      <p className="text-white/85">{t.learn.rulesDoneNote}</p>
+      <button
+        type="button"
+        onClick={() => void dealNew()}
+        disabled={dealing}
+        className={`${PRIMARY} self-start`}
+      >
+        {t.home.play}
+      </button>
+      {dealError && (
+        <p role="alert" className="text-sm text-red-300">
+          {t.storeMessage(dealError)}
+        </p>
+      )}
+      <DealingOverlay />
+    </section>
   );
 }
 
@@ -233,7 +349,7 @@ export function LessonPage() {
         <LearnHeader
           back="/learn"
           backLabel={t.learn.backToChapters}
-          kicker={t.learn.chapterOf(n, TOTAL)}
+          kicker={`${t.learn.chapterOf(n, TOTAL)} · ${partOf(n, lang)?.title ?? ''}`}
           title={chapter.title}
         />
         {written ? (
@@ -286,6 +402,8 @@ export function LessonPage() {
             </ol>
           </section>
         )}
+
+        {partById('rules').chapters.at(-1) === n && <RulesDone />}
 
         <nav aria-label={t.learn.lessons} className="mt-2 flex gap-2">
           {prev ? (
