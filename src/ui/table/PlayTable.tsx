@@ -36,7 +36,6 @@ import { ActionBar } from './ActionBar';
 import { ClaimDialog } from './ClaimDialog';
 import { CoachTipView } from './CoachTip';
 import { useCardPick } from './cardPick';
-import { ConfirmPlayBar } from './ConfirmPlayBar';
 import type { BlockedHandler, CardMode, PlayHandler } from './hands';
 import { DummyHand, FaceDownRow, FannedHand, HiddenHand, OpenHand } from './hands';
 import { InfoBar } from './InfoBar';
@@ -44,6 +43,7 @@ import { SEAT_NAME, SEAT_ROLE, cardName, illegalText } from './labels';
 import type { ReviewStatus } from './ResultPanel';
 import { ResultPanel } from './ResultPanel';
 import { ReplayView } from './ReplayView';
+import type { PendingPlay } from './TrickArea';
 import { TrickArea } from './TrickArea';
 
 type SeatTagProps = { seat: Seat; active: boolean; thinking?: boolean; className?: string };
@@ -222,10 +222,8 @@ export function PlayTable() {
       liveHint !== null && seat === owner && liveHint.cards.some((c) => sameCard(c, card));
   const onPlay: PlayHandler = pick.onPlay;
   const picked = pick.picked;
-  const confirmBar = (side: 'above' | 'below') =>
-    picked && (
-      <ConfirmPlayBar card={picked} side={side} onConfirm={pick.confirm} onCancel={pick.cancel} />
-    );
+  const pending: PendingPlay | null =
+    picked && seat ? { seat, card: picked, onConfirm: pick.confirm, onCancel: pick.cancel } : null;
   // Beginner mode: say why the card cannot be played now (SPEC §7.8).
   const onBlocked: BlockedHandler | undefined = beginner
     ? (card) => {
@@ -249,7 +247,7 @@ export function PlayTable() {
   else if (error) status = error;
   else if (shown?.winner) status = `${SEAT_NAME[shown.winner]} กิน trick นี้`;
   else if (blockedText) status = blockedText;
-  else if (picked) status = `ยืนยันด้วยปุ่ม "ลง" หรือกด ${cardName(picked)} อีกครั้ง`;
+  else if (picked) status = `แตะไพ่กลางโต๊ะ หรือกด ${cardName(picked)} อีกครั้งเพื่อลง`;
   else if (liveHint) {
     const short = liveHint.tricks < needed ? ` — ไม่พอแล้ว (ต้องได้ ${needed})` : '';
     status = `คำใบ้: ใบที่ยกขึ้นยังทำได้ ${liveHint.tricks} trick${short}`;
@@ -343,7 +341,6 @@ export function PlayTable() {
               ) : (
                 <FaceDownRow count={hands.N.length} />
               )}
-              {seat === 'N' && confirmBar('below')}
             </section>
 
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
@@ -359,6 +356,7 @@ export function PlayTable() {
                   plays={trickPlays}
                   winner={shown?.winner ?? null}
                   gatherTo={done.at(-1)?.winner ?? null}
+                  pending={pending}
                 />
               </div>
               <section aria-label="East" className="flex flex-col items-center gap-1.5">
@@ -382,7 +380,7 @@ export function PlayTable() {
                   blockedText && status === blockedText
                     ? 'font-semibold text-amber-200'
                     : picked
-                      ? 'font-semibold text-sky-200'
+                      ? 'font-semibold text-amber-100'
                       : liveHint
                         ? 'font-semibold text-emerald-200'
                         : 'text-white/90'
@@ -410,7 +408,6 @@ export function PlayTable() {
                 onPlay={onPlay}
                 onBlocked={onBlocked}
               />
-              {seat === 'S' && confirmBar('above')}
               <SeatTag seat="S" active={active('S')} className="sm:absolute sm:top-2 sm:left-3" />
             </section>
           </div>

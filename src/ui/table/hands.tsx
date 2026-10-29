@@ -57,9 +57,9 @@ function CardButton(props: CardButtonProps) {
       onClick={onClick}
       className={[
         'block rounded-[6px] transition duration-150 outline-none',
-        // A picked card stands out in a colour of its own: South's lifted (within the room the hand
+        // A picked card glows gold like its copy waiting on the table: South's lifted (within the room the hand
         // keeps above it); dummy's slid sideways into the gap, as lifting it hides the card above.
-        picked && 'shadow-[0_0_0_3px_#38bdf8,0_0_18px_5px_rgba(56,189,248,0.7)]',
+        picked && 'shadow-[0_0_0_3px_#fcd34d,0_0_18px_5px_rgba(252,211,77,0.65)]',
         picked && (layout === 'stack' ? '-translate-y-[11%]' : 'translate-x-[12%]'),
         // Lifted as well as outlined, so a hint does not rely on colour alone.
         !picked &&

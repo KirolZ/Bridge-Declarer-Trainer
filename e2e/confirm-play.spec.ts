@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-// Setting "การลงไพ่": tap to play at once (default) or pick a card first and confirm with "ลง".
+// Setting "การลงไพ่": tap to play at once (default) or pick a card first; it waits in its trick
+// slot and is played by tapping it there or by clicking the card in hand again.
 // Same fixed deal as play.spec.ts (seeded deal 5, 3♥ by South).
 const HAND = '/#/play/GNA8WobYT233o4lpzA/3H';
 
@@ -62,7 +63,7 @@ test('confirm mode: pick, change, cancel, then play with the button or a second 
   await page.keyboard.press('Escape');
   await expect(bar(page)).toHaveCount(0);
 
-  // Picking another card moves the pick; "ลง" plays it.
+  // Picking another card moves the pick; tapping it on the table plays it.
   await page.locator(`[data-card="${first}"]`).click(CORNER);
   await page.locator(`[data-card="${last}"]`).click(CORNER);
   await expect(picked(page)).toHaveCount(1);
@@ -99,8 +100,8 @@ test('the setting switches between confirm and tap-to-play', async ({ page }) =>
   await page.goto('/#/settings');
   const group = page.getByRole('group', { name: 'การลงไพ่' });
   await expect(group.getByRole('radio', { name: 'แตะแล้วลงเลย' })).toBeChecked();
-  await group.getByText('แตะเลือก แล้วกด "ลง"').click();
-  await expect(group.getByRole('radio', { name: 'แตะเลือก แล้วกด "ลง"' })).toBeChecked();
+  await group.getByText('แตะเลือก แล้วยืนยัน').click();
+  await expect(group.getByRole('radio', { name: 'แตะเลือก แล้วยืนยัน' })).toBeChecked();
 
   await page.goto(HAND);
   await expect(playable(page).first()).toBeVisible({ timeout: 15_000 });

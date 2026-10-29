@@ -1,6 +1,6 @@
 // "Pick, then confirm" card play (setting `cardPlay: 'confirm'`): the first click on a card picks
-// it, and it is played by the confirm button (ConfirmPlayBar) or by clicking it again; Esc lets
-// go of it. With `cardPlay: 'tap'` a click plays the card at once, as before.
+// it and shows it waiting in its trick slot (TrickArea); tapping it there or clicking the card again
+// plays it, and ✕ / Esc lets go of it. With `cardPlay: 'tap'` a click plays the card at once, as before.
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Card } from '../../engine';

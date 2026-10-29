@@ -42,8 +42,8 @@ const SUIT_ORDER: Readonly<Record<SuitOrder, Omit<Option<SuitOrder>, 'value'>>> 
 const CARD_PLAY: Readonly<Record<CardPlay, Omit<Option<CardPlay>, 'value'>>> = {
   tap: { label: 'แตะแล้วลงเลย', note: 'แตะไพ่ครั้งเดียว ไพ่ลงทันที' },
   confirm: {
-    label: 'แตะเลือก แล้วกด "ลง"',
-    note: 'แตะครั้งแรกเพื่อเลือก (ไพ่มีกรอบสีฟ้า) แล้วกดปุ่ม "ลง" หรือแตะใบเดิมซ้ำ กันลงผิดใบ — ✕ หรือ Esc เพื่อยกเลิก',
+    label: 'แตะเลือก แล้วยืนยัน',
+    note: 'แตะครั้งแรก ไพ่จะไปรอกลางโต๊ะ แล้วแตะไพ่กลางโต๊ะ (หรือใบเดิมซ้ำ) เพื่อลงจริง กันลงผิดใบ — ✕ หรือ Esc เพื่อยกเลิก',
   },
 };
 

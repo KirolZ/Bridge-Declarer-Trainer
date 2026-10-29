@@ -28,7 +28,6 @@ import { CardText, DummyHand, FannedHand, OpenHand } from '../table/hands';
 import { SEAT_NAME, SEAT_ROLE } from '../table/labels';
 import type { CardPick } from '../table/cardPick';
 import { useCardPick } from '../table/cardPick';
-import { ConfirmPlayBar } from '../table/ConfirmPlayBar';
 import { TrickArea } from '../table/TrickArea';
 import { Explanation, Feedback, PRIMARY, SECONDARY } from './ExerciseViews';
 import { Rich, SuitSymbol } from './Rich';
@@ -90,15 +89,14 @@ function Board({
   const hands = remainingHands(play);
   const trump = play.contract.strain;
   const picked = pick?.picked ?? null;
-  const confirmBar = (side: 'above' | 'below') =>
-    pick &&
-    picked && (
-      <ConfirmPlayBar card={picked} side={side} onConfirm={pick.confirm} onCancel={pick.cancel} />
-    );
+  const pending =
+    pick && picked && active
+      ? { seat: active, card: picked, onConfirm: pick.confirm, onCancel: pick.cancel }
+      : null;
   return (
     <div className="table-felt mx-auto w-full max-w-2xl" style={{ containerType: 'inline-size' }}>
       <div className="exercise-cards flex flex-col gap-2 p-2 sm:p-3">
-        <section aria-label="North (dummy)" className="relative flex flex-col items-center gap-1">
+        <section aria-label="North (dummy)" className="flex flex-col items-center gap-1">
           <SeatLabel seat="N" active={active === 'N'} />
           <DummyHand
             cards={hands.N}
@@ -108,7 +106,6 @@ function Board({
             picked={picked}
             onPlay={onPlay}
           />
-          {active === 'N' && confirmBar('below')}
         </section>
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
           {(['W', 'E'] as const).map((s) => (
@@ -128,10 +125,11 @@ function Board({
               plays={shown ? shown.plays : currentTrick(play)}
               winner={shown?.winner ?? null}
               gatherTo={done.at(-1)?.winner ?? null}
+              pending={pending}
             />
           </div>
         </div>
-        <section aria-label="South (คุณ)" className="relative flex flex-col items-center gap-1">
+        <section aria-label="South (คุณ)" className="flex flex-col items-center gap-1">
           <FannedHand
             cards={hands.S}
             trump={trump}
@@ -140,7 +138,6 @@ function Board({
             picked={picked}
             onPlay={onPlay}
           />
-          {active === 'S' && confirmBar('above')}
           <SeatLabel seat="S" active={active === 'S'} />
         </section>
       </div>
