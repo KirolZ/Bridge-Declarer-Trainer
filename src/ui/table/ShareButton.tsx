@@ -1,9 +1,10 @@
-// "แชร์มือนี้" (SPEC §4.4, §7.5): copies the link of the hand (deal + contract + vulnerability).
+// Share this hand (SPEC §4.4, §7.5): copies the link of the hand (deal + contract + vulnerability).
 // If the clipboard is blocked, the link is shown selected so it can be copied by hand.
 
 import { useEffect, useRef, useState } from 'react';
 import type { HandSetup } from '../../game/playStore';
 import { handPath } from '../../game/playStore';
+import { useT } from '../gameStore';
 
 /** Absolute link of `hand` for the page this app is served from. */
 function shareUrl(hand: HandSetup): string {
@@ -37,6 +38,7 @@ async function copyText(text: string): Promise<boolean> {
 type ShareButtonProps = { hand: HandSetup; className: string };
 
 export function ShareButton({ hand, className }: ShareButtonProps) {
+  const t = useT();
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const input = useRef<HTMLInputElement>(null);
   const url = shareUrl(hand);
@@ -55,14 +57,14 @@ export function ShareButton({ hand, className }: ShareButtonProps) {
         className={className}
         onClick={() => void copyText(url).then((ok) => setState(ok ? 'copied' : 'failed'))}
       >
-        {state === 'copied' ? '✓ คัดลอกลิงก์แล้ว' : '🔗 แชร์มือนี้'}
+        {state === 'copied' ? t.share.copied : t.share.share}
       </button>
       <span className="sr-only" role="status">
-        {state === 'copied' ? 'คัดลอกลิงก์ของมือนี้แล้ว' : ''}
+        {state === 'copied' ? t.share.copiedStatus : ''}
       </span>
       {state === 'failed' && (
         <label className="flex w-full basis-full flex-col gap-1 text-left text-xs text-white/75">
-          คัดลอกอัตโนมัติไม่ได้ — คัดลอกลิงก์นี้เอง
+          {t.share.failed}
           <input
             ref={input}
             readOnly

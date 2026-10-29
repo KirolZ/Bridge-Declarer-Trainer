@@ -9,6 +9,7 @@ import type { Suit } from '../../engine';
 import { SUIT_INFO } from '../../engine';
 import type { Inline } from '../../learn';
 import { glossaryEntry, parseInline } from '../../learn';
+import { useT } from '../gameStore';
 import { CardText } from '../table/hands';
 
 /** Opens the term sheet; null outside a `TermSheetProvider` (terms then link to the glossary). */
@@ -16,10 +17,11 @@ const OpenTerm = createContext<((id: string) => void) | null>(null);
 
 export function SuitSymbol({ suit }: { suit: Suit }) {
   const info = SUIT_INFO[suit];
+  const t = useT();
   return (
     <span
       role="img"
-      aria-label={info.thaiName}
+      aria-label={t.suitName[suit]}
       className={info.red ? 'text-red-300' : 'text-white'}
     >
       {info.symbol}
@@ -84,6 +86,7 @@ export function Rich({ text }: { text: string }) {
 /** The definition of a term, at the bottom of the screen. Esc, ✕ or a click elsewhere closes it. */
 function TermSheet({ id, onClose }: { id: string; onClose: () => void }) {
   const entry = glossaryEntry(id);
+  const t = useT();
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
@@ -126,7 +129,7 @@ function TermSheet({ id, onClose }: { id: string; onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            aria-label="ปิด"
+            aria-label={t.common.close}
             className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
           >
             ✕
@@ -138,11 +141,11 @@ function TermSheet({ id, onClose }: { id: string; onClose: () => void }) {
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {entry.chapter !== undefined && (
             <Link to={`/learn/${entry.chapter}`} className="text-amber-200 hover:underline">
-              บทที่ {entry.chapter}
+              {t.learn.chapter(entry.chapter)}
             </Link>
           )}
           <Link to={`/learn/glossary?t=${entry.id}`} className="text-amber-200 hover:underline">
-            อภิธานศัพท์ทั้งหมด
+            {t.learn.allTerms}
           </Link>
         </div>
       </motion.div>

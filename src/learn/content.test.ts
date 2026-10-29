@@ -168,7 +168,8 @@ describe('glossary', () => {
   it('explains every English word the guide uses (TASKS 12.6)', () => {
     // Bridge terms stay in English (SPEC §7.7), so any English word in the guide must be a
     // glossary term or one of its aliases. Words that are not bridge terms are listed here.
-    const notTerms = ['north', 'east', 'south', 'west', 'bridge'];
+    // TH / EN: the language switch (chapter 14, M17).
+    const notTerms = ['north', 'east', 'south', 'west', 'bridge', 'th', 'en'];
     // Named in the `suit` entry.
     const suitNames = ['spade', 'heart', 'diamond', 'club'];
     const known = new Set([

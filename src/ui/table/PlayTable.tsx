@@ -30,6 +30,7 @@ import {
   useGame,
   useLearn,
   useSettings,
+  useT,
 } from '../gameStore';
 import { GuidePanel } from '../learn/GuidePanel';
 import { ActionBar } from './ActionBar';
@@ -39,7 +40,7 @@ import { useCardPick } from './cardPick';
 import type { BlockedHandler, CardMode, PlayHandler } from './hands';
 import { DummyHand, FaceDownRow, FannedHand, HiddenHand, OpenHand } from './hands';
 import { InfoBar } from './InfoBar';
-import { SEAT_NAME, SEAT_ROLE, cardName, illegalText } from './labels';
+import { SEAT_NAME } from './labels';
 import type { ReviewStatus } from './ResultPanel';
 import { ResultPanel } from './ResultPanel';
 import { ReplayView } from './ReplayView';
@@ -49,6 +50,7 @@ import { TrickArea } from './TrickArea';
 type SeatTagProps = { seat: Seat; active: boolean; thinking?: boolean; className?: string };
 
 function SeatTag({ seat, active, thinking, className }: SeatTagProps) {
+  const t = useT();
   return (
     <span
       data-seat={seat}
@@ -61,9 +63,9 @@ function SeatTag({ seat, active, thinking, className }: SeatTagProps) {
         className,
       ].join(' ')}
     >
-      {SEAT_ROLE[seat]}
+      {t.seatRole[seat]}
       {thinking && (
-        <span className="inline-flex gap-0.5" aria-label="กำลังคิด">
+        <span className="inline-flex gap-0.5" aria-label={t.table.seatThinking}>
           {[0, 1, 2].map((i) => (
             <span
               key={i}
@@ -104,6 +106,7 @@ function reviewStatus(complete: boolean, failed: boolean): ReviewStatus {
 
 export function PlayTable() {
   const state = useGame((s) => s);
+  const t = useT();
   const { hand, play, trickPause, botThinking, error, notice, hint, studyMode, epoch } = state;
   const dealing = useGame((s) => s.dealing);
   const dealNew = useDealNew();
@@ -114,7 +117,7 @@ export function PlayTable() {
   /** Trick on show in the replay (1-based), or null for the summary. */
   const [replayTrick, setReplayTrick] = useState<number | null>(null);
   const [reviewFailed, setReviewFailed] = useState(false);
-  /** Bumped by "ลองใหม่" on a failed review. */
+  /** Bumped by "try again" on a failed review. */
   const [reviewTry, setReviewTry] = useState(0);
   /** Chapter open in the guide panel, or null when closed. */
   const [guide, setGuide] = useState<number | null>(null);
@@ -229,11 +232,11 @@ export function PlayTable() {
     ? (card) => {
         if (trickPause || over || !seat) return;
         let text: string;
-        if (!playerTurn) text = `รอ ${SEAT_NAME[seat]} ลงก่อน`;
+        if (!playerTurn) text = t.table.waitFor(seat);
         else {
           const reason = illegalReason(play, card);
           if (!reason) return;
-          text = illegalText(reason, hands.N.some((c) => sameCard(c, card)) ? 'N' : 'S');
+          text = t.illegal(reason, hands.N.some((c) => sameCard(c, card)) ? 'N' : 'S');
         }
         setBlocked({ at: plays, text });
       }
@@ -244,16 +247,14 @@ export function PlayTable() {
 
   let status = '';
   if (over) status = '';
-  else if (error) status = error;
-  else if (shown?.winner) status = `${SEAT_NAME[shown.winner]} กิน trick นี้`;
+  else if (error) status = t.storeMessage(error);
+  else if (shown?.winner) status = t.table.wonTrick(shown.winner);
   else if (blockedText) status = blockedText;
-  else if (picked) status = `แตะไพ่กลางโต๊ะ หรือกด ${cardName(picked)} อีกครั้งเพื่อลง`;
-  else if (liveHint) {
-    const short = liveHint.tricks < needed ? ` — ไม่พอแล้ว (ต้องได้ ${needed})` : '';
-    status = `คำใบ้: ใบที่ยกขึ้นยังทำได้ ${liveHint.tricks} trick${short}`;
-  } else if (seat === 'N') status = 'ถึงตา dummy — กดไพ่ของ North ด้านบน';
-  else if (seat === 'S') status = 'ถึงตาคุณ — ลงไพ่จากมือ South';
-  else if (seat) status = `${SEAT_NAME[seat]} กำลังคิด…`;
+  else if (picked) status = t.table.confirmStatus(t.cardName(picked));
+  else if (liveHint) status = t.table.hintStatus(liveHint.tricks, needed);
+  else if (seat === 'N') status = t.table.dummyTurn;
+  else if (seat === 'S') status = t.table.yourTurn;
+  else if (seat) status = t.table.botThinking(seat);
 
   const defender = (s: 'W' | 'E') =>
     studyMode ? (
@@ -293,13 +294,13 @@ export function PlayTable() {
           className="flex items-start gap-2 bg-amber-300 px-3 py-2 text-sm text-black"
           role="status"
         >
-          <span className="flex-1">{notice}</span>
+          <span className="flex-1">{t.storeMessage(notice)}</span>
           <button
             type="button"
             onClick={() => gameStore.getState().dismissNotice()}
             className="rounded px-2 font-semibold hover:bg-black/10"
           >
-            ปิด
+            {t.common.close}
           </button>
         </div>
       )}
@@ -367,7 +368,7 @@ export function PlayTable() {
             </div>
 
             <section
-              aria-label="South (คุณ)"
+              aria-label={t.seatRole.S}
               data-turn={active('S') || undefined}
               className={[
                 'relative flex flex-col items-center gap-1.5 rounded-2xl p-1.5 transition-colors',
@@ -396,7 +397,7 @@ export function PlayTable() {
                     onClick={() => gameStore.getState().retry()}
                     className="ml-2 rounded bg-white/15 px-2 py-0.5 hover:bg-white/25"
                   >
-                    ลองใหม่
+                    {t.common.retry}
                   </button>
                 )}
               </p>
@@ -416,7 +417,7 @@ export function PlayTable() {
       </main>
 
       <p className="sr-only" aria-live="polite">
-        {last ? `${SEAT_NAME[last.seat]} ลง ${cardName(last.card)}` : ''}
+        {last ? t.table.played(last.seat, t.cardName(last.card)) : ''}
       </p>
       {claimOpen && playerTurn && (
         <ClaimDialog

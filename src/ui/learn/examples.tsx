@@ -6,9 +6,9 @@ import type { Card, PlayedCard, Seat, Strain } from '../../engine';
 import { SEATS, cardCode, parseHand, trickWinner } from '../../engine';
 import type { Block } from '../../learn';
 import { parseCardList, trickPlays } from '../../learn';
-import { useSuitOrder } from '../gameStore';
+import { useSuitOrder, useT } from '../gameStore';
 import { OpenHand } from '../table/hands';
-import { SEAT_NAME, cardName } from '../table/labels';
+import { SEAT_NAME } from '../table/labels';
 import { sortForDisplay } from '../table/layout';
 import { PlayingCard } from '../table/PlayingCard';
 import { Rich } from './Rich';
@@ -28,10 +28,11 @@ function Figure({ caption, children }: { caption?: string; children: ReactNode }
 
 /** Cards side by side, as given. */
 export function CardRow({ cards }: { cards: readonly Card[] }) {
+  const t = useT();
   return (
     <div
       role="img"
-      aria-label={cards.map(cardName).join(', ')}
+      aria-label={cards.map(t.cardName).join(', ')}
       className="flex flex-wrap justify-center gap-1.5"
     >
       {cards.map((c) => (
@@ -44,10 +45,11 @@ export function CardRow({ cards }: { cards: readonly Card[] }) {
 /** A hand sorted and fanned, overlapped just enough to fit the width. */
 export function HandFan({ cards, seat }: { cards: readonly Card[]; seat?: Seat }) {
   const order = useSuitOrder();
+  const t = useT();
   const sorted = sortForDisplay(cards, 'NT', order);
   const gaps = Math.max(sorted.length - 1, 1);
   const step = `min(calc(var(--card-w) * 0.6), calc((100cqw - var(--card-w)) / ${gaps}))`;
-  const label = `${seat ? `${SEAT_NAME[seat]}: ` : ''}${sorted.map(cardName).join(', ')}`;
+  const label = `${seat ? `${SEAT_NAME[seat]}: ` : ''}${sorted.map(t.cardName).join(', ')}`;
   return (
     <div className="flex w-full flex-col items-center gap-1">
       {seat && <span className="text-xs font-semibold text-white/70">{SEAT_NAME[seat]}</span>}
@@ -95,6 +97,7 @@ type TrickDiagramProps = {
 /** A trick around the table: cards numbered in play order, the winner highlighted. */
 export function TrickDiagram({ plays, trump, showWinner = true, toPlay }: TrickDiagramProps) {
   const winner = showWinner && plays.length === 4 ? trickWinner(plays, trump) : null;
+  const t = useT();
   return (
     <div
       className="grid items-center justify-items-center gap-x-2 gap-y-1"
@@ -109,7 +112,7 @@ export function TrickDiagram({ plays, trump, showWinner = true, toPlay }: TrickD
         className="grid size-full place-items-center text-center text-[11px] leading-tight text-white/60"
         style={{ gridArea: '2 / 2 / 3 / 3' }}
       >
-        {plays[0] ? `${SEAT_NAME[plays[0].seat]} นำ` : ''}
+        {plays[0] ? t.learn.led(plays[0].seat) : ''}
       </div>
       {SEATS.map((seat) => {
         const i = plays.findIndex((p) => p.seat === seat);
@@ -125,12 +128,12 @@ export function TrickDiagram({ plays, trump, showWinner = true, toPlay }: TrickD
               className={`text-[11px] font-semibold whitespace-nowrap ${won ? 'text-amber-300' : 'text-white/70'}`}
             >
               {SEAT_NAME[seat]}
-              {won && ' · กิน'}
+              {won && t.learn.wins}
             </span>
             {p ? (
               <div
                 className={`relative rounded-[6px] ${won ? 'shadow-[0_0_0_3px_#fcd34d,0_0_14px_3px_rgba(252,211,77,0.55)]' : ''}`}
-                aria-label={`${i + 1}. ${SEAT_NAME[seat]}: ${cardName(p.card)}${won ? ' (กิน)' : ''}`}
+                aria-label={`${i + 1}. ${SEAT_NAME[seat]}: ${t.cardName(p.card)}${won ? t.learn.winsLabel : ''}`}
                 role="img"
                 data-trick-seat={seat}
               >
@@ -146,7 +149,7 @@ export function TrickDiagram({ plays, trump, showWinner = true, toPlay }: TrickD
               <div
                 className={`grid place-items-center rounded-[6px] border-2 border-dashed text-lg font-bold ${toPlay === seat ? 'border-amber-300 text-amber-300' : 'border-white/20 text-transparent'}`}
                 style={{ width: 'var(--card-w)', aspectRatio: '5 / 7' }}
-                aria-label={toPlay === seat ? `${SEAT_NAME[seat]}: ถึงตา` : undefined}
+                aria-label={toPlay === seat ? t.learn.toPlay(seat) : undefined}
               >
                 ?
               </div>

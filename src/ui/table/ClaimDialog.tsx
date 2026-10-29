@@ -5,6 +5,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import type { ClaimOutcome } from '../../game/playStore';
+import { useT } from '../gameStore';
 
 type ClaimDialogProps = {
   /** Tricks still to play (the current one included). */
@@ -21,6 +22,7 @@ const STEP =
   'grid size-10 place-items-center rounded-lg bg-white/10 text-xl hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none disabled:opacity-40';
 
 export function ClaimDialog({ left, won, needed, checking, onClaim, onClose }: ClaimDialogProps) {
+  const t = useT();
   const [tricks, setTricks] = useState(left);
   const [rejected, setRejected] = useState(false);
   const submit = useRef<HTMLButtonElement>(null);
@@ -65,28 +67,25 @@ export function ClaimDialog({ left, won, needed, checking, onClaim, onClose }: C
         {rejected ? (
           <>
             <p className="text-red-200" role="alert" data-testid="claim-rejected">
-              Claim ไม่ผ่าน — ฝั่งป้องกันยังมีทางกิน
+              {t.claim.rejected}
             </p>
-            <p className="text-sm text-white/70">เล่นต่อจากตรงนี้ได้เลย</p>
+            <p className="text-sm text-white/70">{t.claim.goOnNote}</p>
             <button
               ref={goOn}
               type="button"
               onClick={onClose}
               className="w-full rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
             >
-              เล่นต่อ
+              {t.claim.goOn}
             </button>
           </>
         ) : (
           <>
-            <p className="text-sm text-white/80">
-              จะได้อีกกี่ trick จาก {left} trick ที่เหลือ?
-              ระบบจะตรวจว่าฝั่งป้องกันเล่นดีที่สุดแล้วยังได้ตามนั้นไหม
-            </p>
+            <p className="text-sm text-white/80">{t.claim.question(left)}</p>
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                aria-label="ลด"
+                aria-label={t.claim.fewer}
                 className={STEP}
                 disabled={tricks <= 0 || checking}
                 onClick={() => setTricks((t) => Math.max(0, t - 1))}
@@ -102,7 +101,7 @@ export function ClaimDialog({ left, won, needed, checking, onClaim, onClose }: C
               </output>
               <button
                 type="button"
-                aria-label="เพิ่ม"
+                aria-label={t.claim.more}
                 className={STEP}
                 disabled={tricks >= left || checking}
                 onClick={() => setTricks((t) => Math.min(left, t + 1))}
@@ -110,10 +109,7 @@ export function ClaimDialog({ left, won, needed, checking, onClaim, onClose }: C
                 +
               </button>
             </div>
-            <p className="text-sm text-white/70">
-              NS จะได้รวม {total} trick (ต้องได้ {needed}) ·{' '}
-              {total >= needed ? 'ทำ contract ได้' : `ขาด ${needed - total}`}
-            </p>
+            <p className="text-sm text-white/70">{t.claim.total(total, needed)}</p>
             <div className="mt-1 flex w-full gap-2">
               <button
                 ref={submit}
@@ -122,14 +118,14 @@ export function ClaimDialog({ left, won, needed, checking, onClaim, onClose }: C
                 disabled={checking}
                 className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
               >
-                {checking ? 'กำลังตรวจ…' : `Claim ${tricks} trick`}
+                {checking ? t.claim.checking : t.claim.submit(tricks)}
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="flex-1 rounded-lg bg-white/10 px-4 py-2 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
               >
-                ยกเลิก
+                {t.common.cancel}
               </button>
             </div>
           </>

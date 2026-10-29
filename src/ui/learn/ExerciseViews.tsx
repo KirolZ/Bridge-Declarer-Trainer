@@ -16,9 +16,9 @@ import {
 } from '../../engine';
 import type { ChoiceExercise, LegalExercise, WinnerExercise } from '../../learn';
 import { exerciseStart, legalAnswer, parseCardList, winnerAnswer } from '../../learn';
-import { useSuitOrder } from '../gameStore';
+import { useSuitOrder, useT } from '../gameStore';
 import { CardText } from '../table/hands';
-import { SEAT_NAME, SEAT_ROLE, illegalText } from '../table/labels';
+import { SEAT_NAME } from '../table/labels';
 import { sortForDisplay } from '../table/layout';
 import { PlayingCard } from '../table/PlayingCard';
 import { CardRow, TrickDiagram } from './examples';
@@ -109,6 +109,8 @@ export function LegalExerciseView({ ex, onPass }: { ex: LegalExercise; onPass: (
   const play = useMemo(() => exerciseStart(ex), [ex]);
   const { seat, cards: legal } = useMemo(() => legalAnswer(ex), [ex]);
   const order = useSuitOrder();
+  const t = useT();
+  const w = t.exercise;
   const hand = sortForDisplay(remainingHand(play, seat), ex.trump, order);
   const [picked, setPicked] = useState<readonly string[]>([]);
   const [result, setResult] = useState<'ok' | 'wrong' | 'shown' | null>(null);
@@ -146,12 +148,10 @@ export function LegalExerciseView({ ex, onPass }: { ex: LegalExercise; onPass: (
         />
       </div>
       <section
-        aria-label={`มือ ${SEAT_ROLE[seat]}`}
+        aria-label={w.hand(t.seatRole[seat])}
         className="learn-cards flex flex-col items-center gap-2"
       >
-        <span className="text-sm font-semibold text-white/80">
-          มือ {SEAT_ROLE[seat]} — กดเลือกใบ
-        </span>
+        <span className="text-sm font-semibold text-white/80">{w.pickCards(t.seatRole[seat])}</span>
         <div className="flex flex-wrap justify-center gap-2 pt-2">
           {hand.map((c) => (
             <PickCard
@@ -168,17 +168,17 @@ export function LegalExerciseView({ ex, onPass }: { ex: LegalExercise; onPass: (
       {!locked && (
         <div className="flex justify-center">
           <button type="button" onClick={check} disabled={picked.length === 0} className={PRIMARY}>
-            ตรวจคำตอบ
+            {w.check}
           </button>
         </div>
       )}
       {result === 'ok' && (
-        <Feedback tone="ok" title="ถูกต้อง!">
+        <Feedback tone="ok" title={w.right}>
           <Explanation text={ex.explanation} />
         </Feedback>
       )}
       {result === 'shown' && (
-        <Feedback tone="info" title="เฉลย: ใบที่มีเครื่องหมาย ✓ คือใบที่ลงได้">
+        <Feedback tone="info" title={w.legalShown}>
           <Explanation text={ex.explanation} />
           <div>
             <button
@@ -189,29 +189,29 @@ export function LegalExerciseView({ ex, onPass }: { ex: LegalExercise; onPass: (
               }}
               className={SECONDARY}
             >
-              ลองใหม่
+              {t.common.retry}
             </button>
           </div>
         </Feedback>
       )}
       {result === 'wrong' && (
-        <Feedback tone="wrong" title="ยังไม่ถูก">
+        <Feedback tone="wrong" title={w.wrong}>
           <ul className="flex flex-col gap-1 text-sm">
             {wrongPicks.map((c) => {
               const reason = illegalReason(play, c);
               return (
                 <li key={cardCode(c)} data-reason="illegal">
-                  <CardText card={c} /> ลงไม่ได้ — {reason ? illegalText(reason) : ''}
+                  <CardText card={c} /> {w.cannotPlay} {reason ? t.illegal(reason) : ''}
                 </li>
               );
             })}
             {missing.map((c) => (
               <li key={cardCode(c)} data-reason="missing">
-                <CardText card={c} /> ก็ลงได้ แต่ยังไม่ได้เลือก
+                <CardText card={c} /> {w.missed}
               </li>
             ))}
           </ul>
-          <p className="text-sm text-white/70">แก้ที่เลือกแล้วกดตรวจอีกครั้ง หรือดูเฉลย</p>
+          <p className="text-sm text-white/70">{w.fixAndCheck}</p>
           <div>
             <button
               type="button"
@@ -221,7 +221,7 @@ export function LegalExerciseView({ ex, onPass }: { ex: LegalExercise; onPass: (
               }}
               className={SECONDARY}
             >
-              ดูเฉลย
+              {w.showAnswer}
             </button>
           </div>
         </Feedback>
@@ -235,6 +235,7 @@ export function LegalExerciseView({ ex, onPass }: { ex: LegalExercise; onPass: (
 type AnswerProps = { ex: WinnerExercise | ChoiceExercise; onPass: () => void };
 
 export function AnswerExerciseView({ ex, onPass }: AnswerProps) {
+  const w = useT().exercise;
   const { options, answer, show } = useMemo(() => {
     if (ex.kind === 'winner') {
       const trick = completedTricks(exerciseStart(ex)).at(-1)!;
@@ -276,7 +277,7 @@ export function AnswerExerciseView({ ex, onPass }: AnswerProps) {
   return (
     <div className="flex flex-col gap-4">
       {show(done !== null)}
-      <div className="grid grid-cols-2 gap-2" role="group" aria-label="ตัวเลือก">
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label={w.options}>
         {options.map((label, i) => {
           const isWrong = wrong.includes(i);
           const isRight = done !== null && i === answer;
@@ -306,7 +307,7 @@ export function AnswerExerciseView({ ex, onPass }: AnswerProps) {
         })}
       </div>
       {done === 'ok' && (
-        <Feedback tone="ok" title="ถูกต้อง!">
+        <Feedback tone="ok" title={w.right}>
           <Explanation text={ex.explanation} />
         </Feedback>
       )}
@@ -315,7 +316,7 @@ export function AnswerExerciseView({ ex, onPass }: AnswerProps) {
           tone="info"
           title={
             <>
-              เฉลย: <Rich text={options[answer]!} />
+              {w.answer} <Rich text={options[answer]!} />
             </>
           }
         >
@@ -323,10 +324,10 @@ export function AnswerExerciseView({ ex, onPass }: AnswerProps) {
         </Feedback>
       )}
       {done === null && wrong.length > 0 && (
-        <Feedback tone="wrong" title="ยังไม่ใช่ — ลองตัวเลือกอื่น">
+        <Feedback tone="wrong" title={w.tryOther}>
           <div>
             <button type="button" onClick={() => setDone('shown')} className={SECONDARY}>
-              ดูเฉลย
+              {w.showAnswer}
             </button>
           </div>
         </Feedback>

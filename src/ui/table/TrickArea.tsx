@@ -6,7 +6,8 @@ import type { CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Card, PlayedCard, Seat } from '../../engine';
 import { cardCode } from '../../engine';
-import { SEAT_NAME, cardName } from './labels';
+import { useT } from '../gameStore';
+import { SEAT_NAME } from './labels';
 import { PlayingCard } from './PlayingCard';
 
 /** Trick cards are a little smaller than the hands, to keep the table short. */
@@ -58,6 +59,7 @@ export type PendingPlay = {
  * play is always empty.
  */
 function PendingCard({ seat, card, onConfirm }: PendingPlay) {
+  const t = useT();
   return (
     <motion.div
       data-testid="confirm-play"
@@ -70,8 +72,8 @@ function PendingCard({ seat, card, onConfirm }: PendingPlay) {
       <button
         type="button"
         data-testid="confirm-play-button"
-        aria-label={`ลง ${cardName(card)}`}
-        title="แตะเพื่อลง"
+        aria-label={t.table.playCard(t.cardName(card))}
+        title={t.table.tapToPlay}
         // `detail` is 0 when the click came from the keyboard (Enter / Space).
         onClick={(e) => onConfirm(e.detail === 0)}
         className="group relative block cursor-pointer rounded-[6px] outline-none focus-visible:ring-4 focus-visible:ring-white"
@@ -92,7 +94,7 @@ function PendingCard({ seat, card, onConfirm }: PendingPlay) {
         </motion.span>
         <span className="pointer-events-none absolute inset-x-0 -bottom-2.5 flex justify-center">
           <span className="rounded-full bg-amber-300 px-2 py-px text-[11px] font-semibold sm:text-xs whitespace-nowrap text-black shadow-[0_0_10px_rgba(252,211,77,0.6)]">
-            แตะเพื่อลง
+            {t.table.tapToPlay}
           </span>
         </span>
       </button>
@@ -112,11 +114,12 @@ type TrickAreaProps = {
 };
 
 export function TrickArea({ trickNumber, plays, winner, gatherTo, pending }: TrickAreaProps) {
+  const t = useT();
   return (
     <div
       className="relative"
       role="group"
-      aria-label={`trick ที่ ${trickNumber}`}
+      aria-label={t.table.trickNumber(trickNumber)}
       style={{ width: `calc(${TW} * 3.15)`, height: `calc(${TW} * 1.4 * 2.05)` }}
     >
       <AnimatePresence custom={gatherTo} initial={false}>
@@ -133,7 +136,7 @@ export function TrickArea({ trickNumber, plays, winner, gatherTo, pending }: Tri
             <motion.div
               key={cardCode(p.card)}
               data-trick-card={cardCode(p.card)}
-              aria-label={`${SEAT_NAME[p.seat]}: ${cardName(p.card)}`}
+              aria-label={`${SEAT_NAME[p.seat]}: ${t.cardName(p.card)}`}
               className={[
                 'absolute rounded-[6px] transition-shadow',
                 winner === p.seat &&

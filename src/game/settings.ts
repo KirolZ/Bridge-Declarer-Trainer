@@ -28,6 +28,9 @@ export type BotSpeed = 'slow' | 'normal' | 'fast';
  */
 export type CardPlay = 'tap' | 'confirm';
 
+/** Language of the screens (SPEC §7.6). The first visit is always Thai. */
+export type Language = 'th' | 'en';
+
 export const BOT_PACE: Readonly<Record<BotSpeed, Pace>> = {
   slow: { cardMs: 1000, trickMs: 1400 },
   normal: { cardMs: 500, trickMs: 800 },
@@ -49,6 +52,7 @@ export type Settings = DealSettings & {
    * explains more. Overrides the contract type, difficulty and bot speed while on.
    */
   readonly beginnerMode: boolean;
+  readonly language: Language;
 };
 
 export const CONTRACT_TYPES: readonly ContractType[] = ['any', 'gameUp', 'slam', 'nt', 'suit'];
@@ -57,6 +61,7 @@ export const VULNERABILITIES: readonly Vulnerability[] = ['none', 'ns'];
 export const BOT_SPEEDS: readonly BotSpeed[] = ['slow', 'normal', 'fast'];
 export const SUIT_ORDER_OPTIONS: readonly SuitOrder[] = ['alternate', 'rank'];
 export const CARD_PLAY_OPTIONS: readonly CardPlay[] = ['tap', 'confirm'];
+export const LANGUAGES: readonly Language[] = ['th', 'en'];
 
 export const DEFAULT_DEAL_SETTINGS: DealSettings = {
   contractType: 'any',
@@ -71,6 +76,7 @@ export const DEFAULT_SETTINGS: Settings = {
   studyMode: false,
   cardPlay: 'tap',
   beginnerMode: false,
+  language: 'th',
 };
 
 /** What the next deal uses: the settings, or in beginner mode an easy contract (SPEC §7.8). */
@@ -110,5 +116,6 @@ export function parseSettings(raw: unknown): Settings {
     studyMode: flag(o.studyMode, d.studyMode),
     cardPlay: pick(o.cardPlay, CARD_PLAY_OPTIONS, d.cardPlay),
     beginnerMode: flag(o.beginnerMode, d.beginnerMode),
+    language: pick(o.language, LANGUAGES, d.language),
   };
 }

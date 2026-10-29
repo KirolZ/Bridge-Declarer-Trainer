@@ -8,7 +8,7 @@ import type { Strain } from '../../engine';
 import { SUIT_INFO, strainSymbol } from '../../engine';
 import type { StatLine } from '../../game/stats';
 import { statTotals } from '../../game/stats';
-import { statsStore, useStats } from '../gameStore';
+import { statsStore, useStats, useT } from '../gameStore';
 import { NotSavedNotice, PageHeader } from './PageHeader';
 
 const pct = (part: number, whole: number) => `${Math.round((part / whole) * 100)}%`;
@@ -23,6 +23,7 @@ type RowProps = { id: string; label: ReactNode; line: StatLine; strong?: boolean
 
 function Row({ id, label, line, strong }: RowProps) {
   const empty = line.hands === 0;
+  const t = useT();
   return (
     <tr
       data-row={id}
@@ -46,7 +47,8 @@ function Row({ id, label, line, strong }: RowProps) {
         {line.lost}
         {!empty && (
           <span className="block text-[11px] font-normal text-white/60">
-            {avg(line.lost, line.hands)}/มือ
+            {avg(line.lost, line.hands)}
+            {t.stats.perHand}
           </span>
         )}
       </td>
@@ -54,7 +56,8 @@ function Row({ id, label, line, strong }: RowProps) {
         {line.hints}
         {!empty && (
           <span className="block text-[11px] font-normal text-white/60">
-            {avg(line.hints, line.hands)}/มือ
+            {avg(line.hints, line.hands)}
+            {t.stats.perHand}
           </span>
         )}
       </td>
@@ -65,6 +68,7 @@ function Row({ id, label, line, strong }: RowProps) {
 /** Two presses: the first arms it for a few seconds, the second wipes the stats. */
 function ResetButton() {
   const [armed, setArmed] = useState(false);
+  const t = useT();
   useEffect(() => {
     if (!armed) return;
     const t = setTimeout(() => setArmed(false), 4000);
@@ -81,7 +85,7 @@ function ResetButton() {
         armed ? 'bg-red-600 font-semibold hover:bg-red-500' : 'bg-white/10 hover:bg-white/20'
       }`}
     >
-      {armed ? 'กดอีกครั้งเพื่อล้างสถิติทั้งหมด' : 'ล้างสถิติ'}
+      {armed ? t.stats.resetArmed : t.stats.reset}
     </button>
   );
 }
@@ -90,20 +94,21 @@ export function StatsPage() {
   const stats = useStats((s) => s.stats);
   const persistent = useStats((s) => s.persistent);
   const { all, suit, nt } = statTotals(stats);
+  const t = useT();
 
   return (
     <main className="mx-auto flex max-w-xl flex-col gap-4 px-4 pb-8">
-      <PageHeader title="สถิติ" />
-      {!persistent && <NotSavedNotice what="สถิติ" />}
+      <PageHeader title={t.common.stats} />
+      {!persistent && <NotSavedNotice what={t.stats.notSavedWhat} />}
 
       {all.hands === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl bg-black/25 p-6 text-center">
-          <p data-testid="stats-empty">ยังไม่มีสถิติ — เล่นให้จบสักมือก่อน</p>
+          <p data-testid="stats-empty">{t.stats.empty}</p>
           <Link
             to="/"
             className="rounded-lg bg-white/10 px-4 py-2 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
           >
-            กลับหน้าแรก
+            {t.common.backHome}
           </Link>
         </div>
       ) : (
@@ -113,25 +118,25 @@ export function StatsPage() {
               <thead>
                 <tr className="text-xs text-white/60 sm:text-sm">
                   <th scope="col" className="py-2 text-left font-normal">
-                    <span className="sr-only">ประเภท</span>
+                    <span className="sr-only">{t.stats.kind}</span>
                   </th>
                   <th scope="col" className="px-1 text-right font-normal">
-                    มือ
+                    {t.stats.hands}
                   </th>
                   <th scope="col" className="px-1 text-right font-normal">
-                    ทำได้
+                    {t.stats.made}
                   </th>
                   <th scope="col" className="px-1 text-right font-normal">
-                    เสีย trick
+                    {t.stats.lost}
                   </th>
                   <th scope="col" className="pl-1 text-right font-normal">
-                    คำใบ้
+                    {t.stats.hints}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                <Row id="all" label="ทั้งหมด" line={all} strong />
-                <Row id="suit" label="suit" line={suit} strong />
+                <Row id="all" label={t.stats.all} line={all} strong />
+                <Row id="suit" label={t.stats.suit} line={suit} strong />
                 {(['S', 'H', 'D', 'C'] as const).map((s) => (
                   <Row
                     key={s}
@@ -148,11 +153,7 @@ export function StatsPage() {
               </tbody>
             </table>
           </div>
-          <p className="text-sm text-white/70">
-            "เสีย trick" นับเทียบกับการเล่นที่ดีที่สุด (double dummy) ตามหน้าวิเคราะห์หลังจบมือ ·
-            นับครั้งแรกที่เล่นจบของแต่ละมือ ส่วนการย้อนหรือเล่นมือเดิมซ้ำไม่นับเพิ่ม ·
-            มือที่เปิดโหมดศึกษาไม่นับ
-          </p>
+          <p className="text-sm text-white/70">{t.stats.note}</p>
           <ResetButton />
         </>
       )}

@@ -14,6 +14,8 @@ import type { Settings } from '../game/settings';
 import { BOT_PACE, botSpeedOf, dealSettingsOf } from '../game/settings';
 import { watchHandResults } from '../game/stats';
 import { STORAGE_KEYS, browserStorage } from '../game/storage';
+import type { Messages } from '../i18n';
+import { MESSAGES } from '../i18n';
 import { getSolver } from '../worker';
 
 const storage = browserStorage();
@@ -34,7 +36,14 @@ export const exerciseStore = createPlayStore({
   pace: BOT_PACE[botSpeedOf(initial)],
 });
 
+/** `<html lang>` follows the language setting (screen readers, hyphenation, fonts). */
+function setDocumentLanguage(language: Settings['language']) {
+  if (typeof document !== 'undefined') document.documentElement.lang = language;
+}
+setDocumentLanguage(initial.language);
+
 settingsStore.subscribe(({ settings }, prev) => {
+  if (settings.language !== prev.settings.language) setDocumentLanguage(settings.language);
   const game = gameStore.getState();
   // Beginner mode plays slow whatever the speed setting (SPEC §7.8).
   const speed = botSpeedOf(settings);
@@ -74,6 +83,11 @@ export function useLearn<T>(selector: (state: LearnState) => T): T {
 
 export function useExercise<T>(selector: (state: PlayStoreState) => T): T {
   return useStore(exerciseStore, selector);
+}
+
+/** The screens' text in the language of the settings (SPEC §7.6). */
+export function useT(): Messages {
+  return MESSAGES[useStore(settingsStore, (s) => s.settings.language)];
 }
 
 /** Suit order for the hands on show (a setting). */

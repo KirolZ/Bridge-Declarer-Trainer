@@ -9,6 +9,7 @@ import type { Card, Contract, Vulnerability } from '../../engine';
 import { contractLabel, isDeclarerVulnerable, scoreBreakdown, tricksNeeded } from '../../engine';
 import type { HandSetup } from '../../game/playStore';
 import type { HandReview, Loss } from '../../game/review';
+import { useT } from '../gameStore';
 import { CardText } from './hands';
 import { SEAT_NAME } from './labels';
 import { explainScore } from './scoreExplain';
@@ -41,13 +42,14 @@ type ResultPanelProps = {
 const SECONDARY =
   'flex-1 rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none';
 
-/** "♠K, ♠Q หรือ ♥2" */
-function CardList({ cards }: { cards: readonly Card[] }) {
+/** "♠K, ♠Q or ♥2" */
+export function CardList({ cards }: { cards: readonly Card[] }) {
+  const t = useT();
   return (
     <>
       {cards.map((c, i) => (
         <Fragment key={`${c.suit}${c.rank}`}>
-          {i > 0 && (i === cards.length - 1 ? ' หรือ ' : ', ')}
+          {i > 0 && (i === cards.length - 1 ? t.or : ', ')}
           <CardText card={c} />
         </Fragment>
       ))}
@@ -65,13 +67,14 @@ function ScoreExplain({
   tricks: number;
   vulnerable: boolean;
 }) {
-  const e = explainScore(contract, tricks, vulnerable);
+  const t = useT();
+  const e = explainScore(contract, tricks, vulnerable, t.score);
   const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
   return (
     <section
       className="flex w-full flex-col gap-1.5 rounded-xl bg-black/25 p-3 text-left text-sm"
       data-testid="score-explain"
-      aria-label="ที่มาของแต้ม"
+      aria-label={t.result.scoreSource}
     >
       <p className="leading-relaxed text-white/85">{e.summary}</p>
       <dl className="flex flex-col gap-1">
@@ -85,12 +88,12 @@ function ScoreExplain({
           </div>
         ))}
         <div className="flex items-baseline gap-2 border-t border-white/15 pt-1">
-          <dt className="flex-1 font-semibold">รวม</dt>
+          <dt className="flex-1 font-semibold">{t.result.total}</dt>
           <dd className="font-bold tabular-nums">{signed(e.total)}</dd>
         </div>
       </dl>
       <Link to="/learn/6" className="self-start text-xs text-amber-200 hover:underline">
-        การคิดแต้ม (คู่มือบทที่ 6)
+        {t.result.scoreChapter}
       </Link>
     </section>
   );
@@ -98,18 +101,18 @@ function ScoreExplain({
 
 /** One place where tricks were lost; opens the replay at that trick. */
 export function LossText({ loss }: { loss: Loss }) {
+  const t = useT();
   if (loss.kind === 'card') {
     return (
       <>
-        {SEAT_NAME[loss.seat]} ลง <CardText card={loss.card} /> · ควรลง{' '}
-        <CardList cards={loss.best} />
+        {SEAT_NAME[loss.seat]} {t.result.lossPlayed} <CardText card={loss.card} /> ·{' '}
+        {t.result.lossBetter} <CardList cards={loss.best} />
       </>
     );
   }
   return (
     <>
-      Claim รวม {loss.claimed} trick แต่ยังทำได้ {loss.before} · ควรเล่นต่อ เช่น{' '}
-      <CardList cards={loss.best} />
+      {t.result.lossClaim(loss.claimed, loss.before)} <CardList cards={loss.best} />
     </>
   );
 }
@@ -120,16 +123,17 @@ function ReviewSection(
   },
 ) {
   const { review, reviewStatus, onReplay, onRetry } = props;
+  const t = useT();
   if (reviewStatus === 'failed') {
     return (
       <p className="text-sm text-red-200" data-testid="review" data-status="failed">
-        วิเคราะห์ไม่สำเร็จ{' '}
+        {t.result.reviewFailed}{' '}
         <button
           type="button"
           onClick={onRetry}
           className="ml-1 rounded bg-white/15 px-2 py-0.5 text-white hover:bg-white/25"
         >
-          ลองใหม่
+          {t.common.retry}
         </button>
       </p>
     );
@@ -137,7 +141,7 @@ function ReviewSection(
   if (reviewStatus === 'loading') {
     return (
       <p className="text-sm text-white/70" data-testid="review" data-status="loading">
-        กำลังวิเคราะห์…
+        {t.result.reviewing}
       </p>
     );
   }
@@ -149,7 +153,7 @@ function ReviewSection(
         data-status="ready"
         data-lost="0"
       >
-        เสีย 0 trick — เล่นได้ดีที่สุดแบบ double-dummy ทุกใบ
+        {t.result.perfect}
       </p>
     );
   }
@@ -162,7 +166,7 @@ function ReviewSection(
       aria-labelledby="losses-title"
     >
       <h3 id="losses-title" className="text-center font-semibold text-red-200">
-        เสีย {review.lost} trick เทียบกับ double-dummy
+        {t.result.lost(review.lost)}
       </h3>
       <ul className="flex flex-col gap-1.5">
         {review.losses.map((loss) => (
@@ -175,7 +179,7 @@ function ReviewSection(
               className="flex w-full items-start gap-2 rounded-lg bg-black/25 px-3 py-2 text-left text-sm hover:bg-black/40 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
             >
               <span className="shrink-0 font-semibold whitespace-nowrap text-white/90">
-                trick {loss.trick}
+                {t.result.trick(loss.trick)}
               </span>
               <span className="flex-1 leading-relaxed text-white/85">
                 <LossText loss={loss} />
@@ -187,7 +191,7 @@ function ReviewSection(
           </li>
         ))}
       </ul>
-      <p className="text-center text-xs text-white/55">กดรายการเพื่อดูย้อนหลัง trick นั้น</p>
+      <p className="text-center text-xs text-white/55">{t.result.lossHelp}</p>
     </section>
   );
 }
@@ -198,13 +202,14 @@ export function ResultPanel(props: ResultPanelProps) {
   const result = scoreBreakdown(contract, nsTricks, isDeclarerVulnerable(vulnerability));
   const needed = tricksNeeded(contract);
   const first = useRef<HTMLButtonElement>(null);
+  const t = useT();
   // No scroll: on a phone the buttons are below the fold, the result should stay in view.
   useEffect(() => first.current?.focus({ preventScroll: true }), []);
 
   const notes = [
-    claimed && 'จบด้วย claim',
-    hintsUsed > 0 ? `ใช้คำใบ้ ${hintsUsed} ครั้ง` : 'ไม่ได้ใช้คำใบ้',
-    studied && 'โหมดศึกษา (ไม่นับสถิติ)',
+    claimed && t.result.byClaim,
+    t.result.hints(hintsUsed),
+    studied && t.result.studied,
   ].filter(Boolean);
 
   return (
@@ -229,17 +234,15 @@ export function ResultPanel(props: ResultPanelProps) {
             className={`text-2xl font-bold ${result.made ? 'text-amber-300' : 'text-red-300'}`}
           >
             {result.made
-              ? `ทำ ${contractLabel(contract)} ได้!`
-              : `${contractLabel(contract)} ขาด ${-result.result} trick`}
+              ? t.result.made(contractLabel(contract))
+              : t.result.down(contractLabel(contract), -result.result)}
           </h2>
           <p className="text-white/85" data-testid="result-tricks">
-            ได้ {nsTricks} trick
-            {ddTricks !== null && ` (DD ทำได้ ${ddTricks})`} · ต้องได้ {needed}
-            {result.made && result.result > 0 && ` · เกิน ${result.result}`}
+            {t.result.tricks(nsTricks, ddTricks, needed, result.made ? result.result : 0)}
           </p>
           <p className="text-3xl font-bold tabular-nums" data-testid="score">
             {result.total > 0 ? `+${result.total}` : result.total}
-            <span className="ml-1 text-base font-normal text-white/70">แต้ม</span>
+            <span className="ml-1 text-base font-normal text-white/70">{t.result.points}</span>
           </p>
           {props.beginner && (
             <ScoreExplain
@@ -266,7 +269,7 @@ export function ResultPanel(props: ResultPanelProps) {
 
           <div className="mt-1 flex w-full flex-wrap gap-2">
             <button type="button" onClick={() => props.onReplay(1)} className={SECONDARY}>
-              ▶ ดูย้อนหลัง
+              {t.result.replay}
             </button>
             <ShareButton hand={props.hand} className={SECONDARY} />
           </div>
@@ -277,10 +280,10 @@ export function ResultPanel(props: ResultPanelProps) {
               onClick={props.onNewHand}
               className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
             >
-              แจกไพ่ใหม่
+              {t.table.newDeal}
             </button>
             <button type="button" onClick={props.onRestart} className={SECONDARY}>
-              เล่นมือนี้ใหม่
+              {t.table.restart}
             </button>
           </div>
           <div className="flex w-full gap-2">
@@ -290,10 +293,10 @@ export function ResultPanel(props: ResultPanelProps) {
               aria-keyshortcuts="U"
               className={SECONDARY}
             >
-              ↶ ย้อน{claimed ? ' claim' : 'ใบล่าสุด'}
+              {t.result.undo(claimed)}
             </button>
             <Link to="/" className={SECONDARY}>
-              หน้าแรก
+              {t.common.home}
             </Link>
           </div>
         </motion.div>

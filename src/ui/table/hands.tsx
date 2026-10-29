@@ -5,9 +5,8 @@ import { motion } from 'framer-motion';
 import type { MouseEvent } from 'react';
 import type { Card, Strain } from '../../engine';
 import { SUIT_INFO, cardCode, rankLabel, sameCard } from '../../engine';
-import { useSuitOrder } from '../gameStore';
+import { useSuitOrder, useT } from '../gameStore';
 import type { IndexLayout } from './PlayingCard';
-import { cardName } from './labels';
 import { PlayingCard } from './PlayingCard';
 import { displaySuits, dummyStep, sortForDisplay } from './layout';
 
@@ -35,15 +34,16 @@ type CardButtonProps = {
 function CardButton(props: CardButtonProps) {
   const { card, mode, hinted, picked, layout, onPlay, onBlocked, flipInDelay } = props;
   const playable = mode === 'playable';
+  const t = useT();
   const onClick = (e: MouseEvent) => {
     // `detail` is 0 when the click came from the keyboard (Enter / Space).
     if (playable) onPlay(card, e.detail === 0);
     else onBlocked?.(card);
   };
-  let label = cardName(card);
-  if (mode === 'illegal') label += ' (ลงไม่ได้)';
-  else if (picked) label += ' (เลือกอยู่ — กดอีกครั้งเพื่อลง)';
-  else if (hinted) label += ' (คำใบ้)';
+  let label = t.cardName(card);
+  if (mode === 'illegal') label += t.table.cardIllegal;
+  else if (picked) label += t.table.cardPicked;
+  else if (hinted) label += t.table.cardHinted;
   return (
     <button
       type="button"
@@ -184,8 +184,12 @@ export function DummyHand(props: HandProps) {
 /** A face-down hand: a few stacked backs and the number of cards left. */
 export function HiddenHand({ count, label }: { count: number; label: string }) {
   const shown = Math.min(count, 5);
+  const t = useT();
   return (
-    <div className="flex flex-col items-center gap-1" aria-label={`${label}: ${count} ใบ`}>
+    <div
+      className="flex flex-col items-center gap-1"
+      aria-label={`${label}: ${t.table.cardCount(count)}`}
+    >
       <div
         className="relative"
         style={{ width: 'calc(var(--card-w) * 0.72)', height: 'calc(var(--card-w) * 1.2)' }}
@@ -201,7 +205,7 @@ export function HiddenHand({ count, label }: { count: number; label: string }) {
         ))}
       </div>
       <span className="rounded-full bg-black/40 px-2 text-xs tabular-nums text-white/90">
-        {count} ใบ
+        {t.table.cardCount(count)}
       </span>
     </div>
   );
@@ -233,11 +237,12 @@ export function OpenHand({
   markOf?: (card: Card) => CardMark | undefined;
 }) {
   const order = useSuitOrder();
+  const t = useT();
   const sorted = sortForDisplay(cards, trump, order);
   return (
     <div
       data-open-hand={label}
-      aria-label={`${label}: ${cards.map(cardName).join(', ') || 'ไม่มีไพ่'}`}
+      aria-label={`${label}: ${cards.map(t.cardName).join(', ') || t.table.noCards}`}
       className="max-w-[27cqw] rounded-lg bg-white/95 px-1.5 py-1 text-[11px] leading-snug font-semibold text-black shadow sm:px-2 sm:text-sm"
     >
       {displaySuits(trump, order).map((suit) => {
@@ -273,10 +278,11 @@ export function OpenHand({
 
 /** A card written inline, e.g. ♠K on a white chip (readable on the dark panels). */
 export function CardText({ card }: { card: Card }) {
+  const t = useT();
   return (
     <span
       className="inline-flex items-center rounded bg-white px-1 leading-tight font-semibold whitespace-nowrap text-black"
-      aria-label={cardName(card)}
+      aria-label={t.cardName(card)}
     >
       <span className={SUIT_INFO[card.suit].red ? 'text-suit-red' : 'text-suit-black'}>
         {SUIT_INFO[card.suit].symbol}
@@ -288,8 +294,9 @@ export function CardText({ card }: { card: Card }) {
 
 /** Dummy before the opening lead: still face down, in one overlapped row. */
 export function FaceDownRow({ count }: { count: number }) {
+  const t = useT();
   return (
-    <div className="flex justify-center" aria-label={`dummy ยังคว่ำอยู่: ${count} ใบ`}>
+    <div className="flex justify-center" aria-label={t.table.dummyFaceDown(count)}>
       {Array.from({ length: count }, (_, i) => (
         <div key={i} style={{ marginLeft: i === 0 ? 0 : 'calc(var(--card-w) * -0.78)' }}>
           <PlayingCard card={null} />

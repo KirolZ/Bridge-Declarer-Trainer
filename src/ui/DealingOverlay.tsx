@@ -1,12 +1,13 @@
-// "กำลังแจกไพ่..." while a new hand is dealt and solved (SPEC §7.1 step 6), with a cancel button.
+// "Dealing…" while a new hand is dealt and solved (SPEC §7.1 step 6), with a cancel button.
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
-import { gameStore, useGame } from './gameStore';
+import { gameStore, useGame, useT } from './gameStore';
 
 export function DealingOverlay() {
   const dealing = useGame((s) => s.dealing);
   const cancel = useRef<HTMLButtonElement>(null);
+  const t = useT();
 
   useEffect(() => {
     if (!dealing) return;
@@ -38,7 +39,7 @@ export function DealingOverlay() {
               aria-hidden="true"
             />
             <p id="dealing-title" className="text-lg font-semibold">
-              กำลังแจกไพ่...
+              {t.dealing}
             </p>
             <button
               ref={cancel}
@@ -46,7 +47,7 @@ export function DealingOverlay() {
               onClick={() => gameStore.getState().cancelDeal()}
               className="rounded-lg bg-white/10 px-5 py-2 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
             >
-              ยกเลิก
+              {t.common.cancel}
             </button>
           </div>
         </motion.div>

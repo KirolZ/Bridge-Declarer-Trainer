@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import type { Chapter, Exercise } from '../../learn';
 import { CHAPTERS, EXERCISES, GLOSSARY, chapterOf, exerciseById, exercisesOf } from '../../learn';
-import { learnStore, useLearn } from '../gameStore';
+import { learnStore, useLearn, useT } from '../gameStore';
 import { Blocks } from '../learn/examples';
 import { AnswerExerciseView, LegalExerciseView, PRIMARY, SECONDARY } from '../learn/ExerciseViews';
 import { PlayExerciseView } from '../learn/PlayExerciseView';
@@ -44,11 +44,12 @@ function LearnHeader({
 }
 
 function NotFound({ what }: { what: string }) {
+  const t = useT();
   return (
     <main className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-4 px-4 text-center">
-      <h1 className="text-2xl font-bold">ไม่พบ{what}</h1>
+      <h1 className="text-2xl font-bold">{t.learn.notFound(what)}</h1>
       <Link to="/learn" className={SECONDARY}>
-        ไปที่คู่มือ
+        {t.learn.toGuide}
       </Link>
     </main>
   );
@@ -65,27 +66,31 @@ export function LearnPage() {
   const persistent = useLearn((s) => s.persistent);
   const read = progress.read.filter((n) => chapterOf(n)).length;
   const passed = passedCount(EXERCISES, progress.passed);
+  const t = useT();
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-8">
-      <PageHeader title="คู่มือ" to="/" />
-      {!persistent && <NotSavedNotice what="ความคืบหน้า" />}
-      <section className="flex flex-col gap-2 rounded-2xl bg-black/25 p-4" aria-label="ความคืบหน้า">
+      <PageHeader title={t.common.guide} to="/" />
+      {!persistent && <NotSavedNotice what={t.learn.progressWhat} />}
+      <section
+        className="flex flex-col gap-2 rounded-2xl bg-black/25 p-4"
+        aria-label={t.learn.progress}
+      >
         <p data-testid="learn-progress">
-          อ่านแล้ว{' '}
+          {t.learn.progressRead}{' '}
           <strong>
             {read}/{TOTAL}
           </strong>{' '}
-          บท · แบบฝึกผ่าน{' '}
+          {t.learn.progressPassed}{' '}
           <strong>
             {passed}/{EXERCISES.length}
           </strong>{' '}
-          ข้อ
+          {t.learn.progressEnd}
         </p>
         <div
           className="h-2 overflow-hidden rounded-full bg-white/10"
           role="progressbar"
-          aria-label="บทที่อ่านแล้ว"
+          aria-label={t.learn.chaptersRead}
           aria-valuemin={0}
           aria-valuemax={TOTAL}
           aria-valuenow={read}
@@ -95,7 +100,7 @@ export function LearnPage() {
             style={{ width: `${(read / TOTAL) * 100}%` }}
           />
         </div>
-        <p className="text-sm text-white/70">อ่านเรียงตามลำดับ หรือข้ามไปบทไหนก็ได้</p>
+        <p className="text-sm text-white/70">{t.learn.readInOrder}</p>
       </section>
 
       <ol className="flex flex-col gap-2">
@@ -112,8 +117,8 @@ export function LearnPage() {
         to="/learn/glossary"
         className="rounded-2xl bg-black/25 px-4 py-3 hover:bg-black/40 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
       >
-        <span className="font-semibold">อภิธานศัพท์</span>
-        <span className="block text-sm text-white/70">ศัพท์ bridge ทุกคำพร้อมคำอธิบายภาษาไทย</span>
+        <span className="font-semibold">{t.learn.glossary}</span>
+        <span className="block text-sm text-white/70">{t.learn.glossaryNote}</span>
       </Link>
     </main>
   );
@@ -131,6 +136,7 @@ function ChapterItem({
   const exercises = exercisesOf(chapter.n);
   const done = passedCount(exercises, passed);
   const written = chapter.blocks.length > 0;
+  const t = useT();
   return (
     <li>
       <Link
@@ -149,17 +155,17 @@ function ChapterItem({
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-semibold">
-            <span className="sr-only">บทที่ {chapter.n}: </span>
+            <span className="sr-only">{t.learn.chapter(chapter.n)}: </span>
             {chapter.title}
           </span>
           <span className="truncate text-sm text-white/65">{chapter.topic}</span>
         </span>
         <span className="flex shrink-0 flex-col items-end text-xs text-white/70">
-          {!written && <span className="rounded-full bg-white/10 px-2 py-0.5">เร็ว ๆ นี้</span>}
-          {read && <span className="text-amber-300">อ่านแล้ว</span>}
+          {!written && <span className="rounded-full bg-white/10 px-2 py-0.5">{t.learn.soon}</span>}
+          {read && <span className="text-amber-300">{t.learn.read}</span>}
           {exercises.length > 0 && (
             <span className={done === exercises.length ? 'text-emerald-300' : undefined}>
-              แบบฝึก {done}/{exercises.length}
+              {t.learn.exercisesDone(done, exercises.length)}
             </span>
           )}
         </span>
@@ -200,12 +206,13 @@ export function LessonPage() {
   const written = (chapter?.blocks.length ?? 0) > 0;
   const markRead = useCallback(() => learnStore.getState().markRead(n), [n]);
   const end = useSeen(markRead, written);
+  const t = useT();
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [n]);
 
-  if (!chapter) return <NotFound what="บทนี้" />;
+  if (!chapter) return <NotFound what={t.learn.thisChapter} />;
   const exercises = exercisesOf(n);
   const prev = chapterOf(n - 1);
   const next = chapterOf(n + 1);
@@ -215,8 +222,8 @@ export function LessonPage() {
       <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-24">
         <LearnHeader
           back="/learn"
-          backLabel="กลับไปรายการบท"
-          kicker={`บทที่ ${n} / ${TOTAL}`}
+          backLabel={t.learn.backToChapters}
+          kicker={t.learn.chapterOf(n, TOTAL)}
           title={chapter.title}
         />
         {written ? (
@@ -225,7 +232,7 @@ export function LessonPage() {
           </article>
         ) : (
           <p className="rounded-2xl bg-black/25 p-4 text-white/80" data-testid="lesson-pending">
-            บทนี้ยังเขียนไม่เสร็จ — เรื่องที่จะมี: {chapter.topic}
+            {t.learn.pending(chapter.topic)}
           </p>
         )}
         <div
@@ -237,7 +244,7 @@ export function LessonPage() {
         {exercises.length > 0 && (
           <section aria-labelledby="exercises-title" className="flex flex-col gap-2">
             <h2 id="exercises-title" className="text-lg font-bold">
-              แบบฝึก
+              {t.learn.exercises}
             </h2>
             <ol className="flex flex-col gap-2">
               {exercises.map((e, i) => {
@@ -260,7 +267,7 @@ export function LessonPage() {
                         <Rich text={e.title} />
                       </span>
                       <span className="text-xs text-white/60">
-                        {ok ? 'ผ่านแล้ว' : 'ยังไม่ได้ทำ'}
+                        {ok ? t.learn.passed : t.learn.notDone}
                       </span>
                     </Link>
                   </li>
@@ -270,10 +277,10 @@ export function LessonPage() {
           </section>
         )}
 
-        <nav aria-label="บทเรียน" className="mt-2 flex gap-2">
+        <nav aria-label={t.learn.lessons} className="mt-2 flex gap-2">
           {prev ? (
             <Link to={`/learn/${prev.n}`} className={`${SECONDARY} flex-1 text-left`}>
-              <span className="block text-xs text-white/60">← บทก่อน</span>
+              <span className="block text-xs text-white/60">{t.learn.prevChapter}</span>
               {prev.title}
             </Link>
           ) : (
@@ -281,12 +288,12 @@ export function LessonPage() {
           )}
           {next ? (
             <Link to={`/learn/${next.n}`} className={`${SECONDARY} flex-1 text-right`}>
-              <span className="block text-xs text-white/60">บทถัดไป →</span>
+              <span className="block text-xs text-white/60">{t.learn.nextChapter}</span>
               {next.title}
             </Link>
           ) : (
             <Link to="/learn" className={`${SECONDARY} flex-1 text-right`}>
-              กลับไปรายการบท
+              {t.learn.backToChapters}
             </Link>
           )}
         </nav>
@@ -315,13 +322,14 @@ export function ExercisePage() {
   const passed = useLearn((s) => s.progress.passed.includes(id));
   const [hint, setHint] = useState(false);
   const onPass = useCallback(() => learnStore.getState().markPassed(id), [id]);
+  const t = useT();
 
   useEffect(() => {
     setHint(false);
     window.scrollTo(0, 0);
   }, [id]);
 
-  if (!ex) return <NotFound what="แบบฝึกนี้" />;
+  if (!ex) return <NotFound what={t.learn.thisExercise} />;
   const siblings = exercisesOf(ex.chapter);
   const i = siblings.findIndex((e) => e.id === ex.id);
   const next = siblings[i + 1];
@@ -332,8 +340,8 @@ export function ExercisePage() {
       <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-24">
         <LearnHeader
           back={`/learn/${ex.chapter}`}
-          backLabel={`กลับไปบทที่ ${ex.chapter}`}
-          kicker={`แบบฝึกบทที่ ${ex.chapter} · ข้อ ${i + 1}/${siblings.length}`}
+          backLabel={t.learn.backToChapter(ex.chapter)}
+          kicker={t.learn.exerciseOf(ex.chapter, i + 1, siblings.length)}
           title={<Rich text={ex.title} />}
         />
         <section className="rounded-2xl bg-black/25 p-4 leading-relaxed" data-testid="instruction">
@@ -341,7 +349,7 @@ export function ExercisePage() {
           <div className="mt-2">
             {hint ? (
               <p className="text-sm text-sky-200" data-testid="hint">
-                คำใบ้: <Rich text={ex.hint} />
+                {t.learn.hint} <Rich text={ex.hint} />
               </p>
             ) : (
               <button
@@ -349,7 +357,7 @@ export function ExercisePage() {
                 onClick={() => setHint(true)}
                 className="text-sm text-sky-200 underline underline-offset-4 hover:text-sky-100"
               >
-                ขอคำใบ้
+                {t.learn.askHint}
               </button>
             )}
           </div>
@@ -358,19 +366,19 @@ export function ExercisePage() {
         <ExerciseBody key={ex.id} ex={ex} onPass={onPass} />
 
         <nav
-          aria-label="แบบฝึก"
+          aria-label={t.learn.exercises}
           className="mt-2 flex flex-wrap gap-2"
           data-passed={passed || undefined}
         >
           <Link to={`/learn/${ex.chapter}`} className={`${SECONDARY} flex-1 text-center`}>
-            กลับไปบทที่ {ex.chapter}
+            {t.learn.backToChapter(ex.chapter)}
           </Link>
           {next ? (
             <Link
               to={`/learn/ex/${next.id}`}
               className={`${passed ? PRIMARY : SECONDARY} flex-1 text-center`}
             >
-              ข้อต่อไป →
+              {t.learn.nextExercise}
             </Link>
           ) : (
             nextChapter && (
@@ -378,7 +386,7 @@ export function ExercisePage() {
                 to={`/learn/${nextChapter.n}`}
                 className={`${passed ? PRIMARY : SECONDARY} flex-1 text-center`}
               >
-                บทที่ {nextChapter.n} →
+                {t.learn.toChapter(nextChapter.n)}
               </Link>
             )
           )}
@@ -393,6 +401,7 @@ export function ExercisePage() {
 export function GlossaryPage() {
   const [params] = useSearchParams();
   const focus = params.get('t');
+  const t = useT();
 
   useEffect(() => {
     if (!focus) return;
@@ -402,10 +411,8 @@ export function GlossaryPage() {
   return (
     <TermSheetProvider>
       <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-24">
-        <LearnHeader back="/learn" backLabel="กลับไปคู่มือ" title="อภิธานศัพท์" />
-        <p className="text-white/75">
-          ศัพท์ bridge ใช้ภาษาอังกฤษตามที่คนไทยเล่นกัน เรียงตามตัวอักษร
-        </p>
+        <LearnHeader back="/learn" backLabel={t.learn.backToGuide} title={t.learn.glossary} />
+        <p className="text-white/75">{t.learn.glossaryIntro}</p>
         <dl className="flex flex-col gap-2">
           {GLOSSARY.map((e) => (
             <div
@@ -419,7 +426,7 @@ export function GlossaryPage() {
                 {e.term} <span className="font-normal text-white/70">({e.thai})</span>
                 {e.aliases && (
                   <span className="block text-sm font-normal text-white/60">
-                    คำที่เกี่ยวข้อง: {e.aliases.join(', ')}
+                    {t.learn.related} {e.aliases.join(', ')}
                   </span>
                 )}
               </dt>
@@ -430,7 +437,7 @@ export function GlossaryPage() {
                     to={`/learn/${e.chapter}`}
                     className="ml-2 text-sm whitespace-nowrap text-amber-200 hover:underline"
                   >
-                    บทที่ {e.chapter}
+                    {t.learn.chapter(e.chapter)}
                   </Link>
                 )}
               </dd>

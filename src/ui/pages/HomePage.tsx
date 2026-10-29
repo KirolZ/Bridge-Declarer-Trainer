@@ -5,15 +5,59 @@ import { motion } from 'framer-motion';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SUIT_INFO, SUITS } from '../../engine/card';
+import { LANGUAGES } from '../../game/settings';
+import { LANGUAGE_CODE, LANGUAGE_NAME } from '../../i18n';
 import { CHAPTERS, chapterOf, isFirstVisit } from '../../learn';
 import { getSolver } from '../../worker';
 import { DealingOverlay } from '../DealingOverlay';
-import { learnStore, updateSettings, useDealNew, useGame, useLearn } from '../gameStore';
+import {
+  learnStore,
+  updateSettings,
+  useDealNew,
+  useGame,
+  useLearn,
+  useSettings,
+  useT,
+} from '../gameStore';
 
 const SECONDARY =
   'rounded-lg bg-white/10 px-5 py-2 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none';
 const PRIMARY =
   'rounded-xl bg-amber-400 px-8 py-3 text-lg font-semibold text-black shadow-lg hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60';
+
+/**
+ * TH / EN at the top of the page (SPEC §8). Each button is named in its own language, so a player
+ * who switched by mistake can find the way back.
+ */
+function LanguageSwitch() {
+  const t = useT();
+  const language = useSettings((s) => s.settings.language);
+  return (
+    <div
+      role="group"
+      aria-label={t.common.language}
+      data-testid="language-switch"
+      className="absolute top-3 right-3 flex gap-0.5 rounded-lg bg-black/30 p-0.5 text-sm"
+    >
+      {LANGUAGES.map((l) => (
+        <button
+          key={l}
+          type="button"
+          lang={l}
+          aria-pressed={language === l}
+          aria-label={LANGUAGE_NAME[l]}
+          title={LANGUAGE_NAME[l]}
+          onClick={() => updateSettings({ language: l })}
+          className={`h-8 min-w-10 rounded-md px-2 font-semibold focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none ${
+            language === l ? 'bg-amber-300 text-black' : 'text-white/75 hover:bg-white/15'
+          }`}
+        >
+          {LANGUAGE_CODE[l]}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** First visit: "have you played bridge?" (SPEC §7.7). */
 function Welcome({
@@ -25,6 +69,7 @@ function Welcome({
   onKnown: () => void;
   busy: boolean;
 }) {
+  const t = useT();
   return (
     <section
       aria-labelledby="welcome-title"
@@ -32,12 +77,12 @@ function Welcome({
       className="flex w-full flex-col items-center gap-3 rounded-2xl bg-black/25 p-5"
     >
       <h2 id="welcome-title" className="text-xl font-bold">
-        เคยเล่น bridge ไหม?
+        {t.home.welcomeTitle}
       </h2>
       <div className="flex w-full flex-col gap-2 sm:flex-row">
         <button type="button" onClick={onNew} className={`${PRIMARY} flex-1 px-4 text-base`}>
-          ยังไม่เคย
-          <span className="block text-sm font-normal">เริ่มจากคู่มือ + โหมดมือใหม่</span>
+          {t.home.welcomeNew}
+          <span className="block text-sm font-normal">{t.home.welcomeNewNote}</span>
         </button>
         <button
           type="button"
@@ -45,18 +90,17 @@ function Welcome({
           disabled={busy}
           className={`${SECONDARY} flex-1 py-3 disabled:opacity-60`}
         >
-          เคยเล่นแล้ว
-          <span className="block text-sm text-white/70">เริ่มเล่นเลย</span>
+          {t.home.welcomeKnown}
+          <span className="block text-sm text-white/70">{t.home.welcomeKnownNote}</span>
         </button>
       </div>
-      <p className="text-sm text-white/60">
-        เปลี่ยนใจได้ทุกเมื่อ: คู่มืออยู่ที่หน้านี้ โหมดมือใหม่อยู่ในตั้งค่า
-      </p>
+      <p className="text-sm text-white/60">{t.home.welcomeLater}</p>
     </section>
   );
 }
 
 export function HomePage() {
+  const t = useT();
   const dealNew = useDealNew();
   const dealing = useGame((s) => s.dealing);
   const dealError = useGame((s) => s.dealError);
@@ -78,8 +122,10 @@ export function HomePage() {
   // Load the solver while the player reads the page, so the first deal is quicker.
   useEffect(() => getSolver().warmUp(), []);
 
+  // Bottom padding: the fixed "Created by" line must never cover the credits (a long page scrolls).
   return (
-    <main className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-6 px-4 text-center">
+    <main className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-6 px-4 pt-12 pb-10 text-center sm:pt-0">
+      <LanguageSwitch />
       <motion.h1
         className="text-3xl font-bold"
         initial={{ opacity: 0, y: -12 }}
@@ -87,7 +133,7 @@ export function HomePage() {
       >
         Bridge Declarer Trainer
       </motion.h1>
-      <p className="text-lg text-white/80">ฝึกเดินไพ่ฝั่ง declarer กับบอทที่เห็นไพ่ทุกมือ</p>
+      <p className="text-lg text-white/80">{t.home.tagline}</p>
       <p className="text-4xl tracking-widest" aria-hidden="true">
         {SUITS.map((suit) => (
           <span key={suit} className={SUIT_INFO[suit].red ? 'text-red-400' : 'text-white'}>
@@ -99,29 +145,29 @@ export function HomePage() {
         <Welcome onNew={onNew} onKnown={onKnown} busy={dealing} />
       ) : (
         <button type="button" onClick={() => void dealNew()} disabled={dealing} className={PRIMARY}>
-          เริ่มเล่น
+          {t.home.play}
         </button>
       )}
-      <nav aria-label="เมนูหลัก" className="flex flex-wrap justify-center gap-3">
+      <nav aria-label={t.home.mainMenu} className="flex flex-wrap justify-center gap-3">
         <Link to="/learn" className={`${SECONDARY} flex items-center gap-2`}>
-          คู่มือ
+          {t.common.guide}
           <span
             className="rounded-full bg-black/30 px-2 text-sm tabular-nums text-white/80"
             data-testid="home-guide-progress"
           >
-            {read}/{CHAPTERS.length} บท
+            {t.home.chapters(read, CHAPTERS.length)}
           </span>
         </Link>
         <Link to="/settings" className={SECONDARY}>
-          ตั้งค่า
+          {t.common.settings}
         </Link>
         <Link to="/stats" className={SECONDARY}>
-          สถิติ
+          {t.common.stats}
         </Link>
       </nav>
       {dealError && (
         <p role="alert" className="text-red-300">
-          {dealError}
+          {t.storeMessage(dealError)}
         </p>
       )}
       <DealingOverlay />
@@ -141,7 +187,7 @@ export function HomePage() {
         >
           DDS
         </a>{' '}
-        โดย Bo Haglund, Soren Hein และคณะ ·{' '}
+        {t.home.creditsBy} ·{' '}
         <a href="LICENSE-DDS.txt" target="_blank" className="underline hover:text-white/80">
           Apache-2.0
         </a>

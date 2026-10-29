@@ -62,14 +62,16 @@ export type Hint = {
 
 export type ClaimOutcome = 'accepted' | 'rejected' | 'cancelled';
 
-export const CONTRACT_TYPE_LABEL: Readonly<Record<ContractType, string>> = {
-  any: 'อะไรก็ได้',
-  gameUp: 'game ขึ้นไป',
-  slam: 'slam',
-  nt: 'NT เท่านั้น',
-  suit: 'suit เท่านั้น',
-  noSlam: 'partscore / game',
-};
+/**
+ * An error or notice for the player, as data: the UI words it in the player's language
+ * (src/i18n). `detail` is the solver's own error text.
+ */
+export type StoreMessage =
+  | {
+      readonly kind: 'botFailed' | 'hintFailed' | 'claimFailed' | 'dealFailed';
+      readonly detail: string;
+    }
+  | { readonly kind: 'dealRelaxed'; readonly wanted: ContractType; readonly got: ContractType };
 
 export type PlayStoreState = {
   readonly hand: HandSetup | null;
@@ -88,12 +90,12 @@ export type PlayStoreState = {
   /** A finished trick is on show before it is gathered; no card can be played meanwhile. */
   readonly trickPause: boolean;
   /** The bot could not move (solver error); `retry()` tries again. */
-  readonly error: string | null;
+  readonly error: StoreMessage | null;
   /** One-off message for the table (e.g. the contract type was relaxed). */
-  readonly notice: string | null;
+  readonly notice: StoreMessage | null;
   /** `newHand` is running. */
   readonly dealing: boolean;
-  readonly dealError: string | null;
+  readonly dealError: StoreMessage | null;
   readonly pace: Pace;
   /** The hint on show (cleared as soon as play moves on). */
   readonly hint: Hint | null;
@@ -305,7 +307,7 @@ export function createPlayStore(options: PlayStoreOptions) {
         await wait(get().pace.cardMs - (Date.now() - started));
       } catch (err) {
         if (g !== gen || isAbort(err)) return;
-        set({ botThinking: false, error: `บอทคิดไม่สำเร็จ (${message(err)})` });
+        set({ botThinking: false, error: { kind: 'botFailed', detail: message(err) } });
         return;
       }
       if (g !== gen) return;
@@ -428,7 +430,7 @@ export function createPlayStore(options: PlayStoreOptions) {
           if (g !== gen) return false;
           set({
             hintLoading: false,
-            notice: isAbort(err) ? get().notice : `คำใบ้ไม่สำเร็จ (${message(err)})`,
+            notice: isAbort(err) ? get().notice : { kind: 'hintFailed', detail: message(err) },
           });
           return false;
         }
@@ -504,7 +506,7 @@ export function createPlayStore(options: PlayStoreOptions) {
           if (g !== gen) return 'cancelled';
           set({
             claimChecking: false,
-            notice: isAbort(err) ? get().notice : `ตรวจ claim ไม่สำเร็จ (${message(err)})`,
+            notice: isAbort(err) ? get().notice : { kind: 'claimFailed', detail: message(err) },
           });
           return 'cancelled';
         }
@@ -542,15 +544,14 @@ export function createPlayStore(options: PlayStoreOptions) {
           dealAbort = null;
           set({
             dealing: false,
-            dealError: isAbort(err) ? null : `แจกไพ่ไม่สำเร็จ (${message(err)})`,
+            dealError: isAbort(err) ? null : { kind: 'dealFailed', detail: message(err) },
           });
           return false;
         }
         if (dealAbort !== ctrl) return false;
         dealAbort = null;
-        const notice = result.relaxed
-          ? `หามือแบบ "${CONTRACT_TYPE_LABEL[settings.contractType]}" ไม่เจอใน 30 มือ ` +
-            `เลยแจกแบบ "${CONTRACT_TYPE_LABEL[result.contractType]}" แทน`
+        const notice: StoreMessage | null = result.relaxed
+          ? { kind: 'dealRelaxed', wanted: settings.contractType, got: result.contractType }
           : null;
         set({ dealing: false, notice });
         get().startHand({

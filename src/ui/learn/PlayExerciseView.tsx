@@ -22,10 +22,12 @@ import { isHandOver, isPlayerTurn } from '../../game/playStore';
 import type { PlayExercise } from '../../learn';
 import { exerciseDeal, exerciseStart } from '../../learn';
 import { getSolver } from '../../worker';
-import { exerciseStore, useExercise } from '../gameStore';
+import type { Messages } from '../../i18n';
+import { exerciseStore, useExercise, useT } from '../gameStore';
 import type { CardMode, PlayHandler } from '../table/hands';
 import { CardText, DummyHand, FannedHand, OpenHand } from '../table/hands';
-import { SEAT_NAME, SEAT_ROLE } from '../table/labels';
+import { SEAT_NAME } from '../table/labels';
+import { CardList } from '../table/ResultPanel';
 import type { CardPick } from '../table/cardPick';
 import { useCardPick } from '../table/cardPick';
 import { TrickArea } from '../table/TrickArea';
@@ -58,6 +60,7 @@ function SeatLabel({
   active: boolean;
   thinking?: boolean;
 }) {
+  const t = useT();
   return (
     <span
       data-seat={seat}
@@ -66,7 +69,7 @@ function SeatLabel({
         active ? 'bg-amber-300 text-black' : 'bg-black/35 text-white/85'
       }`}
     >
-      {SEAT_ROLE[seat]}
+      {t.seatRole[seat]}
       {thinking && ' …'}
     </span>
   );
@@ -82,6 +85,7 @@ function Board({
   pick,
   trickKey,
 }: BoardProps) {
+  const t = useT();
   const done = completedTricks(play);
   const shown = showLast ? done.at(-1) : undefined;
   const total = totalTricks(play);
@@ -131,7 +135,7 @@ function Board({
             />
           </div>
         </div>
-        <section aria-label="South (คุณ)" className="flex flex-col items-center gap-1">
+        <section aria-label={t.seatRole.S} className="flex flex-col items-center gap-1">
           <FannedHand
             cards={hands.S}
             trump={trump}
@@ -150,11 +154,12 @@ function Board({
 function Score({ play, goal }: { play: PlayState; goal: number }) {
   const won = tricksWon(play);
   const trump = play.contract.strain;
+  const w = useT().exercise;
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
       <span>
         {trump === 'NT' ? (
-          'ไม่มี trump (NT)'
+          w.noTrump
         ) : (
           <>
             trump <SuitSymbol suit={trump} />
@@ -162,7 +167,7 @@ function Score({ play, goal }: { play: PlayState; goal: number }) {
         )}
       </span>
       <span>
-        เป้า: NS ได้ <strong data-testid="goal">{goal}</strong> จาก {totalTricks(play)} trick
+        {w.goal} <strong data-testid="goal">{goal}</strong> {w.goalOf(totalTricks(play))}
       </span>
       <span className="tabular-nums">
         NS <strong data-testid="tricks-ns">{won.NS}</strong> · EW{' '}
@@ -172,16 +177,16 @@ function Score({ play, goal }: { play: PlayState; goal: number }) {
   );
 }
 
-function statusText(state: PlayStoreState): string {
+function statusText(t: Messages, state: PlayStoreState): string {
   const { play, trickPause, error } = state;
   if (!play) return '';
-  if (error) return error;
+  if (error) return t.storeMessage(error);
   const last = completedTricks(play).at(-1);
-  if (trickPause && last?.winner) return `${SEAT_NAME[last.winner]} กิน trick นี้`;
+  if (trickPause && last?.winner) return t.table.wonTrick(last.winner);
   const seat = toPlay(play);
-  if (seat === 'N') return 'ถึงตา North (dummy) — กดไพ่ด้านบน';
-  if (seat === 'S') return 'ถึงตา South (คุณ) — ลงไพ่จากมือด้านล่าง';
-  if (seat) return `${SEAT_NAME[seat]} กำลังคิด…`;
+  if (seat === 'N') return t.exercise.northTurn;
+  if (seat === 'S') return t.exercise.southTurn;
+  if (seat) return t.table.botThinking(seat);
   return '';
 }
 
@@ -198,13 +203,15 @@ function SolutionView(props: {
   onExit: () => void;
 }) {
   const { ex, start, solution, onStep, onExit } = props;
+  const t = useT();
+  const w = t.exercise;
   if (solution.status !== 'ready') {
     return (
-      <Feedback tone={solution.status === 'error' ? 'wrong' : 'info'} title="เฉลย">
-        <p>{solution.status === 'error' ? 'โหลดเฉลยไม่สำเร็จ' : 'กำลังเตรียมเฉลย…'}</p>
+      <Feedback tone={solution.status === 'error' ? 'wrong' : 'info'} title={w.solution}>
+        <p>{solution.status === 'error' ? w.solutionFailed : w.solutionLoading}</p>
         <div>
           <button type="button" onClick={onExit} className={SECONDARY}>
-            กลับไปเล่นเอง
+            {w.backToPlay}
           </button>
         </div>
       </Feedback>
@@ -220,21 +227,19 @@ function SolutionView(props: {
     <div className="flex flex-col gap-3" data-testid="solution" data-step={step}>
       <Score play={play} goal={ex.goal.nsTricks} />
       <Board play={play} showLast={showLast} active={null} trickKey="solution" />
-      <Feedback tone="info" title={`เฉลย — ใบที่ ${step}/${line.length}`}>
+      <Feedback tone="info" title={w.solutionStep(step, line.length)}>
         <p data-testid="solution-step">
           {last ? (
             <>
-              {SEAT_ROLE[last.seat]} ลง <CardText card={last.card} />
-              {winner && ` · ${SEAT_NAME[winner]} กิน trick นี้`}
+              {t.seatRole[last.seat]} {t.result.lossPlayed} <CardText card={last.card} />
+              {winner && ` · ${t.table.wonTrick(winner)}`}
             </>
           ) : (
-            'กด "ถัดไป" เพื่อดูทีละใบ'
+            w.stepHelp
           )}
         </p>
         {end && (
-          <p className="font-semibold text-emerald-200">
-            จบแล้ว NS ได้ {tricksWon(play).NS} trick ตามเป้า
-          </p>
+          <p className="font-semibold text-emerald-200">{w.solutionEnd(tricksWon(play).NS)}</p>
         )}
         <Explanation text={ex.explanation} />
         <div className="flex flex-wrap gap-2">
@@ -244,13 +249,13 @@ function SolutionView(props: {
             disabled={step === 0}
             className={SECONDARY}
           >
-            ← ก่อนหน้า
+            {w.prev}
           </button>
           <button type="button" onClick={() => onStep(step + 1)} disabled={end} className={PRIMARY}>
-            ถัดไป →
+            {w.next}
           </button>
           <button type="button" onClick={onExit} className={SECONDARY}>
-            เล่นเอง
+            {w.playYourself}
           </button>
         </div>
       </Feedback>
@@ -260,6 +265,8 @@ function SolutionView(props: {
 
 export function PlayExerciseView({ ex, onPass }: { ex: PlayExercise; onPass: () => void }) {
   const state = useExercise((s) => s);
+  const t = useT();
+  const w = t.exercise;
   const start = useMemo(() => exerciseStart(ex), [ex]);
   const pbn = useMemo(() => formatDealPbn(exerciseDeal(ex)), [ex]);
   const [solution, setSolution] = useState<Solution | null>(null);
@@ -330,10 +337,10 @@ export function PlayExerciseView({ ex, onPass }: { ex: PlayExercise; onPass: () 
   const buttons = (
     <div className="flex flex-wrap justify-center gap-2">
       <button type="button" onClick={retry} className={SECONDARY}>
-        ↺ ลองใหม่
+        {w.retry}
       </button>
       <button type="button" onClick={() => void showSolution()} className={SECONDARY}>
-        ดูเฉลย
+        {w.showAnswer}
       </button>
     </div>
   );
@@ -349,7 +356,7 @@ export function PlayExerciseView({ ex, onPass }: { ex: PlayExercise; onPass: () 
       />
     );
   }
-  if (!ready || !play) return <p className="text-center text-white/70">กำลังเตรียมโต๊ะ…</p>;
+  if (!ready || !play) return <p className="text-center text-white/70">{w.preparing}</p>;
 
   const playerTurn = isPlayerTurn(state);
   const seat = toPlay(play);
@@ -383,39 +390,34 @@ export function PlayExerciseView({ ex, onPass }: { ex: PlayExercise; onPass: () 
           data-testid="status"
           aria-live="polite"
         >
-          {statusText(state)}
+          {statusText(t, state)}
           {state.error && (
             <button
               type="button"
               onClick={() => exerciseStore.getState().retry()}
               className="ml-2 rounded bg-white/15 px-2 py-0.5 hover:bg-white/25"
             >
-              ลองใหม่
+              {t.common.retry}
             </button>
           )}
         </p>
       )}
       {outcome?.passed && (
-        <Feedback tone="ok" title={`ผ่าน! NS ได้ ${outcome.tricks} trick ตามเป้า`}>
+        <Feedback tone="ok" title={w.passed(outcome.tricks)}>
           <Explanation text={ex.explanation} />
         </Feedback>
       )}
       {outcome && !outcome.passed && (
-        <Feedback tone="wrong" title={`ยังไม่ผ่าน — NS ได้ ${outcome.tricks} trick (เป้า ${goal})`}>
+        <Feedback tone="wrong" title={w.failed(outcome.tricks, goal)}>
           {outcome.mistake ? (
             <div
               data-testid="mistake"
               data-card={`${outcome.mistake.card.suit}${outcome.mistake.card.rank}`}
             >
               <p>
-                พลาดที่ trick {outcome.mistake.trick}: {SEAT_ROLE[outcome.mistake.seat]} ลง{' '}
-                <CardText card={outcome.mistake.card} /> · ควรลง{' '}
-                {outcome.mistake.best.map((c, i) => (
-                  <span key={i}>
-                    {i > 0 && ' หรือ '}
-                    <CardText card={c} />
-                  </span>
-                ))}
+                {w.mistakeAt(outcome.mistake.trick)} {t.seatRole[outcome.mistake.seat]}{' '}
+                {t.result.lossPlayed} <CardText card={outcome.mistake.card} /> ·{' '}
+                {t.result.lossBetter} <CardList cards={outcome.mistake.best} />
               </p>
               {outcome.mistake.why && (
                 <p className="mt-1 text-white/90">
@@ -425,17 +427,17 @@ export function PlayExerciseView({ ex, onPass }: { ex: PlayExercise; onPass: () 
             </div>
           ) : reviewFailed ? (
             <p className="text-sm">
-              หาจุดพลาดไม่สำเร็จ{' '}
+              {w.reviewFailed}{' '}
               <button
                 type="button"
                 onClick={() => setReviewTry((n) => n + 1)}
                 className="ml-1 rounded bg-white/15 px-2 py-0.5 hover:bg-white/25"
               >
-                ลองใหม่
+                {t.common.retry}
               </button>
             </p>
           ) : (
-            <p className="text-sm text-white/70">กำลังหาจุดที่พลาด…</p>
+            <p className="text-sm text-white/70">{w.reviewing}</p>
           )}
           <Explanation text={ex.explanation} />
         </Feedback>

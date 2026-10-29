@@ -5,6 +5,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useT } from '../gameStore';
 
 type ActionButtonProps = {
   onClick: () => void;
@@ -47,6 +48,7 @@ const MENU_ITEM =
   'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm whitespace-nowrap hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none';
 
 function GameMenu({ studyMode, onRestart, onNewHand, onStudyMode }: MenuProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -85,19 +87,19 @@ function GameMenu({ studyMode, onRestart, onNewHand, onStudyMode }: MenuProps) {
         onClick={() => setOpen((o) => !o)}
         className={BUTTON}
       >
-        <span aria-hidden="true">☰</span> เมนู
+        <span aria-hidden="true">☰</span> {t.table.menu}
       </button>
       {open && (
         <div
           role="menu"
-          aria-label="เมนู"
+          aria-label={t.table.menu}
           className="absolute top-full right-0 z-30 mt-1 flex min-w-48 flex-col rounded-xl border border-white/10 bg-felt-dark p-1 shadow-2xl"
         >
           <button type="button" role="menuitem" className={MENU_ITEM} onClick={pick(onRestart)}>
-            เล่นมือนี้ใหม่
+            {t.table.restart}
           </button>
           <button type="button" role="menuitem" className={MENU_ITEM} onClick={pick(onNewHand)}>
-            แจกไพ่ใหม่
+            {t.table.newDeal}
           </button>
           <button
             type="button"
@@ -114,13 +116,13 @@ function GameMenu({ studyMode, onRestart, onNewHand, onStudyMode }: MenuProps) {
             >
               {studyMode ? '✓' : ''}
             </span>
-            โหมดศึกษา (เปิดไพ่ทุกมือ)
+            {t.table.studyMode}
           </button>
           <Link to="/settings" role="menuitem" className={MENU_ITEM}>
-            ตั้งค่า
+            {t.common.settings}
           </Link>
           <Link to="/" role="menuitem" className={MENU_ITEM}>
-            หน้าแรก
+            {t.common.home}
           </Link>
         </div>
       )}
@@ -143,9 +145,10 @@ type ActionBarProps = MenuProps & {
 
 export function ActionBar(props: ActionBarProps) {
   const { canHint, hintLoading, hintsUsed, canUndo, canClaim, onHint, onUndo, onClaim } = props;
+  const t = useT();
   return (
     <nav
-      aria-label="เครื่องมือฝึก"
+      aria-label={t.table.tools}
       // Phones: a row of its own under the contract; wider screens: inline in the header.
       className="order-last flex basis-full gap-1.5 sm:order-none sm:basis-auto"
     >
@@ -153,11 +156,11 @@ export function ActionBar(props: ActionBarProps) {
         onClick={onHint}
         disabled={!canHint}
         shortcut="H"
-        label="คำใบ้"
-        name={hintsUsed > 0 ? `คำใบ้ (ใช้ไปแล้ว ${hintsUsed} ครั้ง)` : 'คำใบ้'}
+        label={t.table.hint}
+        name={hintsUsed > 0 ? t.table.hintUsed(hintsUsed) : t.table.hint}
       >
         <span aria-hidden="true">💡</span>
-        {hintLoading ? 'กำลังคิด…' : 'คำใบ้'}
+        {hintLoading ? t.table.thinking : t.table.hint}
         {hintsUsed > 0 && (
           <span
             className="rounded-full bg-amber-300 px-1.5 text-xs font-semibold text-black tabular-nums"
@@ -167,8 +170,8 @@ export function ActionBar(props: ActionBarProps) {
           </span>
         )}
       </ActionButton>
-      <ActionButton onClick={onUndo} disabled={!canUndo} shortcut="U" label="ย้อน">
-        <span aria-hidden="true">↶</span> ย้อน
+      <ActionButton onClick={onUndo} disabled={!canUndo} shortcut="U" label={t.table.undo}>
+        <span aria-hidden="true">↶</span> {t.table.undo}
       </ActionButton>
       <ActionButton onClick={onClaim} disabled={!canClaim} label="Claim">
         Claim
@@ -176,8 +179,8 @@ export function ActionBar(props: ActionBarProps) {
       <button
         type="button"
         onClick={props.onGuide}
-        aria-label="คู่มือบทที่เกี่ยวกับตอนนี้"
-        title="คู่มือบทที่เกี่ยวกับตอนนี้"
+        aria-label={t.table.guideHere}
+        title={t.table.guideHere}
         data-testid="guide-button"
         className={`${BUTTON} flex-none font-bold`}
       >

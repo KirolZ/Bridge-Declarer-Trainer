@@ -7,6 +7,8 @@ import { completedTricks, remainingHands, sameCard, toPlay, tricksWon } from '..
 import type { CardAnalysis } from '../../solver';
 import type { HandReview } from '../../game/review';
 import { ddValueAt, replayTrickCount } from '../../game/review';
+import type { Messages } from '../../i18n';
+import { useT } from '../gameStore';
 import type { CardMark } from './hands';
 import { OpenHand } from './hands';
 import { SEAT_NAME } from './labels';
@@ -30,14 +32,17 @@ type ReplayViewProps = {
 const NAV =
   'flex-1 rounded-lg bg-white/10 px-3 py-2 text-sm whitespace-nowrap hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/10';
 
-const LEGEND: { mark: CardMark; text: string; className: string }[] = [
-  { mark: 'played', text: 'ลงใน trick นี้', className: 'bg-amber-300 text-black' },
-  { mark: 'wrong', text: 'ใบที่เสีย trick', className: 'bg-red-600 text-white' },
-  { mark: 'better', text: 'ใบที่ควรลง', className: 'outline-2 outline-emerald-500' },
+type ReplayWords = Messages['replay'];
+
+const LEGEND: { mark: CardMark; text: (w: ReplayWords) => string; className: string }[] = [
+  { mark: 'played', text: (w) => w.legendPlayed, className: 'bg-amber-300 text-black' },
+  { mark: 'wrong', text: (w) => w.legendWrong, className: 'bg-red-600 text-white' },
+  { mark: 'better', text: (w) => w.legendBetter, className: 'outline-2 outline-emerald-500' },
 ];
 
 export function ReplayView(props: ReplayViewProps) {
   const { play, analyses, review, claimed, trick, onTrick, onClose, onPlayFrom } = props;
+  const t = useT();
   const count = replayTrickCount(play, claimed !== null);
   const start = (trick - 1) * 4;
   const before: PlayState = { ...play, plays: play.plays.slice(0, start) };
@@ -87,7 +92,7 @@ export function ReplayView(props: ReplayViewProps) {
   const diagram = (seat: Seat) => (
     <div className="flex flex-col items-center gap-1">
       <span className="rounded-full bg-black/35 px-2 text-xs font-semibold text-white/85">
-        {seat === 'N' ? 'North (dummy)' : seat === 'S' ? 'South (คุณ)' : SEAT_NAME[seat]}
+        {t.seatRole[seat]}
       </span>
       <OpenHand cards={hands[seat]} trump={trump} label={SEAT_NAME[seat]} markOf={markOf(seat)} />
     </div>
@@ -106,13 +111,13 @@ export function ReplayView(props: ReplayViewProps) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="กลับหน้าสรุป"
+          aria-label={t.replay.back}
           className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/10 text-lg hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
         >
           ←
         </button>
         <h2 id="replay-title" className="flex-1 text-lg font-bold">
-          ดูย้อนหลัง · trick {trick}/{count}
+          {t.replay.title(trick, count)}
         </h2>
         <span className="text-sm whitespace-nowrap text-white/75 tabular-nums">
           NS {won.NS} · EW {won.EW}
@@ -120,27 +125,27 @@ export function ReplayView(props: ReplayViewProps) {
       </header>
 
       <nav
-        aria-label="เลือก trick"
+        aria-label={t.replay.pickTrick}
         className="flex flex-wrap justify-center gap-1 px-2 pt-2 sm:px-4"
       >
-        {Array.from({ length: count }, (_, i) => i + 1).map((t) => {
-          const lossy = lossTricks.has(t);
+        {Array.from({ length: count }, (_, i) => i + 1).map((n) => {
+          const lossy = lossTricks.has(n);
           return (
             <button
-              key={t}
+              key={n}
               type="button"
-              onClick={() => onTrick(t)}
-              aria-current={t === trick ? 'true' : undefined}
-              aria-label={`trick ${t}${lossy ? ' (เสีย trick)' : ''}`}
+              onClick={() => onTrick(n)}
+              aria-current={n === trick ? 'true' : undefined}
+              aria-label={t.replay.trick(n, lossy)}
               className={[
                 'relative grid size-8 place-items-center rounded-md text-sm tabular-nums focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none',
-                t === trick ? 'bg-amber-300 font-bold text-black' : 'bg-white/10 hover:bg-white/20',
-                lossy && t !== trick && 'text-red-200 ring-1 ring-red-400',
+                n === trick ? 'bg-amber-300 font-bold text-black' : 'bg-white/10 hover:bg-white/20',
+                lossy && n !== trick && 'text-red-200 ring-1 ring-red-400',
               ]
                 .filter(Boolean)
                 .join(' ')}
             >
-              {t}
+              {n}
               {lossy && (
                 <span
                   aria-hidden="true"
@@ -179,18 +184,18 @@ export function ReplayView(props: ReplayViewProps) {
           data-testid="replay-notes"
         >
           <p>
-            {leader && `${SEAT_NAME[leader]} นำ`}
-            {winner && ` · ${SEAT_NAME[winner]} กิน trick นี้`}
-            {dd !== null && ` · ก่อน trick นี้ DD ทำได้ ${dd} trick`}
+            {leader && t.replay.led(leader)}
+            {winner && ` · ${t.table.wonTrick(winner)}`}
+            {dd !== null && ` · ${t.replay.ddBefore(dd)}`}
           </p>
-          {isClaim && <p data-testid="replay-claim">Claim ตรงนี้ — NS ได้รวม {claimed} trick</p>}
+          {isClaim && <p data-testid="replay-claim">{t.replay.claimHere(claimed)}</p>}
           {losses.map((l) => (
             <p
               key={`${l.kind}${l.index}`}
               data-testid="replay-loss"
               className="rounded-lg bg-red-950/60 px-3 py-2 leading-relaxed"
             >
-              <span className="font-semibold text-red-200">เสีย {l.lost} trick: </span>
+              <span className="font-semibold text-red-200">{t.replay.lost(l.lost)}</span>
               <LossText loss={l} />
             </p>
           ))}
@@ -199,7 +204,7 @@ export function ReplayView(props: ReplayViewProps) {
               {LEGEND.filter((m) => used.has(m.mark)).map((m) => (
                 <span key={m.mark} className="inline-flex items-center gap-1">
                   <span className={`inline-block size-3 rounded-sm ${m.className}`} />
-                  {m.text}
+                  {m.text(t.replay)}
                 </span>
               ))}
             </p>
@@ -213,7 +218,7 @@ export function ReplayView(props: ReplayViewProps) {
             disabled={trick <= 1}
             onClick={() => onTrick(trick - 1)}
           >
-            ◀ trick ก่อน
+            {t.replay.prev}
           </button>
           <button
             ref={next}
@@ -222,14 +227,14 @@ export function ReplayView(props: ReplayViewProps) {
             disabled={trick >= count}
             onClick={() => onTrick(trick + 1)}
           >
-            trick ถัดไป ▶
+            {t.replay.next}
           </button>
           <button
             type="button"
             onClick={() => onPlayFrom(trick)}
             className="w-full rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:w-auto sm:flex-1"
           >
-            ลองเล่นใหม่จากตรงนี้
+            {t.replay.playFromHere}
           </button>
         </div>
       </main>

@@ -1,8 +1,9 @@
 // The score explained line by line, for the result panel in beginner mode (SPEC §7.8): where each
-// part of the score comes from, in the words of chapter 6.
+// part of the score comes from, in the words of chapter 6 (`words`: the player's language).
 
 import type { Contract } from '../../engine';
 import { SUIT_INFO, contractLabel, scoreBreakdown, tricksNeeded } from '../../engine';
+import type { Messages } from '../../i18n';
 
 export type ScoreLine = {
   readonly label: string;
@@ -26,10 +27,12 @@ export function explainScore(
   contract: Contract,
   tricks: number,
   vulnerable: boolean,
+  words: Messages['score'],
 ): ScoreExplanation {
   const s = scoreBreakdown(contract, tricks, vulnerable);
-  const vul = vulnerable ? 'vul' : 'ไม่ vul';
+  const vul = words.vul(vulnerable);
   const name = contractLabel(contract);
+  const needed = tricksNeeded(contract);
 
   if (!s.made) {
     const per = vulnerable ? 100 : 50;
@@ -37,13 +40,13 @@ export function explainScore(
     return {
       lines: [
         {
-          label: `ขาด ${down} trick`,
-          detail: `${down} × ${per} (${vul}: trick ละ ${per})`,
+          label: words.down(down),
+          detail: words.downDetail(down, per, vul),
           points: s.undertrickPoints,
         },
       ],
       total: s.total,
-      summary: `${name} ต้องได้ ${tricksNeeded(contract)} trick แต่ได้ ${tricks} — ทำไม่ได้จึงไม่ได้แต้มของ trick เลย และเสียแต้มให้ฝั่งป้องกันตามจำนวน trick ที่ขาด`,
+      summary: words.downSummary(name, needed, tricks),
     };
   }
 
@@ -52,41 +55,35 @@ export function explainScore(
   const per = minor ? 20 : 30;
   const lines: ScoreLine[] = [
     {
-      label: `trick ตามสัญญา (${level} trick เกิน 6)`,
+      label: words.contractTricks(level),
       detail:
         contract.strain === 'NT'
           ? level === 1
-            ? 'NT trick แรก 40'
-            : `NT trick แรก 40 + อีก ${level - 1} × 30`
-          : `${level} × ${per} (${strainName(contract)} trick ละ ${per})`,
+            ? words.ntFirst
+            : words.ntMore(level - 1)
+          : words.suitDetail(level, per, strainName(contract)),
       points: s.contractPoints,
     },
   ];
   if (s.result > 0) {
     lines.push({
-      label: `trick ที่เกิน ${s.result} trick`,
+      label: words.overtricks(s.result),
       detail: `${s.result} × ${per}`,
       points: s.overtrickPoints,
     });
   }
   const game = s.contractPoints >= 100;
   lines.push({
-    label: game ? 'โบนัส game' : 'โบนัส partscore',
-    detail: game
-      ? `แต้มของ trick ตามสัญญาถึง 100 · ${vul} ได้ ${s.gameBonus}`
-      : 'แต้มของ trick ตามสัญญาไม่ถึง 100',
+    label: game ? words.gameBonus : words.partscoreBonus,
+    detail: game ? words.gameDetail(vul, s.gameBonus) : words.partscoreDetail,
     points: s.gameBonus,
   });
   if (s.slamBonus > 0) {
-    lines.push({
-      label: level === 7 ? 'โบนัส grand slam' : 'โบนัส small slam',
-      detail: vul,
-      points: s.slamBonus,
-    });
+    lines.push({ label: words.slamBonus(level === 7), detail: vul, points: s.slamBonus });
   }
   return {
     lines,
     total: s.total,
-    summary: `${name} ต้องได้ ${tricksNeeded(contract)} trick และได้ ${tricks} — ทำได้ จึงได้แต้มของ trick ตามสัญญา${s.result > 0 ? ' trick ที่เกิน' : ''} และโบนัส`,
+    summary: words.madeSummary(name, needed, tricks, s.result > 0),
   };
 }

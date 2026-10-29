@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Contract, TrickCount, Vulnerability } from '../../engine';
 import { contractLabel, tricksNeeded } from '../../engine';
-import { VULNERABILITY_LABEL } from './labels';
+import { useT } from '../gameStore';
 
 type InfoBarProps = {
   contract: Contract;
@@ -31,11 +31,12 @@ function Stat({ label, value, testId }: { label: string; value: string; testId?:
 export function InfoBar(props: InfoBarProps) {
   const { contract, vulnerability, won, trickNumber, totalTricks, actions } = props;
   const red = contract.strain === 'H' || contract.strain === 'D';
+  const t = useT();
   return (
     <header className="relative z-20 flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-white/10 bg-black/25 px-2 py-1.5 sm:gap-x-4 sm:px-4">
       <Link
         to="/"
-        aria-label="กลับหน้าแรก"
+        aria-label={t.common.backHome}
         className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/10 text-lg hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
       >
         ←
@@ -48,10 +49,12 @@ export function InfoBar(props: InfoBarProps) {
               {contractLabel(contract).slice(1)}
             </span>
           </span>{' '}
-          <span className="text-sm font-normal text-white/80 sm:text-base">โดย South</span>
+          <span className="text-sm font-normal text-white/80 sm:text-base">
+            {t.table.byDeclarer}
+          </span>
         </span>
         <span className="truncate text-[11px] text-white/60 sm:text-xs">
-          ต้องได้ {tricksNeeded(contract)} trick · {VULNERABILITY_LABEL[vulnerability]}
+          {t.table.needed(tricksNeeded(contract))} · {t.vulnerability[vulnerability]}
         </span>
       </div>
       <Stat label="NS" value={String(won.NS)} testId="tricks-ns" />

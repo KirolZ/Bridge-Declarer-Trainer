@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useId, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CHAPTERS, chapterOf } from '../../learn';
+import { useT } from '../gameStore';
 import { Blocks } from './examples';
 import { TermSheetProvider } from './Rich';
 
@@ -22,6 +23,7 @@ export function GuidePanel({ chapter: n, onChapter, onClose }: GuidePanelProps) 
   const panel = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const t = useT();
 
   useEffect(() => {
     const back = document.activeElement as HTMLElement | null;
@@ -56,16 +58,16 @@ export function GuidePanel({ chapter: n, onChapter, onClose }: GuidePanelProps) 
       >
         <header className="flex items-center gap-2 border-b border-white/10 px-3 py-2">
           <label className="flex min-w-0 flex-1 flex-col text-xs text-white/60">
-            คู่มือ
+            {t.common.guide}
             <select
               value={chapter.n}
               onChange={(e) => onChapter(Number(e.target.value))}
-              aria-label="เลือกบท"
+              aria-label={t.learn.pickChapter}
               className="mt-0.5 w-full truncate rounded-md bg-black/30 px-2 py-1 text-sm text-white"
             >
               {CHAPTERS.map((c) => (
                 <option key={c.n} value={c.n}>
-                  บทที่ {c.n}: {c.title}
+                  {t.learn.chapter(c.n)}: {c.title}
                 </option>
               ))}
             </select>
@@ -73,14 +75,14 @@ export function GuidePanel({ chapter: n, onChapter, onClose }: GuidePanelProps) 
           <button
             type="button"
             onClick={onClose}
-            aria-label="ปิดคู่มือ"
+            aria-label={t.learn.closeGuide}
             className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/10 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
           >
             ✕
           </button>
         </header>
         <div ref={body} className="flex-1 overflow-y-auto px-4 pt-3 pb-6">
-          <p className="text-sm text-white/60">บทที่ {chapter.n}</p>
+          <p className="text-sm text-white/60">{t.learn.chapter(chapter.n)}</p>
           <h2 id={titleId} className="mb-3 text-xl font-bold">
             {chapter.title}
           </h2>
@@ -92,7 +94,7 @@ export function GuidePanel({ chapter: n, onChapter, onClose }: GuidePanelProps) 
               disabled={!chapterOf(n - 1)}
               onClick={() => onChapter(n - 1)}
             >
-              ← บทก่อน
+              {t.learn.prevChapter}
             </button>
             <button
               type="button"
@@ -100,13 +102,13 @@ export function GuidePanel({ chapter: n, onChapter, onClose }: GuidePanelProps) 
               disabled={!chapterOf(n + 1)}
               onClick={() => onChapter(n + 1)}
             >
-              บทถัดไป →
+              {t.learn.nextChapter}
             </button>
             <Link
               to={`/learn/${chapter.n}`}
               className="ml-auto text-sm text-amber-200 hover:underline"
             >
-              เปิดในหน้าคู่มือ (ออกจากโต๊ะ)
+              {t.learn.openInGuide}
             </Link>
           </div>
         </div>

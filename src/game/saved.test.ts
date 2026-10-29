@@ -75,6 +75,11 @@ describe('settings', () => {
     ).toEqual({ ...DEFAULT_SETTINGS, contractType: 'slam', suitOrder: 'rank' });
     expect(parseSettings({ cardPlay: 'confirm' }).cardPlay).toBe('confirm');
     expect(parseSettings({ cardPlay: 'swipe' }).cardPlay).toBe('tap');
+    // Language (SPEC §7.6): Thai unless English was picked; older saves have no language.
+    expect(DEFAULT_SETTINGS.language).toBe('th');
+    expect(parseSettings({ language: 'en' }).language).toBe('en');
+    expect(parseSettings({ language: 'fr' }).language).toBe('th');
+    expect(parseSettings({ botSpeed: 'fast' }).language).toBe('th');
     expect(dealSettingsOf({ ...DEFAULT_SETTINGS, vulnerability: 'ns' })).toEqual({
       contractType: 'any',
       difficulty: 'exact',
