@@ -110,6 +110,10 @@ export const th = {
     mainMenu: 'เมนูหลัก',
     chapters: (read: number, total: number) => `${read}/${total} บท`,
     creditsBy: 'โดย Bo Haglund, Soren Hein และคณะ',
+    feedback: 'แจ้งปัญหา / ข้อเสนอแนะ',
+    feedbackSubject: 'Bridge Declarer Trainer: แจ้งปัญหา / ข้อเสนอแนะ',
+    feedbackIntro:
+      'เล่าปัญหาหรือข้อเสนอแนะตรงนี้ (ถ้าเป็นบั๊ก บอกด้วยว่ากดอะไรก่อนเกิด และแนบภาพหน้าจอได้):',
   },
 
   dealing: 'กำลังแจกไพ่...',

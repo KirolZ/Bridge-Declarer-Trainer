@@ -12,3 +12,4 @@ export * from './stats';
 export * from './saved';
 export * from './exercise';
 export * from './coach';
+export * from './feedback';

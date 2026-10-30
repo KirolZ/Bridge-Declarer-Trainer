@@ -130,3 +130,30 @@ test('the DDS license ships with the app and the home page credits it', async ({
   ).toHaveAttribute('href', 'LICENSE-DDS.txt');
   await expect(page.getByTestId('author')).toHaveText('Created by 1Cu');
 });
+
+// TASKS M23: bug reports and feedback by email, from the home page, in both languages.
+test('the home page links to the feedback email with a ready subject and body', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const feedback = page.getByTestId('feedback');
+  await expect(feedback).toContainText('shinhiichi0@gmail.com');
+
+  const mail = async (name: string) => {
+    const href = (await feedback.getByRole('link', { name }).getAttribute('href')) ?? '';
+    expect(href.startsWith('mailto:shinhiichi0@gmail.com?')).toBe(true);
+    const params = new URLSearchParams(href.slice(href.indexOf('?') + 1));
+    return { subject: params.get('subject') ?? '', body: params.get('body') ?? '' };
+  };
+
+  const th = await mail('แจ้งปัญหา / ข้อเสนอแนะ');
+  expect(th.subject).toContain('แจ้งปัญหา');
+  expect(th.body).toContain('language: th');
+  expect(th.body).toContain('page: ');
+  expect(th.body).toContain('browser: ');
+
+  await page.getByTestId('language-switch').getByRole('button', { name: 'English' }).click();
+  const en = await mail('Report a bug / feedback');
+  expect(en.subject).toContain('bug report');
+  expect(en.body).toContain('language: en');
+});

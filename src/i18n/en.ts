@@ -98,6 +98,10 @@ export const en: Messages = {
     mainMenu: 'Main menu',
     chapters: (read, total) => `${read}/${total} chapters`,
     creditsBy: 'by Bo Haglund, Soren Hein et al.',
+    feedback: 'Report a bug / feedback',
+    feedbackSubject: 'Bridge Declarer Trainer: bug report / feedback',
+    feedbackIntro:
+      'Tell us about the problem or your idea here (for a bug, say what you did just before it, and attach a screenshot if you can):',
   },
 
   dealing: 'Dealing…',

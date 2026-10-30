@@ -151,6 +151,14 @@ export const CH14: Chapter<Bilingual> = {
         en: 'The **flags** at the top right of the home page (Thai flag = Thai, UK flag = English), or **Language** in Settings, switch the screens between Thai and English at any time. The bridge terms are the same in both.',
       },
     },
+    { kind: 'h', text: { th: 'แจ้งปัญหา / ข้อเสนอแนะ', en: 'Report a bug / feedback' } },
+    {
+      kind: 'p',
+      text: {
+        th: 'เจอบั๊กหรืออยากเสนออะไร กดลิงก์**แจ้งปัญหา / ข้อเสนอแนะ**ท้ายหน้าแรก จะเปิดอีเมลถึงผู้พัฒนาที่มีหัวเรื่องและข้อมูลช่วยหาบั๊ก (หน้าที่เปิด ภาษา เบราว์เซอร์) ใส่ไว้ให้แล้ว เขียนเล่าเพิ่มแล้วส่งได้เลย ถ้าเครื่องไม่มีโปรแกรมอีเมล ส่งถึงที่อยู่อีเมลที่แสดงใต้ลิงก์แทน',
+        en: 'Found a bug or have an idea? The **Report a bug / feedback** link at the bottom of the home page opens an email to the developer with the subject and some details that help find bugs (the page, the language, the browser) already filled in. Add what happened and send it. With no mail app on the device, write to the address shown under the link.',
+      },
+    },
     { kind: 'h', text: { th: 'ฝึกยังไงให้ได้ผล', en: 'How to practise well' } },
     {
       kind: 'list',
