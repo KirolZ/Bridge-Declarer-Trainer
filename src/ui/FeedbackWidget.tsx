@@ -80,7 +80,7 @@ export function FeedbackWidget() {
   return (
     <div
       ref={root}
-      data-testid="feedback"
+      data-testid="contact"
       className="fixed right-3 bottom-3 z-30 flex flex-col items-end gap-3"
     >
       <AnimatePresence>
@@ -89,7 +89,7 @@ export function FeedbackWidget() {
             id={boxId}
             role="dialog"
             aria-labelledby={titleId}
-            data-testid="feedback-box"
+            data-testid="contact-box"
             initial={{ opacity: 0, y: 8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
@@ -106,7 +106,7 @@ export function FeedbackWidget() {
                 readOnly
                 value={FEEDBACK_EMAIL}
                 aria-label={t.home.feedbackEmail}
-                data-testid="feedback-email"
+                data-testid="contact-email"
                 onFocus={(e) => e.currentTarget.select()}
                 className="min-w-0 flex-1 bg-transparent py-1.5 text-stone-900 outline-none"
               />

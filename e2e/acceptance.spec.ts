@@ -138,9 +138,9 @@ test('the feedback button opens a box to copy the address or start an email', as
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/');
-  const feedback = page.getByTestId('feedback');
-  const box = page.getByTestId('feedback-box');
-  const toggle = feedback.getByRole('button', { name: 'แจ้งปัญหา' });
+  const feedback = page.getByTestId('contact');
+  const box = page.getByTestId('contact-box');
+  const toggle = feedback.getByRole('button', { name: 'ติดต่อ' });
 
   const mail = async (name: string) => {
     const href = (await box.getByRole('link', { name }).getAttribute('href')) ?? '';
@@ -154,7 +154,7 @@ test('the feedback button opens a box to copy the address or start an email', as
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.click();
   await expect(box.getByRole('heading', { name: 'แจ้งปัญหา / ข้อเสนอแนะ' })).toBeVisible();
-  await expect(box.getByTestId('feedback-email')).toHaveValue('shinhiichi0@gmail.com');
+  await expect(box.getByTestId('contact-email')).toHaveValue('shinhiichi0@gmail.com');
   const th = await mail('ส่งอีเมล');
   expect(th.subject).toContain('แจ้งปัญหา');
   expect(th.body).toContain('language: th');
@@ -180,7 +180,7 @@ test('the feedback button opens a box to copy the address or start an email', as
   await expect(box).toBeHidden();
 
   await page.getByTestId('language-switch').getByRole('button', { name: 'English' }).click();
-  await feedback.getByRole('button', { name: 'Feedback' }).click();
+  await feedback.getByRole('button', { name: 'Contact' }).click();
   await expect(box.getByRole('heading', { name: 'Report a bug / feedback' })).toBeVisible();
   const en = await mail('Send email');
   expect(en.subject).toContain('bug report');

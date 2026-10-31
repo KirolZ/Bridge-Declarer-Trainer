@@ -155,8 +155,8 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'เจอบั๊กหรืออยากเสนออะไร กดปุ่ม**แจ้งปัญหา**ที่มุมขวาล่างของหน้าแรก แล้วกด**ส่งอีเมล** จะเปิดอีเมลถึงผู้พัฒนาที่มีหัวเรื่องและข้อมูลช่วยหาบั๊ก (หน้าที่เปิด ภาษา เบราว์เซอร์) ใส่ไว้ให้แล้ว เขียนเล่าเพิ่มแล้วส่งได้เลย ถ้าเครื่องไม่มีโปรแกรมอีเมล กด**คัดลอก**ที่อยู่อีเมลไปส่งเองแทน',
-        en: 'Found a bug or have an idea? Press **Feedback** at the bottom right of the home page, then **Send email**: it opens an email to the developer with the subject and some details that help find bugs (the page, the language, the browser) already filled in. Add what happened and send it. With no mail app on the device, press **Copy** and write to the address yourself.',
+        th: 'เจอบั๊กหรืออยากเสนออะไร กดปุ่ม**ติดต่อ**ที่มุมขวาล่างของหน้าแรก แล้วกด**ส่งอีเมล** จะเปิดอีเมลถึงผู้พัฒนาที่มีหัวเรื่องและข้อมูลช่วยหาบั๊ก (หน้าที่เปิด ภาษา เบราว์เซอร์) ใส่ไว้ให้แล้ว เขียนเล่าเพิ่มแล้วส่งได้เลย ถ้าเครื่องไม่มีโปรแกรมอีเมล กด**คัดลอก**ที่อยู่อีเมลไปส่งเองแทน',
+        en: 'Found a bug or have an idea? Press **Contact** at the bottom right of the home page, then **Send email**: it opens an email to the developer with the subject and some details that help find bugs (the page, the language, the browser) already filled in. Add what happened and send it. With no mail app on the device, press **Copy** and write to the address yourself.',
       },
     },
     { kind: 'h', text: { th: 'ฝึกยังไงให้ได้ผล', en: 'How to practise well' } },

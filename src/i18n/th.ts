@@ -110,7 +110,7 @@ export const th = {
     mainMenu: 'เมนูหลัก',
     chapters: (read: number, total: number) => `${read}/${total} บท`,
     creditsBy: 'โดย Bo Haglund, Soren Hein และคณะ',
-    feedbackOpen: 'แจ้งปัญหา',
+    feedbackOpen: 'ติดต่อ',
     feedbackTitle: 'แจ้งปัญหา / ข้อเสนอแนะ',
     feedbackNote: 'เจอบั๊ก หรืออยากให้เพิ่มอะไร ส่งมาได้เลย',
     feedbackEmail: 'อีเมลผู้พัฒนา',
