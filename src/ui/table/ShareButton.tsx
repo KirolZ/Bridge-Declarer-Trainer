@@ -4,35 +4,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { HandSetup } from '../../game/playStore';
 import { handPath } from '../../game/playStore';
+import { copyText } from '../clipboard';
 import { useT } from '../gameStore';
 
 /** Absolute link of `hand` for the page this app is served from. */
 function shareUrl(hand: HandSetup): string {
   const { origin, pathname, search } = window.location;
   return `${origin}${pathname}${search}#${handPath(hand)}`;
-}
-
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // Older browsers, or no permission: fall back to a hidden textarea.
-  }
-  try {
-    const area = document.createElement('textarea');
-    area.value = text;
-    area.setAttribute('readonly', '');
-    area.style.position = 'fixed';
-    area.style.opacity = '0';
-    document.body.appendChild(area);
-    area.select();
-    const ok = document.execCommand('copy');
-    area.remove();
-    return ok;
-  } catch {
-    return false;
-  }
 }
 
 type ShareButtonProps = { hand: HandSetup; className: string };

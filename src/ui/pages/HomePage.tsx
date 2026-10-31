@@ -5,12 +5,12 @@ import { motion } from 'framer-motion';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SUIT_INFO, SUITS } from '../../engine/card';
-import { FEEDBACK_EMAIL, feedbackMailto } from '../../game/feedback';
 import { LANGUAGES } from '../../game/settings';
 import { LANGUAGE_NAME } from '../../i18n';
 import { CHAPTERS, chapterOf, isFirstVisit } from '../../learn';
 import { getSolver } from '../../worker';
 import { DealingOverlay } from '../DealingOverlay';
+import { FeedbackWidget } from '../FeedbackWidget';
 import { Flag } from '../Flag';
 import {
   learnStore,
@@ -60,36 +60,6 @@ function LanguageSwitch() {
         </button>
       ))}
     </div>
-  );
-}
-
-/**
- * Bug reports and feedback by email (SPEC §8). The address is also shown as text, for devices with
- * no mail app set up, where the link does nothing.
- */
-function FeedbackLink() {
-  const t = useT();
-  const language = useSettings((s) => s.settings.language);
-  const href = feedbackMailto({
-    subject: t.home.feedbackSubject,
-    intro: t.home.feedbackIntro,
-    details: [
-      `page: ${window.location.href}`,
-      `language: ${language}`,
-      `screen: ${window.innerWidth}x${window.innerHeight}`,
-      `browser: ${navigator.userAgent}`,
-    ],
-  });
-  return (
-    <p className="text-sm text-white/70" data-testid="feedback">
-      <a
-        href={href}
-        className="rounded underline hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
-      >
-        {t.home.feedback}
-      </a>
-      <span className="block text-xs text-white/50 select-all">{FEEDBACK_EMAIL}</span>
-    </p>
   );
 }
 
@@ -156,9 +126,10 @@ export function HomePage() {
   // Load the solver while the player reads the page, so the first deal is quicker.
   useEffect(() => getSolver().warmUp(), []);
 
-  // Bottom padding: the fixed "Created by" line must never cover the credits (a long page scrolls).
+  // Bottom padding: the fixed "Created by" line and feedback button must never cover the credits
+  // (a long page scrolls).
   return (
-    <main className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-6 px-4 pt-12 pb-10 text-center sm:pt-0">
+    <main className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-6 px-4 pt-12 pb-20 text-center sm:pt-0">
       <LanguageSwitch />
       <motion.h1
         className="text-3xl font-bold"
@@ -204,8 +175,8 @@ export function HomePage() {
           {t.storeMessage(dealError)}
         </p>
       )}
-      <FeedbackLink />
       <DealingOverlay />
+      <FeedbackWidget />
       <p
         className="pointer-events-none fixed bottom-2 left-3 text-xs text-white/50"
         data-testid="author"

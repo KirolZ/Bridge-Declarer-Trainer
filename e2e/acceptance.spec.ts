@@ -131,29 +131,58 @@ test('the DDS license ships with the app and the home page credits it', async ({
   await expect(page.getByTestId('author')).toHaveText('Created by 1Cu');
 });
 
-// TASKS M23: bug reports and feedback by email, from the home page, in both languages.
-test('the home page links to the feedback email with a ready subject and body', async ({
+// TASKS M23: bug reports and feedback from the floating button on the home page, in both languages.
+test('the feedback button opens a box to copy the address or start an email', async ({
   page,
+  context,
 }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/');
   const feedback = page.getByTestId('feedback');
-  await expect(feedback).toContainText('shinhiichi0@gmail.com');
+  const box = page.getByTestId('feedback-box');
+  const toggle = feedback.getByRole('button', { name: 'แจ้งปัญหา' });
 
   const mail = async (name: string) => {
-    const href = (await feedback.getByRole('link', { name }).getAttribute('href')) ?? '';
+    const href = (await box.getByRole('link', { name }).getAttribute('href')) ?? '';
     expect(href.startsWith('mailto:shinhiichi0@gmail.com?')).toBe(true);
     const params = new URLSearchParams(href.slice(href.indexOf('?') + 1));
     return { subject: params.get('subject') ?? '', body: params.get('body') ?? '' };
   };
 
-  const th = await mail('แจ้งปัญหา / ข้อเสนอแนะ');
+  // Closed at first; the button opens it and becomes "close".
+  await expect(box).toBeHidden();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.click();
+  await expect(box.getByRole('heading', { name: 'แจ้งปัญหา / ข้อเสนอแนะ' })).toBeVisible();
+  await expect(box.getByTestId('feedback-email')).toHaveValue('shinhiichi0@gmail.com');
+  const th = await mail('ส่งอีเมล');
   expect(th.subject).toContain('แจ้งปัญหา');
   expect(th.body).toContain('language: th');
   expect(th.body).toContain('page: ');
   expect(th.body).toContain('browser: ');
 
+  await box.getByRole('button', { name: 'คัดลอก' }).click();
+  await expect(box.getByRole('button', { name: /คัดลอกแล้ว/ })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('shinhiichi0@gmail.com');
+
+  await feedback.getByRole('button', { name: 'ปิด' }).click();
+  await expect(box).toBeHidden();
+
+  // Esc closes it and gives the focus back to the button; so does a tap outside.
+  await toggle.click();
+  await expect(box).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(box).toBeHidden();
+  await expect(toggle).toBeFocused();
+  await toggle.click();
+  await expect(box).toBeVisible();
+  await page.getByRole('heading', { level: 1 }).click();
+  await expect(box).toBeHidden();
+
   await page.getByTestId('language-switch').getByRole('button', { name: 'English' }).click();
-  const en = await mail('Report a bug / feedback');
+  await feedback.getByRole('button', { name: 'Feedback' }).click();
+  await expect(box.getByRole('heading', { name: 'Report a bug / feedback' })).toBeVisible();
+  const en = await mail('Send email');
   expect(en.subject).toContain('bug report');
   expect(en.body).toContain('language: en');
 });
