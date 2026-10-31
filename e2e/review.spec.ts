@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
 // TASKS M10: post-hand review. Same fixed deal as play.spec.ts: seeded deal 5, South makes 3♥
 // exactly (9 tricks) with best play.

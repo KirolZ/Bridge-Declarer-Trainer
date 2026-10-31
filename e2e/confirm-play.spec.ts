@@ -1,8 +1,8 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
-// Setting "การลงไพ่": tap to play at once (default) or pick a card first; it waits in its trick
-// slot and is played by tapping it there or by clicking the card in hand again.
+// Setting "การลงไพ่": pick a card first (default since M24) — it waits in its trick slot and is
+// played by tapping it there or by clicking the card in hand again — or tap to play at once.
 // Same fixed deal as play.spec.ts (seeded deal 5, 3♥ by South).
 const HAND = '/#/play/GNA8WobYT233o4lpzA/3H';
 
@@ -17,6 +17,9 @@ function collectErrors(page: Page): string[] {
 
 /** Overlapped cards show only their corner index, so click there (as a person would). */
 const CORNER = { position: { x: 6, y: 6 } };
+
+// These specs are about the setting: no "tap to play" from the shared fixture.
+test.use({ cardPlay: null });
 
 const playable = (page: Page) => page.locator('[data-playable="true"]');
 const picked = (page: Page) => page.locator('[data-picked="true"]');
@@ -101,26 +104,41 @@ test('confirm mode with the keyboard: Enter picks, Enter again plays', async ({ 
   await expect(onTrick(page, code)).toBeVisible();
 });
 
-test('the setting switches between confirm and tap-to-play', async ({ page }) => {
+// TASKS M24: a new player (nothing saved) picks then confirms; the setting switches to tap and back.
+test('confirm is the default for a new player; the setting switches to tap-to-play and back', async ({
+  page,
+}) => {
   await page.goto('/#/settings');
   const group = page.getByRole('group', { name: 'การลงไพ่' });
-  await expect(group.getByRole('radio', { name: 'แตะแล้วลงเลย' })).toBeChecked();
-  await group.getByText('แตะเลือก แล้วยืนยัน').click();
   await expect(group.getByRole('radio', { name: 'แตะเลือก แล้วยืนยัน' })).toBeChecked();
 
   await page.goto(HAND);
   await expect(playable(page).first()).toBeVisible({ timeout: 15_000 });
+  const first = (await playable(page).first().getAttribute('data-card'))!;
   await playable(page).first().click(CORNER);
   await expect(bar(page)).toBeVisible();
+  await expect(picked(page)).toHaveAttribute('data-card', first);
+  await expect(onTrick(page, first)).toHaveCount(0);
 
   await page.goto('/#/settings');
   await group.getByText('แตะแล้วลงเลย').click();
+  await expect(group.getByRole('radio', { name: 'แตะแล้วลงเลย' })).toBeChecked();
   await page.goto(HAND);
   await expect(playable(page).first()).toBeVisible({ timeout: 15_000 });
   const code = (await playable(page).first().getAttribute('data-card'))!;
   await playable(page).first().click(CORNER);
   await expect(onTrick(page, code)).toBeVisible();
   await expect(bar(page)).toHaveCount(0);
+
+  // The choice is kept after a reload, and switching back picks again.
+  await page.goto('/#/settings');
+  await page.reload();
+  await expect(group.getByRole('radio', { name: 'แตะแล้วลงเลย' })).toBeChecked();
+  await group.getByText('แตะเลือก แล้วยืนยัน').click();
+  await page.goto(HAND);
+  await expect(playable(page).first()).toBeVisible({ timeout: 15_000 });
+  await playable(page).first().click(CORNER);
+  await expect(bar(page)).toBeVisible();
 });
 
 test('a picked dummy card: its gold frame fits the card, stays above the next column, hides nothing', async ({

@@ -73,8 +73,11 @@ describe('settings', () => {
         suitOrder: 'rank',
       }),
     ).toEqual({ ...DEFAULT_SETTINGS, contractType: 'slam', suitOrder: 'rank' });
-    expect(parseSettings({ cardPlay: 'confirm' }).cardPlay).toBe('confirm');
-    expect(parseSettings({ cardPlay: 'swipe' }).cardPlay).toBe('tap');
+    // Card play (TASKS M24): pick then confirm unless "tap" was chosen; a saved choice is kept.
+    expect(DEFAULT_SETTINGS.cardPlay).toBe('confirm');
+    expect(parseSettings({}).cardPlay).toBe('confirm');
+    expect(parseSettings({ cardPlay: 'tap' }).cardPlay).toBe('tap');
+    expect(parseSettings({ cardPlay: 'swipe' }).cardPlay).toBe('confirm');
     // Language (SPEC §7.6): Thai unless English was picked; older saves have no language.
     expect(DEFAULT_SETTINGS.language).toBe('th');
     expect(parseSettings({ language: 'en' }).language).toBe('en');

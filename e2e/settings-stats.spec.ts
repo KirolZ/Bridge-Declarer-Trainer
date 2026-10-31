@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
 // TASKS M11: settings and stats survive closing the browser, and the app still works when the
 // browser blocks storage. Same fixed deal as play.spec.ts: seeded deal 5, 3♥ makes 9 tricks.
@@ -129,7 +129,10 @@ test('a hand finished again after undo is not counted twice', async ({ page }) =
   await page.addInitScript(() => {
     if (sessionStorage.getItem('seeded')) return;
     sessionStorage.setItem('seeded', '1');
-    localStorage.setItem('bridge-trainer.settings.v1', JSON.stringify({ beginnerMode: true }));
+    localStorage.setItem(
+      'bridge-trainer.settings.v1',
+      JSON.stringify({ beginnerMode: true, cardPlay: 'tap' }),
+    );
   });
   await page.goto(HAND);
   await claimNothing(page);

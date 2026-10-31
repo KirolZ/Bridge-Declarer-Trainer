@@ -74,7 +74,7 @@ export const DEFAULT_SETTINGS: Settings = {
   botSpeed: 'normal',
   suitOrder: 'alternate',
   studyMode: false,
-  cardPlay: 'tap',
+  cardPlay: 'confirm',
   beginnerMode: false,
   language: 'th',
 };

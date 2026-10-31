@@ -86,8 +86,8 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'กลัวกดผิดใบ? ในหน้าตั้งค่า เลือก**การลงไพ่**แบบ "แตะเลือก แล้วยืนยัน" แตะแรกไพ่จะแค่ไปรอกลางโต๊ะ ไพ่ลงจริงเมื่อแตะไพ่ใบนั้นกลางโต๊ะ หรือแตะใบเดิมในมืออีกครั้ง ถ้าเปลี่ยนใจ แตะที่อื่นบนโต๊ะเพื่อยกเลิก',
-        en: 'Worried about tapping the wrong card? In Settings, set **Playing a card** to "Tap, then confirm". The first tap only sends the card to wait in the middle of the table; it is played when you tap it there, or tap the same card in your hand again. Changed your mind? Tap elsewhere on the table to cancel.',
+        th: 'แตะไพ่ครั้งแรก ไพ่จะแค่ไปรอกลางโต๊ะ (กันกดผิดใบ) ไพ่ลงจริงเมื่อแตะไพ่ใบนั้นกลางโต๊ะ หรือแตะใบเดิมในมืออีกครั้ง ถ้าเปลี่ยนใจ แตะที่อื่นบนโต๊ะเพื่อยกเลิก อยากให้แตะครั้งเดียวแล้วลงเลย? ในหน้าตั้งค่า เลือก**การลงไพ่**แบบ "แตะแล้วลงเลย"',
+        en: 'The first tap on a card only sends it to wait in the middle of the table (so a slip of the finger costs nothing); it is played when you tap it there, or tap the same card in your hand again. Changed your mind? Tap elsewhere on the table to cancel. Want one tap to play? In Settings, set **Playing a card** to "Tap to play".',
       },
     },
     { kind: 'h', text: { th: 'Claim', en: 'Claim' } },

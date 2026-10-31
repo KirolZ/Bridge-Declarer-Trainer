@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
 // TASKS M9: hint, undo, play again, claim, study mode. Same fixed deal as play.spec.ts:
 // seeded deal 5, South makes 3♥ exactly (9 tricks) with best play.
@@ -33,7 +33,10 @@ function beginnerMode(page: Page) {
   return page.addInitScript(() => {
     if (sessionStorage.getItem('seeded')) return;
     sessionStorage.setItem('seeded', '1');
-    localStorage.setItem('bridge-trainer.settings.v1', JSON.stringify({ beginnerMode: true }));
+    localStorage.setItem(
+      'bridge-trainer.settings.v1',
+      JSON.stringify({ beginnerMode: true, cardPlay: 'tap' }),
+    );
     localStorage.setItem(
       'bridge-trainer.learn.v1',
       JSON.stringify({

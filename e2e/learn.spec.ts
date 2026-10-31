@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
 // TASKS M12 12.1–12.2: the guide's chapter list and progress, a lesson with glossary terms and
 // card examples, and the three kinds of exercise.

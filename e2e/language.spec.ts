@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
 // TASKS M17–M18: the screens in English. The flag switch on the home page, then every screen of a
 // hand (table, menu, claim, result, replay), settings, stats and the guide (chapters, the four

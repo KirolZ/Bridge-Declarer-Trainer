@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
 // SPEC §10 — the two end-to-end journeys, on desktop and phone, with no console error (the CSP of
 // docker/security-headers.conf is sent by `vite preview` as well as nginx, so a violation fails here).

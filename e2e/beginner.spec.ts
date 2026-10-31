@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
 // TASKS M12 12.7–12.8: the first-visit question, the guide's entry points (home progress, the
 // table's `?` panel) and beginner mode on the table. Same fixed deal as play.spec.ts (3♥ by South).
@@ -70,7 +70,10 @@ test('beginner mode: tips, why a card cannot be played, the ? panel, the score e
   await page.addInitScript(() => {
     if (sessionStorage.getItem('seeded')) return;
     sessionStorage.setItem('seeded', '1');
-    localStorage.setItem('bridge-trainer.settings.v1', JSON.stringify({ beginnerMode: true }));
+    localStorage.setItem(
+      'bridge-trainer.settings.v1',
+      JSON.stringify({ beginnerMode: true, cardPlay: 'tap' }),
+    );
     localStorage.setItem('bridge-trainer.learn.v1', JSON.stringify({ welcomed: true }));
   });
   await page.goto(HAND);

@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
 // TASKS M5: the solver runs in a Web Worker, so the page keeps responding while it works.
 // Seed 4 deals ten tables that take about 1.3 s together in Node (none over 0.25 s).

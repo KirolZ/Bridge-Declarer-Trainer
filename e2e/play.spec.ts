@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from './fixtures';
+import { expect, test } from './fixtures';
 
 // TASKS M8: a hand can be played through all 13 tricks against the bots, on desktop and phone.
 // The deal is fixed (seeded deal 5): South makes 3♥ exactly with best play.
