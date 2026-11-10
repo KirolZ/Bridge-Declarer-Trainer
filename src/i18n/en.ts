@@ -89,7 +89,7 @@ export const en: Messages = {
     tagline: 'Practise declarer play against bots that see all four hands',
     welcomeTitle: 'Have you played bridge before?',
     welcomeNew: 'Not yet',
-    welcomeNewNote: 'The rules in 2 minutes + beginner mode',
+    welcomeNewNote: 'Start with the guide + beginner mode',
     welcomeKnown: 'Yes, I have',
     welcomeKnownNote: 'Start playing',
     welcomeLater:

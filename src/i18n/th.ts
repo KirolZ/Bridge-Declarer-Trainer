@@ -102,7 +102,7 @@ export const th = {
     tagline: 'ฝึกเดินไพ่ฝั่ง declarer กับบอทที่เห็นไพ่ทุกมือ',
     welcomeTitle: 'เคยเล่น bridge ไหม?',
     welcomeNew: 'ยังไม่เคย',
-    welcomeNewNote: 'อ่านกติกาย่อ 2 นาที + โหมดมือใหม่',
+    welcomeNewNote: 'เริ่มจากคู่มือ + โหมดมือใหม่',
     welcomeKnown: 'เคยเล่นแล้ว',
     welcomeKnownNote: 'เริ่มเล่นเลย',
     welcomeLater: 'เปลี่ยนใจได้ทุกเมื่อ: คู่มืออยู่ที่หน้านี้ โหมดมือใหม่อยู่ในตั้งค่า',

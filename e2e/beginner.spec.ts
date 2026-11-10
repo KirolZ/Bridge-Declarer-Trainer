@@ -40,7 +40,7 @@ test('first visit: "never played" opens the quick guide with beginner mode on (M
   await expect(page.getByTestId('home-guide-progress')).toHaveText('0/14 บท');
   await noSideScroll(page);
 
-  await expect(page.getByTestId('welcome')).toContainText('อ่านกติกาย่อ 2 นาที');
+  await expect(page.getByTestId('welcome')).toContainText('เริ่มจากคู่มือ + โหมดมือใหม่');
   await page.getByRole('button', { name: /ยังไม่เคย/ }).click();
   await expect(page).toHaveURL(/#\/learn\/quick$/);
   await expect(page.getByRole('heading', { name: 'คู่มือฉบับย่อ' })).toBeVisible();
