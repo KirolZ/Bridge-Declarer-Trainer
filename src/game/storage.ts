@@ -94,4 +94,6 @@ export const STORAGE_KEYS = {
   settings: 'bridge-trainer.settings.v1',
   stats: 'bridge-trainer.stats.v1',
   learn: 'bridge-trainer.learn.v1',
+  /** The player closed the test-site notice (M26). */
+  testNotice: 'bridge-trainer.test-notice.v1',
 } as const;

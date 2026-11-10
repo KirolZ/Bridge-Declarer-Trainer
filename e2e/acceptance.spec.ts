@@ -194,3 +194,31 @@ test('the feedback button opens a box to copy the address or start an email', as
   expect(en.subject).toContain('bug report');
   expect(en.body).toContain('language: en');
 });
+
+// TASKS M26: the e2e server runs on localhost, a test host, so the home page shows the notice.
+test('the test-site notice shows on the home page until it is closed', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/');
+  const notice = page.getByTestId('test-site-notice');
+  await expect(notice).toHaveText(/นี่เป็นเว็บทดสอบ ที่อยู่เว็บอาจเปลี่ยนในอนาคต/);
+
+  // On a small phone the first-visit page is taller than the screen and starts at the top padding:
+  // the notice must still sit below the language switch, with no sideways scroll.
+  await page.setViewportSize({ width: 360, height: 640 });
+  const box = await notice.boundingBox();
+  const flags = await page.getByTestId('language-switch').boundingBox();
+  expect(box && flags && box.y >= flags.y + flags.height).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+
+  await page.getByTestId('language-switch').getByRole('button', { name: 'English' }).click();
+  await expect(notice).toHaveText(/This is a test site\. Its address may change in the future\./);
+
+  await notice.getByRole('button', { name: 'Dismiss notice' }).click();
+  await expect(notice).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(notice).toBeHidden();
+  expect(errors).toEqual([]);
+});

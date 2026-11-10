@@ -1,4 +1,4 @@
-// #/ — start a hand, the guide (with progress), settings, stats. On the first visit it asks
+// #/ — start a hand, the guide (with progress), settings, stats (and a test-site notice on test hosts). On the first visit it asks
 // whether the player knows bridge (SPEC §7.7): no → the quick guide with beginner mode on, yes → play.
 
 import { motion } from 'framer-motion';
@@ -21,6 +21,7 @@ import {
   useSettings,
   useT,
 } from '../gameStore';
+import { TestSiteNotice } from '../TestSiteNotice';
 
 const SECONDARY =
   'rounded-lg bg-white/10 px-5 py-2 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none';
@@ -127,10 +128,12 @@ export function HomePage() {
   useEffect(() => getSolver().warmUp(), []);
 
   // Bottom padding: the fixed "Created by" line and feedback button must never cover the credits
-  // (a long page scrolls).
+  // (a long page scrolls). Top padding on a phone: the language switch must never cover the first
+  // line (the test-site notice, M26) when the page is taller than the screen.
   return (
-    <main className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-6 px-4 pt-12 pb-20 text-center sm:pt-0">
+    <main className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-6 px-4 pt-16 pb-20 text-center sm:pt-0">
       <LanguageSwitch />
+      <TestSiteNotice />
       <motion.h1
         className="text-3xl font-bold"
         initial={{ opacity: 0, y: -12 }}
