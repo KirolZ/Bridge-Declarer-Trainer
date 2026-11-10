@@ -29,7 +29,10 @@ const noSideScroll = (page: Page) =>
  */
 const BLOCKED_CLICK = { position: { x: 6, y: 6 }, force: true };
 
-test('first visit: "never played" opens chapter 1 with beginner mode on', async ({ page }) => {
+test('first visit: "never played" opens the quick guide with beginner mode on (M25)', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await page.goto('/');
   await expect(page.getByTestId('welcome')).toBeVisible();
@@ -37,11 +40,18 @@ test('first visit: "never played" opens chapter 1 with beginner mode on', async 
   await expect(page.getByTestId('home-guide-progress')).toHaveText('0/14 บท');
   await noSideScroll(page);
 
+  await expect(page.getByTestId('welcome')).toContainText('อ่านกติกาย่อ 2 นาที');
   await page.getByRole('button', { name: /ยังไม่เคย/ }).click();
-  await expect(page).toHaveURL(/#\/learn\/1$/);
-  await expect(page.getByRole('heading', { name: 'Bridge คืออะไร' })).toBeVisible();
-  await page.getByTestId('lesson-end').scrollIntoViewIfNeeded();
-  await expect(page.getByTestId('lesson-end')).toHaveAttribute('data-read', 'true');
+  await expect(page).toHaveURL(/#\/learn\/quick$/);
+  await expect(page.getByRole('heading', { name: 'คู่มือฉบับย่อ' })).toBeVisible();
+  await noSideScroll(page);
+
+  // One page, then play: the button at the end deals a hand.
+  const done = page.getByTestId('quick-done');
+  await done.scrollIntoViewIfNeeded();
+  await expect(done).toContainText('แค่นี้ก็เล่นได้แล้ว');
+  await done.getByRole('button', { name: 'เริ่มเล่น' }).click();
+  await expect(page).toHaveURL(/#\/play\//, { timeout: 30_000 });
 
   // Beginner mode is on and decides the contract type, difficulty and bot speed.
   await page.goto('/#/settings');
@@ -58,7 +68,8 @@ test('first visit: "never played" opens chapter 1 with beginner mode on', async 
   await page.goto('/');
   await expect(page.getByTestId('welcome')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'เริ่มเล่น', exact: true })).toBeVisible();
-  await expect(page.getByTestId('home-guide-progress')).toHaveText('1/14 บท');
+  // The quick guide is not one of the 14 chapters.
+  await expect(page.getByTestId('home-guide-progress')).toHaveText('0/14 บท');
   expect(errors).toEqual([]);
 });
 

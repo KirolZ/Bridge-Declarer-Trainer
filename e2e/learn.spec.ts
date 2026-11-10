@@ -142,6 +142,39 @@ test('the last rules chapter says the rules are enough, and deals a hand (M21)',
   expect(errors).toEqual([]);
 });
 
+test('the quick guide: first on the chapter list, one short page, then the full guide (M25)', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto('/#/learn');
+  const card = page.getByTestId('quick-guide-link');
+  await expect(card).toContainText('คู่มือฉบับย่อ');
+  await expect(card).toContainText('อ่าน 2 นาทีก็เล่นได้');
+  // Above the progress and the chapters.
+  const cardBox = (await card.boundingBox())!;
+  const progressBox = (await page.getByTestId('learn-progress').boundingBox())!;
+  expect(cardBox.y).toBeLessThan(progressBox.y);
+  await card.click();
+
+  await expect(page).toHaveURL(/#\/learn\/quick$/);
+  await expect(page.getByRole('heading', { name: 'คู่มือฉบับย่อ', level: 1 })).toBeVisible();
+  const guide = page.getByTestId('quick-guide');
+  await expect(guide.getByRole('heading')).toHaveCount(5);
+  // Terms open the glossary sheet, like in a chapter; tricks show the winner.
+  await guide.locator('[data-term="trick"]').first().click();
+  await expect(page.getByTestId('term-sheet')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('term-sheet')).toHaveCount(0);
+  await expect(guide.locator('figure')).toHaveCount(2);
+  await noSideScroll(page);
+
+  // Reading it does not count as reading a chapter.
+  await page.getByTestId('quick-done').getByRole('link', { name: 'อ่านคู่มือเต็ม' }).click();
+  await expect(page).toHaveURL(/#\/learn$/);
+  await expect(page.locator('[data-part="rules"]')).toContainText('อ่านแล้ว 0/6');
+  expect(errors).toEqual([]);
+});
+
 test('pick the legal cards: reasons for a wrong pick, then pass', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/#/learn/ex/ch2-follow-suit');
@@ -241,6 +274,7 @@ test('guide pages fit a 360 px phone', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   for (const path of [
     '/#/learn',
+    '/#/learn/quick',
     '/#/learn/2',
     '/#/learn/glossary',
     '/#/learn/ex/ch10-finesse-aq',

@@ -89,7 +89,7 @@ export const en: Messages = {
     tagline: 'Practise declarer play against bots that see all four hands',
     welcomeTitle: 'Have you played bridge before?',
     welcomeNew: 'Not yet',
-    welcomeNewNote: 'Start with the guide + beginner mode',
+    welcomeNewNote: 'The rules in 2 minutes + beginner mode',
     welcomeKnown: 'Yes, I have',
     welcomeKnownNote: 'Start playing',
     welcomeLater:
@@ -345,6 +345,11 @@ export const en: Messages = {
     rulesDoneNote:
       'The playing technique in chapters 7–13 can wait until you have played a few hands. While you play, the ? button on the table opens the guide at any time.',
     backToChapters: 'Back to the chapters',
+    quickNote: 'No time for 14 chapters? Two minutes and you can play.',
+    quickDone: 'That is all you need to play',
+    quickDoneNote:
+      'Once you have played a few hands and want the details, the full guide is always there: the rules in chapters 1–6, playing technique in chapters 7–13.',
+    fullGuide: 'Read the full guide',
     pending: (topic) => `This chapter is not written yet — it will cover: ${topic}`,
     exercises: 'Exercises',
     passed: 'Passed',

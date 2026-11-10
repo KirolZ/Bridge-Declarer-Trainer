@@ -1,5 +1,5 @@
 // #/ — start a hand, the guide (with progress), settings, stats. On the first visit it asks
-// whether the player knows bridge (SPEC §7.7): no → chapter 1 with beginner mode on, yes → play.
+// whether the player knows bridge (SPEC §7.7): no → the quick guide with beginner mode on, yes → play.
 
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
@@ -116,7 +116,7 @@ export function HomePage() {
   const onNew = () => {
     updateSettings({ beginnerMode: true });
     learnStore.getState().markWelcomed();
-    navigate('/learn/1');
+    navigate('/learn/quick');
   };
   const onKnown = () => {
     learnStore.getState().markWelcomed();

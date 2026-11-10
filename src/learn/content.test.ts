@@ -7,6 +7,7 @@ import { trickPlays } from './exercise';
 import { EXERCISES, exercisesIn } from './exercises';
 import { GLOSSARY, glossaryEntry, glossaryIn } from './glossary';
 import { isBilingual, localize } from './localize';
+import { QUICK_GUIDE, quickGuideIn } from './quick';
 import { parseCardList, parseInline, termIds } from './markup';
 import {
   EMPTY_PROGRESS,
@@ -56,6 +57,7 @@ describe('parseInline', () => {
         ...(e.kind === 'play' ? e.wrong.map((w) => w.why) : []),
       ]),
       ...GLOSSARY.map((e) => e.text),
+      ...QUICK_GUIDE.blocks.flatMap(blockTexts),
     ];
     for (const text of all) {
       for (const p of parseInline(text)) {
@@ -76,6 +78,50 @@ describe('parseInline', () => {
     expect(() => parseCardList('SA X1')).toThrow();
   });
 });
+
+type Piece = { where: string; text: string };
+
+/**
+ * Reads the pieces in order and lists every glossary term whose first use is not a link (TASKS
+ * 12.9), plus the terms met. `everyday` terms may first appear as plain words.
+ */
+function firstLinks(
+  pieces: readonly Piece[],
+  lang: 'th' | 'en',
+  everyday: readonly string[],
+): { unlinked: string[]; seen: Set<string> } {
+  // "NT (No Trump)" → nt, no trump; "NS / EW" → ns, ew. Longest first, so "opening lead" is not
+  // also read as "lead".
+  const names = glossaryIn(lang)
+    .flatMap((e) =>
+      [...e.term.replace(/[()]/g, '/').split('/'), ...(e.aliases ?? [])]
+        .map((n) => n.trim().toLowerCase())
+        .filter(Boolean)
+        .map((name) => ({ id: e.id, re: new RegExp(`(?<![a-z])${name}s?(?![a-z])`, 'g') })),
+    )
+    .sort((a, b) => b.re.source.length - a.re.source.length);
+
+  const seen = new Set<string>();
+  const unlinked: string[] = [];
+  for (const { where, text } of pieces) {
+    const linked = new Set(termIds(text));
+    let plain = parseInline(text)
+      .map((p) => (p.t === 'text' || p.t === 'strong' ? p.text : ' '))
+      .join(' ')
+      .toLowerCase();
+    const used = new Set(linked);
+    for (const { id, re } of names) {
+      if (plain.match(re)) used.add(id);
+      plain = plain.replace(re, ' ');
+    }
+    for (const id of used) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      if (!linked.has(id) && !everyday.includes(id)) unlinked.push(`${id} (${where})`);
+    }
+  }
+  return { unlinked, seen };
+}
 
 function blockTexts(b: Block): string[] {
   switch (b.kind) {
@@ -218,6 +264,9 @@ describe('glossary', () => {
       ]),
       ...GLOSSARY.map((e) => e.text),
       ...PARTS.flatMap((p) => [p.title, p.note]),
+      QUICK_GUIDE.title,
+      QUICK_GUIDE.intro,
+      ...QUICK_GUIDE.blocks.flatMap(blockTexts),
     ];
     const unknown = new Set<string>();
     for (const text of texts) {
@@ -274,40 +323,71 @@ describe('glossary', () => {
           ].map((text) => ({ where: e.id, text })),
         ),
       ]);
-      // "NT (No Trump)" → nt, no trump; "NS / EW" → ns, ew. Longest first, so "opening lead" is not
-      // also read as "lead".
-      const names = GLOSSARY.flatMap((e) =>
-        [...e.term.replace(/[()]/g, '/').split('/'), ...(e.aliases ?? [])]
-          .map((n) => n.trim().toLowerCase())
-          .filter(Boolean)
-          .map((name) => ({ id: e.id, re: new RegExp(`(?<![a-z])${name}s?(?![a-z])`, 'g') })),
-      ).sort((a, b) => b.re.source.length - a.re.source.length);
-
-      const seen = new Set<string>();
-      const unlinked: string[] = [];
-      for (const { where, text } of pieces) {
-        const linked = new Set(termIds(text));
-        let plain = parseInline(text)
-          .map((p) => (p.t === 'text' || p.t === 'strong' ? p.text : ' '))
-          .join(' ')
-          .toLowerCase();
-        const used = new Set(linked);
-        for (const { id, re } of names) {
-          if (plain.match(re)) used.add(id);
-          plain = plain.replace(re, ' ');
-        }
-        for (const id of used) {
-          if (seen.has(id)) continue;
-          seen.add(id);
-          if (!linked.has(id) && !(everyday as readonly string[]).includes(id))
-            unlinked.push(`${id} (${where})`);
-        }
-      }
+      const { unlinked, seen } = firstLinks(pieces, lang, everyday);
       expect(unlinked).toEqual([]);
       // Every glossary term is met somewhere in the guide.
       expect(GLOSSARY.filter((e) => !seen.has(e.id)).map((e) => e.id)).toEqual([]);
     },
   );
+});
+
+describe('the quick guide (M25)', () => {
+  const said = {
+    th: /(North|East|South|West)(?: \(dummy\))?(?: จึง)? ?กิน/g,
+    en: /(North|East|South|West)(?: \(dummy\))? (?:wins|takes)/g,
+  };
+  const names: Record<string, string> = { N: 'North', E: 'East', S: 'South', W: 'West' };
+
+  it('has the same blocks in both languages', () => {
+    const en = quickGuideIn('en');
+    expect(en.blocks.map((b) => b.kind)).toEqual(QUICK_GUIDE.blocks.map((b) => b.kind));
+    for (const g of [QUICK_GUIDE, en]) {
+      expect(g.title.trim()).not.toBe('');
+      expect(g.intro.trim()).not.toBe('');
+    }
+  });
+
+  it('teaches what the first hand needs, and stays short', () => {
+    const linked = new Set(QUICK_GUIDE.blocks.flatMap(blockTexts).flatMap(termIds));
+    for (const id of ['trick', 'contract', 'follow-suit', 'trump', 'nt', 'dummy', 'lead'])
+      expect(linked, id).toContain(id);
+    // A fifth of the rules chapters (1–6) at most: the point of this page is that it is short.
+    const length = (texts: readonly string[]) => texts.join('').length;
+    const rules = CHAPTERS.filter((c) => PARTS[0]!.chapters.includes(c.n));
+    expect(length(QUICK_GUIDE.blocks.flatMap(blockTexts))).toBeLessThan(
+      length(rules.flatMap((c) => c.blocks.flatMap(blockTexts))) / 5,
+    );
+  });
+
+  it.each([
+    ['th', []],
+    ['en', ['game']],
+  ] as const)('links only existing terms, each the first time it is met (%s)', (lang, everyday) => {
+    const guide = quickGuideIn(lang);
+    const texts = guide.blocks.filter((b) => b.kind !== 'h').flatMap(blockTexts);
+    for (const text of guide.blocks.flatMap(blockTexts))
+      for (const id of termIds(text)) expect(glossaryEntry(id, lang), `[[${id}]]`).toBeDefined();
+    expect(
+      firstLinks(
+        texts.map((text) => ({ where: 'quick', text })),
+        lang,
+        everyday,
+      ).unlinked,
+    ).toEqual([]);
+  });
+
+  it.each(['th', 'en'] as const)('trick examples are valid and name the winner (%s)', (lang) => {
+    for (const b of quickGuideIn(lang).blocks) {
+      if (b.kind !== 'trick') continue;
+      const cards = parseCardList(b.cards);
+      expect(cards).toHaveLength(4);
+      expect(new Set(b.cards.split(/\s+/)).size).toBe(4);
+      const winner = trickWinner(trickPlays(b.leader, cards), b.trump);
+      const named = [...(b.caption ?? '').matchAll(said[lang])].map((m) => m[1]);
+      expect(named.length, b.cards).toBeGreaterThan(0);
+      for (const n of named) expect(n, b.cards).toBe(names[winner]);
+    }
+  });
 });
 
 describe('the guide in English (M18)', () => {
@@ -334,6 +414,9 @@ describe('the guide in English (M18)', () => {
     ),
     ...glossary.map((e) => ({ where: e.id, text: e.text })),
     ...partsIn('en').flatMap((p) => [p.title, p.note].map((text) => ({ where: p.id, text }))),
+    ...[quickGuideIn('en').title, quickGuideIn('en').intro]
+      .concat(quickGuideIn('en').blocks.flatMap(blockTexts))
+      .map((text) => ({ where: 'quick', text })),
   ];
 
   it('has the same chapters, exercises and terms as the Thai guide', () => {
@@ -378,6 +461,7 @@ describe('the guide in English (M18)', () => {
     walk(CHAPTERS, chapters);
     walk(EXERCISES, exercises);
     walk(GLOSSARY, glossary);
+    walk(QUICK_GUIDE, quickGuideIn('en'));
     expect(pairs.length).toBeGreaterThan(400);
     for (const [th, en] of pairs) expect(cards(en), en).toEqual(cards(th));
   });

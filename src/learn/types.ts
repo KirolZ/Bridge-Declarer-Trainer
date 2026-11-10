@@ -88,6 +88,14 @@ export type Part<T extends Text = Rich> = {
   readonly chapters: readonly number[];
 };
 
+/** The quick guide (M25): one short page with what a player needs for the first hand. */
+export type QuickGuide<T extends Text = Rich> = {
+  readonly title: T;
+  /** One line under the title. */
+  readonly intro: T;
+  readonly blocks: readonly Block<T>[];
+};
+
 export type GlossaryEntry<T extends Text = Rich> = {
   /** Used in links: `[[id]]`, `#/learn/glossary?t=<id>`. */
   readonly id: string;

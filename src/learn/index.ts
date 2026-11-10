@@ -5,6 +5,7 @@ export * from './markup';
 export * from './localize';
 export * from './glossary';
 export * from './chapters';
+export * from './quick';
 export * from './exercises';
 export * from './exercise';
 export * from './progress';

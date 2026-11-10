@@ -1,5 +1,5 @@
-// The beginner's guide (SPEC §7.7): #/learn (chapters + progress), #/learn/<n> (a lesson),
-// #/learn/ex/<id> (an exercise) and #/learn/glossary[?t=<term>].
+// The beginner's guide (SPEC §7.7): #/learn (chapters + progress), #/learn/quick (the quick
+// guide), #/learn/<n> (a lesson), #/learn/ex/<id> (an exercise) and #/learn/glossary[?t=<term>].
 
 import type { ReactNode } from 'react';
 import type { Language } from '../../game/settings';
@@ -16,6 +16,7 @@ import {
   partById,
   partOf,
   partsIn,
+  quickGuideIn,
 } from '../../learn';
 import { learnStore, useDealNew, useGame, useLanguage, useLearn, useT } from '../gameStore';
 import { DealingOverlay } from '../DealingOverlay';
@@ -85,6 +86,17 @@ export function LearnPage() {
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-8">
       <PageHeader title={t.common.guide} to="/" />
       {!persistent && <NotSavedNotice what={t.learn.progressWhat} />}
+      <Link
+        to="/learn/quick"
+        data-testid="quick-guide-link"
+        className="flex items-center gap-3 rounded-2xl border border-amber-300/40 bg-amber-400/10 px-4 py-3 hover:bg-amber-400/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
+      >
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="font-semibold text-amber-200">{quickGuideIn(lang).title}</span>
+          <span className="text-sm text-white/80">{t.learn.quickNote}</span>
+        </span>
+        <span aria-hidden="true">→</span>
+      </Link>
       <section
         className="flex flex-col gap-2 rounded-2xl bg-black/25 p-4"
         aria-label={t.learn.progress}
@@ -218,27 +230,38 @@ function PartSection({
   );
 }
 
-/** At the end of the last rules chapter (M21): the rules are enough, go and play. */
-function RulesDone() {
+/**
+ * "You can play now", with a button that deals a hand: at the end of the last rules chapter (M21)
+ * and of the quick guide (M25).
+ */
+function PlayNow({
+  testId,
+  title,
+  note,
+  children,
+}: {
+  testId: string;
+  title: string;
+  note: string;
+  children?: ReactNode;
+}) {
   const t = useT();
   const dealNew = useDealNew();
   const dealing = useGame((s) => s.dealing);
   const dealError = useGame((s) => s.dealError);
   return (
     <section
-      data-testid="rules-done"
+      data-testid={testId}
       className="flex flex-col gap-3 rounded-2xl border border-amber-300/40 bg-amber-400/10 p-4"
     >
-      <h2 className="text-lg font-bold text-amber-200">{t.learn.rulesDone}</h2>
-      <p className="text-white/85">{t.learn.rulesDoneNote}</p>
-      <button
-        type="button"
-        onClick={() => void dealNew()}
-        disabled={dealing}
-        className={`${PRIMARY} self-start`}
-      >
-        {t.home.play}
-      </button>
+      <h2 className="text-lg font-bold text-amber-200">{title}</h2>
+      <p className="text-white/85">{note}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => void dealNew()} disabled={dealing} className={PRIMARY}>
+          {t.home.play}
+        </button>
+        {children}
+      </div>
       {dealError && (
         <p role="alert" className="text-sm text-red-300">
           {t.storeMessage(dealError)}
@@ -247,6 +270,12 @@ function RulesDone() {
       <DealingOverlay />
     </section>
   );
+}
+
+/** At the end of the last rules chapter (M21): the rules are enough, go and play. */
+function RulesDone() {
+  const t = useT();
+  return <PlayNow testId="rules-done" title={t.learn.rulesDone} note={t.learn.rulesDoneNote} />;
 }
 
 function ChapterItem({
@@ -296,6 +325,36 @@ function ChapterItem({
         </span>
       </Link>
     </li>
+  );
+}
+
+// ---------- #/learn/quick ----------
+
+/** The quick guide (M25): one short page, then play; the full guide is a link away. */
+export function QuickGuidePage() {
+  const lang = useLanguage();
+  const guide = quickGuideIn(lang);
+  const t = useT();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return (
+    <TermSheetProvider>
+      <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-24">
+        <LearnHeader back="/learn" backLabel={t.learn.backToChapters} title={guide.title} />
+        <p className="-mt-2 text-white/80">{guide.intro}</p>
+        <article className="flex flex-col gap-3" data-testid="quick-guide">
+          <Blocks blocks={guide.blocks} />
+        </article>
+        <PlayNow testId="quick-done" title={t.learn.quickDone} note={t.learn.quickDoneNote}>
+          <Link to="/learn" className={SECONDARY}>
+            {t.learn.fullGuide}
+          </Link>
+        </PlayNow>
+      </main>
+    </TermSheetProvider>
   );
 }
 

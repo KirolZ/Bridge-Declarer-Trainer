@@ -29,13 +29,21 @@ const noSideScroll = (page: Page) =>
     )
     .toBeLessThanOrEqual(0);
 
-test('a new player: "never played" → reads chapter 1 → passes the chapter 2 exercises', async ({
+test('a new player: "never played" → quick guide → reads chapter 1 → passes the chapter 2 exercises', async ({
   page,
 }) => {
   const errors = collectErrors(page);
   await page.goto('/');
   await expect(page.getByTestId('welcome')).toBeVisible();
   await page.getByRole('button', { name: /ยังไม่เคย/ }).click();
+
+  // The quick guide first (M25); the full guide is a link away.
+  await expect(page).toHaveURL(/#\/learn\/quick$/);
+  await expect(page.getByRole('heading', { name: 'คู่มือฉบับย่อ' })).toBeVisible();
+  await noSideScroll(page);
+  await page.getByTestId('quick-done').getByRole('link', { name: 'อ่านคู่มือเต็ม' }).click();
+  await expect(page).toHaveURL(/#\/learn$/);
+  await page.locator('[data-chapter="1"]').click();
 
   // Chapter 1, read to the end.
   await expect(page).toHaveURL(/#\/learn\/1$/);

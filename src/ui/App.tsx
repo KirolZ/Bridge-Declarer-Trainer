@@ -2,7 +2,13 @@ import { MotionConfig } from 'framer-motion';
 import { createHashRouter, RouterProvider } from 'react-router-dom';
 import { DevSolverPage } from './pages/DevSolverPage';
 import { HomePage } from './pages/HomePage';
-import { ExercisePage, GlossaryPage, LearnPage, LessonPage } from './pages/LearnPages';
+import {
+  ExercisePage,
+  GlossaryPage,
+  LearnPage,
+  LessonPage,
+  QuickGuidePage,
+} from './pages/LearnPages';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PlayPage } from './pages/PlayPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -16,6 +22,7 @@ const router = createHashRouter([
   { path: '/stats', element: <StatsPage /> },
   { path: '/learn', element: <LearnPage /> },
   { path: '/learn/glossary', element: <GlossaryPage /> },
+  { path: '/learn/quick', element: <QuickGuidePage /> },
   { path: '/learn/ex/:id', element: <ExercisePage /> },
   { path: '/learn/:chapter', element: <LessonPage /> },
   { path: '/dev/solver', element: <DevSolverPage /> },

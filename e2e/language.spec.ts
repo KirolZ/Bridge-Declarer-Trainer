@@ -147,6 +147,24 @@ test('beginner mode in English: table tips and the score explained', async ({ pa
   expect(errors).toEqual([]);
 });
 
+test('the quick guide in English (M25)', async ({ page }) => {
+  const errors = collectErrors(page);
+  await switchToEnglish(page);
+  await page.goto('/#/learn');
+  await expect(page.getByTestId('quick-guide-link')).toContainText('No time for 14 chapters?');
+  await page.getByTestId('quick-guide-link').click();
+  await expect(page.getByRole('heading', { name: 'Quick guide', level: 1 })).toBeVisible();
+  await expect(page.getByTestId('quick-guide')).toContainText(
+    'You are South, and you play North too',
+  );
+  await expect(page.getByTestId('quick-done')).toContainText('That is all you need to play');
+  await expect(
+    page.getByTestId('quick-done').getByRole('link', { name: 'Read the full guide' }),
+  ).toBeVisible();
+  await noThai(page);
+  expect(errors).toEqual([]);
+});
+
 test('switching back to Thai', async ({ page }) => {
   await switchToEnglish(page);
   await page.getByTestId('language-switch').getByRole('button', { name: 'ไทย' }).click();
