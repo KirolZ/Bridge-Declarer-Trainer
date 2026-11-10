@@ -27,7 +27,7 @@ export function TestSiteNotice() {
       data-testid="test-site-notice"
       className="flex max-w-full items-center gap-1 rounded-2xl bg-amber-300/15 py-1 pr-1 pl-4 text-sm text-amber-100 ring-1 ring-amber-300/40"
     >
-      <span>{t.home.testSiteNotice}</span>
+      <span data-testid="test-site-notice-text">{t.home.testSiteNotice}</span>
       <button
         type="button"
         onClick={dismiss}

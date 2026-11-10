@@ -98,7 +98,7 @@ export const en: Messages = {
     mainMenu: 'Main menu',
     chapters: (read, total) => `${read}/${total} chapters`,
     creditsBy: 'by Bo Haglund, Soren Hein et al.',
-    testSiteNotice: '🧪 This is a test site. Its address may change in the future.',
+    testSiteNotice: 'This is a test site. Its address may change in the future.',
     testSiteDismiss: 'Dismiss notice',
     feedbackOpen: 'Contact',
     feedbackTitle: 'Report a bug / feedback',
