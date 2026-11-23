@@ -2,74 +2,41 @@
 // in order of preference, each with its meaning. The bidder makes the first call whose meaning
 // the hand fits; an explanation of a call is the meaning of the rules that make it there.
 //
-// Phase one (M28) covers auctions where the other side only passes. Where the system has nothing
-// to say (the other side bid — M29) it gives no calls: the player passes and the pass means
-// nothing. Point ranges follow the ACBL SAYC booklet; DECISIONS.md (M28) lists where they differ.
+// This file holds the uncontested rules (M28) and the dispatch; the competitive rules (M29) are in
+// competition.ts and contract placement in placement.ts. Point ranges follow the ACBL SAYC
+// booklet; DECISIONS.md (M28, M29) lists where they differ.
 
-import type { Bid, Call, Strain, Suit } from '../engine';
-import { PASS, STRAINS, bid } from '../engine';
+import type { Bid, Suit } from '../engine';
+import { PASS, bid, sideOf } from '../engine';
 import type { BidContext } from './context';
-import { canBid, gameLevel, isGameBid } from './context';
+import { canBid, isGameBid } from './context';
+import {
+  advanceDouble,
+  advanceOvercall,
+  contest,
+  defend,
+  doublerRebid,
+  respondOverOvercall,
+} from './competition';
 import type { HandEval } from './evaluate';
-import type { Meaning, Range } from './meaning';
-import { MAX_HCP, NO_INFO } from './meaning';
+import type { Range } from './meaning';
+import { MAX_HCP } from './meaning';
+import { placement } from './placement';
+import type { Candidate } from './rules';
+import {
+  MAJORS,
+  SUIT_PREFERENCE,
+  bidOf,
+  c,
+  cheapest,
+  higher,
+  isMajor,
+  isSuit,
+  r,
+  withRange,
+} from './rules';
 
-export type Candidate = {
-  readonly call: Call;
-  readonly meaning: Meaning;
-  /** Rule id, for tests and DECISIONS. */
-  readonly rule: string;
-  /**
-   * A choice between calls the meaning does not show (e.g. which of two long suits to bid first).
-   * Never a reason the meaning would be wrong: the hand still fits the meaning.
-   */
-  readonly when?: (ev: HandEval) => boolean;
-};
-
-const MAJORS: readonly Suit[] = ['S', 'H'];
-const MINORS: readonly Suit[] = ['D', 'C'];
-/** Majors first, then minors, higher first. */
-const SUIT_PREFERENCE: readonly Suit[] = ['S', 'H', 'D', 'C'];
-
-function c(
-  call: Call,
-  meaning: Meaning,
-  rule: string,
-  when?: (ev: HandEval) => boolean,
-): Candidate {
-  return when ? { call, meaning, rule, when } : { call, meaning, rule };
-}
-
-/** [lo, hi] clamped to 0–37, or null when empty. */
-function r(lo: number, hi: number): Range | null {
-  const a = Math.max(0, lo);
-  const b = Math.min(MAX_HCP, hi);
-  return a <= b ? [a, b] : null;
-}
-
-/** Adds `make(range)` when `range` is not empty. */
-function withRange(out: Candidate[], range: Range | null, make: (hcp: Range) => Candidate): void {
-  if (range) out.push(make(range));
-}
-
-const higher = (a: Strain, b: Strain) => STRAINS.indexOf(a) > STRAINS.indexOf(b);
-const isMajor = (s: Strain) => s === 'H' || s === 'S';
-const isSuit = (s: string): s is Suit => s === 'S' || s === 'H' || s === 'D' || s === 'C';
-
-/** The lowest bid of `strain` above the last bid. */
-function cheapest(ctx: BidContext, strain: Strain): Bid {
-  const last = ctx.lastBid?.bid;
-  if (!last) return bid(1, strain);
-  return bid((higher(strain, last.strain) ? last.level : last.level + 1) as Bid['level'], strain);
-}
-
-/** Parses a bid code of the seq (`1S`, `2N`); null for pass / double. */
-function bidOf(code: string | undefined): Bid | null {
-  const m = /^([1-7])([CDHSN])$/.exec(code ?? '');
-  if (!m) return null;
-  const s = m[2]!;
-  return bid(Number(m[1]) as Bid['level'], s === 'N' ? 'NT' : (s as Suit));
-}
+export type { Candidate } from './rules';
 
 // ---------- Openings ----------
 
@@ -612,115 +579,67 @@ function afterAceReply(ctx: BidContext): Candidate[] {
   return out;
 }
 
-// ---------- Placing the contract ----------
-
-/**
- * Captain's decision once partner has described their hand: slam, game, invite or partscore, in
- * a known eight-card fit or in notrump, from the points partner has shown at least (and at most,
- * for invitations).
- */
-function placement(ctx: BidContext): Candidate[] {
-  const p = ctx.shownByPartner;
-  const [pmin, pmax] = p.hcp;
-  const cur = ctx.lastBid?.bid ?? null;
-  if (ctx.blackwoodAsked || (cur && cur.level >= 6)) return [c(PASS, NO_INFO, 'place.done')];
-  const need = (s: Suit) => Math.max(0, 8 - p.len[s][0]);
-  const fit = (s: Suit) => ({ [s]: [need(s), 13] as Range });
-  const out: Candidate[] = [];
-
-  // Slam: Blackwood with a fit, 6NT without.
-  const slam = r(33 - pmin, MAX_HCP);
-  if (slam) {
-    for (const s of SUIT_PREFERENCE) {
-      out.push(
-        c(
-          bid(4, 'NT'),
-          { name: 'blackwood', hcp: slam, len: fit(s), artificial: true, forcing: 'round' },
-          `place.blackwood${s}`,
-        ),
-      );
-    }
-    out.push(c(bid(6, 'NT'), { name: 'slam', hcp: slam }, 'place.6NT'));
-  }
-
-  // Game: a major fit, then 3NT, then a minor fit.
-  for (const s of MAJORS) {
-    withRange(out, r(25 - pmin, MAX_HCP), (hcp) =>
-      c(bid(4, s), { name: 'game', hcp, len: fit(s) }, `place.4${s}`),
-    );
-  }
-  withRange(out, r(25 - pmin, MAX_HCP), (hcp) =>
-    c(bid(3, 'NT'), { name: 'game', hcp }, 'place.3NT'),
-  );
-  for (const s of MINORS) {
-    withRange(out, r(29 - pmin, MAX_HCP), (hcp) =>
-      c(bid(5, s), { name: 'game', hcp, len: fit(s) }, `place.5${s}`),
-    );
-  }
-
-  const ourBid = cur !== null;
-  const atGame = cur !== null && isGameBid(cur);
-  if (atGame) {
-    withRange(out, r(0, 32 - pmin), (hcp) => c(PASS, { name: 'pass', hcp }, 'place.pass.game'));
-    return finish(ctx, out);
-  }
-
-  // Invitations, only when partner's strength is known within a few points.
-  const invite = pmax - pmin <= 5 ? r(25 - pmax, 24 - pmin) : null;
-  if (invite) {
-    for (const s of MAJORS)
-      out.push(c(bid(3, s), { name: 'invite', hcp: invite, len: fit(s) }, `place.3${s}`));
-    out.push(c(bid(2, 'NT'), { name: 'invite', hcp: invite }, 'place.2NT'));
-  }
-  // With 2NT still open every hand in the invitation range invites, so passing shows less.
-  const ntInvite = invite !== null && canBid(ctx, { level: 2, strain: 'NT' });
-  const keep = r(0, ntInvite ? invite[0] - 1 : 24 - pmin);
-  if (keep && ourBid) {
-    const strain = cur.strain;
-    // Stay in a fit or in notrump; otherwise move to a fit at the lowest level.
-    if (strain !== 'NT')
-      out.push(c(PASS, { name: 'pass', hcp: keep, len: fit(strain) }, 'place.pass.fit'));
-    else out.push(c(PASS, { name: 'pass', hcp: keep }, 'place.pass.nt'));
-    for (const s of SUIT_PREFERENCE) {
-      if (s === strain) continue;
-      const low = cheapest(ctx, s);
-      if (low.level < gameLevel(s))
-        out.push(c(low, { name: 'signoff', hcp: keep, len: fit(s) }, `place.to${s}`));
-    }
-    out.push(c(PASS, { name: 'pass', hcp: keep }, 'place.pass'));
-  }
-  return finish(ctx, out);
-}
-
-/** When pass is not allowed, a last resort that keeps the auction going. */
-function finish(ctx: BidContext, out: Candidate[]): Candidate[] {
-  if (!ctx.forced) return out;
-  const last = ctx.partnerLast?.call;
-  const options: Bid[] = [cheapest(ctx, 'NT')];
-  if (last?.kind === 'bid' && last.strain !== 'NT') options.unshift(cheapest(ctx, last.strain));
-  const fallback = options.find((b) => b.level <= 5 && !(b.level === 4 && b.strain === 'NT'));
-  return fallback ? [...out, c(fallback, NO_INFO, 'place.forced')] : out;
-}
-
 // ---------- Dispatch ----------
 
 /** The calls the system makes at this point, in order of preference (none: it has no say). */
 export function candidates(ctx: BidContext): Candidate[] {
-  if (ctx.theyActed) return []; // competitive bidding: M29
-  if (ctx.opener === null) return opening();
+  if (ctx.openedBy === null) return opening();
 
+  // Conventions answered whatever the auction (if the next player kept out of the way).
   const partner = ctx.partnerLast;
   const partnerName = partner?.meaning?.name;
+  const rhoPassed = ctx.rhoCall?.kind === 'pass';
   if (partner?.call.kind === 'bid') {
     if (partnerName === 'blackwood') return aceReplies();
-    if (partnerName === 'stayman') return staymanReplies(ctx, partner.call);
-    if (partnerName === 'transfer') {
+    if (partnerName === 'stayman' && rhoPassed) return staymanReplies(ctx, partner.call);
+    if (partnerName === 'transfer' && rhoPassed) {
       const target = partner.call.strain === 'D' ? 'H' : 'S';
       return [c(bid(partner.call.level, target), { name: 'transferAccept' }, 'transfer.accept')];
     }
   }
   if (ctx.myLast?.meaning?.name === 'blackwood') return afterAceReply(ctx);
 
+  const weOpened = sideOf(ctx.openedBy) === sideOf(ctx.seat);
+  if (weOpened) {
+    // A takeout double takes no room: answer as if they had passed.
+    if (!ctx.theyBid) return uncontested(ctx);
+    const first = bidOf(ctx.seq[0]);
+    if (
+      ctx.opener === ctx.partner &&
+      ctx.seq.length === 1 &&
+      first?.level === 1 &&
+      isSuit(first.strain) &&
+      ctx.theirLast?.meaning?.artificial !== true
+    ) {
+      return respondOverOvercall(ctx, first.strain);
+    }
+    return contest(ctx);
+  }
+
+  // They opened.
+  if (ctx.opener === null) {
+    // Our side has not acted yet.
+    if (!ctx.theirLast || ctx.theirLast.meaning?.artificial) return [];
+    return defend(ctx);
+  }
+  if (ctx.opener === ctx.partner && !ctx.iActed && partner) {
+    // Partner made our side's first call; this is my first chance to answer it.
+    const call = partner.call;
+    if (partnerName === 'takeoutDouble') return advanceDouble(ctx);
+    if (partnerName === 'notrumpOvercall' && call.kind === 'bid' && call.level === 1 && rhoPassed) {
+      return notrumpResponses(ctx, 1);
+    }
+    if ((partnerName === 'overcall' || partnerName === 'weakJumpOvercall') && call.kind === 'bid') {
+      return advanceOvercall(ctx, call.strain as Suit);
+    }
+  }
+  if (ctx.myLast?.meaning?.name === 'takeoutDouble') return doublerRebid(ctx);
+  return contest(ctx);
+}
+
+/** The uncontested rules (M28): after the opening, with the other side passing (or doubling). */
+function uncontested(ctx: BidContext): Candidate[] {
+  const partner = ctx.partnerLast;
   const { seq } = ctx;
   const iOpened = ctx.opener === ctx.seat;
   const first = bidOf(seq[0]);

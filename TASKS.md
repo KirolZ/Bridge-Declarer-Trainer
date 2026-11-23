@@ -794,3 +794,39 @@ e2e 26.2 ผ่านทั้ง desktop + มือถือ, check ทั้�
 >
 > **ส่งต่อ:** คำตอบ Q1–Q5 ของผู้ใช้อยู่ใน DECISIONS "M28 แก้ตามผู้ใช้" — M30: ตั้งค่าแสดงการประมูลเปิดสำหรับทุกคน, มีเผื่อ = DD ≥ level + 7, ทิ้งบอร์ดที่มี fallback,
 > ตัดสินเรื่อง "บอร์ดแข่งประมูล" จาก bench; M31: โหมดมือใหม่พับตาราง + coach tip; M33: หน้าวิเคราะห์ชี้การประมูล
+
+## M29 — Bidder: การแข่งประมูล (SAYC)
+
+> ที่มา (2026-11-23): ต่อจาก M28 ตามแผน `D:\Hobby\AUCTION_PLAN.md` (ผู้ใช้สั่ง "เริ่ม M29") — ให้ทั้งสองฝั่งแข่งประมูลได้จริง
+> เพื่อให้เกิดบอร์ดที่ฝั่ง declarer แต้มน้อยกว่าตาม brief §4.1 (overcall, takeout double, raise ในการแข่ง, แย่ง partscore, balancing จำกัดระดับด้วย
+> Law of Total Tricks) ไม่มี sacrifice / penalty double / redouble · branch `feature/bidder-competitive` (ต่อจาก `feature/bidder-uncontested`)
+
+- [x] **29.1** ฝั่งค้านหลังอีกฝั่งเปิด 1 ในดอก: simple overcall (ระดับ 1: 8–16 ดอก 5 ใบ, ระดับ 2: 10–16), 1NT overcall (15–18 balanced + stopper),
+      takeout double (12+ shortness ในดอกที่เปิด / 17+ มือแข็ง), weak jump overcall (6 ใบ 5–10), pass ที่มีความหมาย
+- [x] **29.2** คู่ของผู้ overcall / double: raise (ตาม LoTT), ดอกใหม่, NT; ตอบ takeout double **ห้าม pass** (ไม่มี penalty)
+- [x] **29.3** ฝั่งเปิดเมื่อโดนแทรก: ผู้ตอบ (raise / ดอกใหม่ / NT / pass — ไม่มี negative double), ผู้เปิด rebid, การแข่ง partscore ตาม LoTT
+- [x] **29.4** balancing (ที่นั่งที่สี่หลัง 1x–P–P และหลังการ raise ที่จะจบต่ำ) — ช่วงแต้มเบากว่าที่นั่งตรง
+- [x] **29.5** ตอบเปิด NT / weak two / preempt ของฝั่งตรงข้าม: ฝั่งค้าน pass แบบมีความหมายหรือแทรกแบบง่าย (ตามที่ทำได้โดยไม่ซับซ้อน)
+- [x] **29.6** stopper ในการประเมินมือ; meaning เพิ่ม `stopper` ถ้าจำเป็น
+- [x] **29.7** ตรวจอิสระ: worker ที่ไม่เห็นโค้ด bidder เขียนมือตัวอย่าง SAYC (การเปิด / ตอบ / แข่งประมูล) จาก booklet → ใช้เป็น test เพิ่ม
+      ข้อที่ไม่ตรงให้ตัดสินว่าเป็นบั๊กหรือการเลือกที่จดไว้แล้ว (จด DECISIONS)
+- [x] **29.8** test: มือตัวอย่างต่อ rule, property ≥ 5,000 มือ — meaning ครอบมือจริง, ไม่มีการประมูลจบแบบ doubled, ถูกกติกา, deterministic;
+      พิมพ์สัดส่วนบอร์ดที่ทั้งสองฝั่งประมูล และ (สำหรับ M30) บอร์ดที่ declarer อยู่ฝั่งที่ HCP น้อยกว่า; ลบ test "ฝั่งเดียวประมูล" ของ M28
+- [x] **29.9** เอกสาร: SPEC §6.5 (ขอบเขตการแข่งประมูล), DECISIONS (ช่วงแต้มเทียบ booklet, LoTT, ผลวัด), บท 14 ตรวจแล้ว (หน้าจอไม่เปลี่ยน)
+
+**เสร็จเมื่อ:** test 29.8 ผ่าน (meaning ไม่ตรงมือ 0 นอก fallback, ไม่มี contract doubled เลย), มี auction แข่งประมูลจริงในชุด 5,000 มือ (พิมพ์สัดส่วน),
+ผลตรวจของ worker อิสระจดใน DECISIONS, check ทั้งหมดผ่าน
+
+> **สถานะ (2026-11-23):** M29 เสร็จ — การแข่งประมูลใน `src/bidding/competition.ts` (`defend` overcall / takeout double / weak jump / 1NT & 2NT overcall /
+> balancing, `advanceDouble` บังคับประมูลเมื่อคนถัดไป pass, `advanceOvercall` raise ตาม LoTT, `respondOverOvercall`, `doublerRebid`, `contest` แย่ง partscore ตาม LoTT
+> ไม่เกินระดับ 3), แยก `rules.ts` / `placement.ts` ออกจาก `system.ts`, dispatch ใหม่ตาม `openedBy`; `context.ts` เพิ่ม `theyBid`, `openedBy`, `theirSuits`, `theirLast`,
+> `rhoCall`, `passEnds`, `iActed` และ `forced` แบบใหม่; `evaluate.ts` เพิ่ม `suitHcp` / `stoppers`; `meaning.ts` เพิ่ม `stoppers` และชื่อใหม่
+> — SPEC §6.5 (ขอบเขตการแข่งประมูล), DECISIONS M29 (รวมผลตรวจอิสระและตารางผลวัด)
+> ตรวจอิสระ: worker ที่ไม่เห็นโค้ด bidder เขียน 153 มือ → `src/bidding/saycCases.ts` รอบแรกตรง 149 พบบั๊ก 2 ข้อ + การเลือก 2 ข้อ แก้แล้วตรง 153 / 153
+> test: `bidding.test.ts` 221 ข้อ (153 จาก SAYC cases, stopper, property: แข่งประมูล > 30% ของมือ / declarer ฝั่งแต้มน้อยกว่า > 10%, ไม่มี contract doubled
+> และ double มีแต่ takeout; ลบ test "ฝั่งเดียวประมูล" ของ M28) — 20,000 มือ: meaning ไม่ตรง 0, fallback 1, doubled 0, ทั้งสองฝั่งประมูล 45%, declarer ฝั่ง < 20 HCP 24%
+> — `pnpm test` 695 ข้อ, `pnpm test:e2e` 102 ข้อผ่าน, lint / typecheck / format ผ่าน; ไม่ได้แตะ `src/solver/` และหน้าจอไม่เปลี่ยน (บท 14 ไม่ต้องแก้)
+>
+> **ส่งต่อ:** (1) M30 ต่อ bidder เข้าการแจกไพ่: ทิ้งบอร์ดที่มี fallback / passed out / declarer E-W / doubled (doubled ไม่ควรเกิดแต่ยังกันไว้),
+> หมุน 180° เมื่อ declarer เป็น North, วัดสัดส่วนบอร์ดที่ NS แต้มน้อยกว่า EW หลังกรอง DD แล้วตัดสินเรื่องตั้งค่า "บอร์ดแข่งประมูล"
+> (2) vul ยังไม่มีผลต่อการตัดสินใจ (3) meaning ชื่อใหม่ (`overcall`, `takeoutDouble`, `advance`, `compete` ฯลฯ) ต้องมีข้อความสองภาษาใน M31

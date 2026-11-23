@@ -14,9 +14,11 @@ import {
   isAuctionComplete,
   mulberry32,
   parseHand,
+  hcp,
   sideOf,
 } from '../engine';
 import type { Meaning } from '.';
+import { SAYC_CASES } from './saycCases';
 import {
   NOTHING_SHOWN,
   bidDeal,
@@ -45,7 +47,21 @@ function callFor(
 describe('hand evaluation', () => {
   it('counts points, lengths and aces, and knows a balanced hand', () => {
     const ev = evaluate(parseHand('AKJ52.K4.Q73.A82'));
-    expect(ev).toEqual({ hcp: 17, len: { S: 5, H: 2, D: 3, C: 3 }, balanced: true, aces: 2 });
+    expect(ev).toEqual({
+      hcp: 17,
+      len: { S: 5, H: 2, D: 3, C: 3 },
+      suitHcp: { S: 8, H: 3, D: 2, C: 4 },
+      balanced: true,
+      aces: 2,
+      stoppers: { S: true, H: true, D: true, C: true },
+    });
+    // A stopper is A, Kx, Qxx or Jxxx: here Q doubleton and K singleton do not stop the suit.
+    expect(evaluate(parseHand('Q3.K.JT92.A87654')).stoppers).toEqual({
+      S: false,
+      H: false,
+      D: true,
+      C: true,
+    });
     expect(evaluate(parseHand('AK52.K4.Q73.A982')).balanced).toBe(true); // 4-4-3-2
     expect(evaluate(parseHand('AK52.K42.Q73.A98')).balanced).toBe(true); // 4-3-3-3
     expect(evaluate(parseHand('AK52.K4.Q7.A9832')).balanced).toBe(false); // 5-4-2-2
@@ -207,6 +223,12 @@ describe('notrump conventions', () => {
   });
 });
 
+describe('SAYC cases from an independent checker (TASKS 29.7)', () => {
+  it.each(SAYC_CASES.map((k) => [k.id, k] as const))('%s', (_, k) => {
+    expect(k.expect, k.why).toContain(callFor(k.hand, k.auction, k.dealer));
+  });
+});
+
 describe('every auction (property, 5,000 seeded deals)', () => {
   const rng = mulberry32(2028);
   const boards = Array.from({ length: 5000 }, (_, i) => {
@@ -250,15 +272,35 @@ describe('every auction (property, 5,000 seeded deals)', () => {
     }
   });
 
-  it('has only one side bidding in phase one (after the opening the other side passes, meaning nothing)', () => {
-    for (const { result } of boards) {
+  it('competes: both sides often bid, and the declaring side can hold fewer points (brief §4.1)', () => {
+    let both = 0;
+    let weaker = 0;
+    let declared = 0;
+    for (const { deal, result } of boards) {
       const { dealer, calls } = result.auction;
-      const opening = calls.findIndex((call: Call) => call.kind !== 'pass');
-      if (opening < 0) continue;
-      const side = sideOf(callerAt(dealer, opening));
-      result.steps.forEach((s, i) => {
-        if (i <= opening || sideOf(callerAt(dealer, i)) === side) return;
-        expect(s).toEqual({ call: { kind: 'pass' }, meaning: null, rule: null });
+      const sides = new Set(
+        calls.flatMap((call: Call, i) =>
+          call.kind === 'bid' ? [sideOf(callerAt(dealer, i))] : [],
+        ),
+      );
+      if (sides.size === 2) both++;
+      const r = auctionResult(result.auction);
+      if (!r) continue;
+      declared++;
+      const pair =
+        sideOf(r.declarer) === 'NS' ? hcp(deal.N) + hcp(deal.S) : hcp(deal.E) + hcp(deal.W);
+      if (pair < 20) weaker++;
+    }
+    expect(both / boards.length).toBeGreaterThan(0.3);
+    expect(weaker / declared).toBeGreaterThan(0.1);
+  });
+
+  it('never ends doubled: the only doubles are for takeout, and there are no redoubles', () => {
+    for (const { result } of boards) {
+      expect(auctionResult(result.auction)?.doubling ?? 0).toBe(0);
+      result.steps.forEach((step) => {
+        if (step.call.kind === 'double') expect(step.meaning?.name).toBe('takeoutDouble');
+        expect(step.call.kind).not.toBe('redouble');
       });
     }
   });

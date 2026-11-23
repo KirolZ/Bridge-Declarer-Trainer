@@ -240,8 +240,8 @@ ddTable(deal: Deal): Record<Strain, number>;
   ถ้า call เดียวกันมาจากหลาย rule ความหมายที่แสดงคือ hull (ช่วงที่ครอบทุก rule)
 - **สิ่งที่แต่ละคนแสดงแล้ว** = meaning ทุกตัวของคนนั้นซ้อนกัน (มือ balanced → ทุกดอก 2–5 ใบ) ใช้ตัดสินใจต่อ และใช้สรุปการอนุมานให้ผู้เล่น (M31)
 - **ไม่มี rule ไหนเข้ากับมือ** → `fallback` (pass ถ้า pass ได้) ซึ่ง meaning อาจไม่ตรงกับมือ — บอร์ดที่มี fallback จะไม่ถูกใช้ (M30)
-- **จุดที่ระบบไม่มีอะไรจะพูด** (เฟสแรก: ฝั่งที่ไม่ได้เปิดประมูล หลังอีกฝั่งเปิดแล้ว — การแข่งประมูลมาใน M29) → pass ที่ไม่มีความหมาย (`null`)
-- ขอบเขตเฟสแรก (M28, ฝั่งตรงข้าม pass ตลอด):
+- **จุดที่ระบบไม่มีอะไรจะพูด** (เช่นหลัง bid artificial ของฝั่งตรงข้าม) → pass ที่ไม่มีความหมาย (`null`)
+- ขอบเขตเมื่อฝั่งตรงข้าม pass (M28):
   - เปิด: 1♣ / 1♦ (12–21, ไม่มี major 5 ใบ, ดอกยาวกว่า — 4-4 เปิด 1♦, 3-3 เปิด 1♣), 1♥ / 1♠ (12–21, 5 ใบขึ้นไป), 1NT (15–17 balanced
     **ไม่มี major 5 ใบ** — มือแบบนั้นเปิด major), 2NT (20–21 balanced, มี major 5 ใบได้), 2♣ (22+ artificial), weak two 2♦ / 2♥ / 2♠ (5–10, 6 ใบพอดี), preempt 3 ในดอก (5–10, 7 ใบขึ้นไป), pass (0–11)
   - ตอบ 1 ในดอก: preemptive raise 4M (0–9, 5 ใบ), limit raise (10–12), raise (6–10), ดอกใหม่ระดับ 1 (6+, 4 ใบ), 2/1 (10+, 4 ใบ / ♥ 5 ใบ), 1NT (6–12 ไม่มี fit), 2NT (13–15 balanced, บังคับถึง game), 3NT (16+ balanced), pass (0–5)
@@ -255,7 +255,21 @@ ddTable(deal: Deal): Record<Strain, number>;
   - 1NT / 2NT (รวม 2♣–2♦–2NT): Stayman, Jacoby transfer, 2NT invite / 3NT / 6NT; 2♣ → 2♦ waiting → rebid; Blackwood (5♣ = 0 / 4, 5♦ = 1, 5♥ = 2, 5♠ = 3)
   - จากนั้น "ตัดสิน contract" จากแต้มที่คู่แสดงแล้ว: fit 8 ใบใน major → 4M, 3NT, fit ใน minor → 5m (รวม 29+), slam (รวม 33+ — Blackwood ถ้ามี fit, ไม่มี → 6NT),
     invite เมื่อรู้แต้มคู่แคบพอ (ช่วงกว้าง ≤ 5), ไม่งั้นหยุดใน partscore ที่มี fit หรือ NT
-- ไม่ทำ: sacrifice, penalty double, convention ขั้นสูง (Michaels, Unusual 2NT, Jacoby 2NT, splinter, 4NT quantitative, positive response ของ 2♣), นับแต้มจากการกระจายไพ่
+- **การแข่งประมูล (M29, `src/bidding/competition.ts`)** — ทั้งสองฝั่งใช้ rule ชุดเดียวกัน:
+  - ฝั่งที่ไม่ได้เปิด (ยังไม่เคยประมูล): takeout double (12+ สั้นในดอกเขา ≤ 2 และดอกที่ยังไม่มีใครประมูล 3+ ใบ / 17+ ดอกเขา ≤ 3),
+    weak jump overcall (หลังการเปิดระดับ 1: 6 ใบพอดี 5–10), overcall (ระดับ 1: 8–16, ระดับ 2: 10–16 ดอก 5 ใบที่ดีพอ, ระดับ 3: 12–17 ดอก 6 ใบ),
+    1NT overcall (15–18 balanced มี stopper), 2NT ทับ weak two (15–18), ทับ NT ของเขา: overcall ดอก 6 ใบ; pass ไม่มีข้อมูล
+  - ที่นั่ง balancing (pass แล้วการประมูลจบ): เบาลง — double 9+, overcall 7+ / 8+, 1NT 11–14
+  - คู่ของคน double: ห้าม pass ถ้าคนถัดไป pass (ไม่มี penalty pass) — 4M (12+ major 4 ใบ), 3NT (12+ stopper), กระโดดในดอก 4 ใบ (9+, ไม่เกินระดับ 3),
+    2NT (10–11), ดอก 4 ใบถูกที่สุด (0–8), NT (6–9 stopper), ดอก 3 ใบถูกที่สุด; ถ้าคนถัดไปประมูลแล้ว ประมูลเฉพาะดอก 4 ใบ 6+
+  - คู่ของคน overcall: game (รวม 25+), 3NT (stopper), raise ตาม Law of Total Tricks (trump รวม 8 → ระดับ 2, 9 → ระดับ 3; ไม่เกินระดับ 3),
+    ดอกใหม่ 5 ใบ 8+, 1NT 8–11 / 2NT 12–14 (stopper); หลัง 1NT overcall ใช้ Stayman / transfer เหมือนเปิด 1NT
+  - ฝั่งที่เปิด หลังโดน overcall: ผู้ตอบ raise (6–10) / limit raise กระโดด (10–12, ไม่เกินระดับ 3) / 4M (13+), major 4 ใบระดับ 1 ก่อน raise minor,
+    ดอกใหม่ (ระดับ 1: 6+ 4 ใบ, ระดับ 2: 10+ 5 ใบ, forcing), 1NT 8–10 / 2NT 11–12 / 3NT 13+ (stopper); หลังโดน takeout double ตอบเหมือนไม่มีใครแทรก
+  - หลังจากนั้น: ถ้า bid ล่าสุดเป็นของเรา ใช้การตัดสิน contract แบบเดิม ถ้าเป็นของเขา: game ถ้าแต้มถึง, แย่ง partscore ใน fit ตาม Law of Total Tricks
+    (ดอกของตัวเองนับคู่เป็น 2 ใบ, ไม่เกินระดับ 3), ผู้เปิดที่มีดอกที่สอง 5 ใบประมูลได้ที่ระดับ 2, หรือ pass ให้เขาเล่น
+  - double มีแบบเดียวคือ takeout และหลัง double คู่ต้องประมูลถ้าคนถัดไป pass จึง**ไม่มีการประมูลไหนจบแบบ doubled** (test ตรวจ)
+- ไม่ทำ: sacrifice, penalty double, redouble, negative double, cue bid, convention ขั้นสูง (Michaels, Unusual 2NT, Jacoby 2NT, splinter, 4NT quantitative, positive response ของ 2♣), นับแต้มจากการกระจายไพ่
 
 ## 7. ฟีเจอร์ฝึก
 

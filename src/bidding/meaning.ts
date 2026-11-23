@@ -35,6 +35,12 @@ export type MeaningName =
   | 'game'
   | 'slam'
   | 'signoff'
+  | 'overcall'
+  | 'weakJumpOvercall'
+  | 'notrumpOvercall'
+  | 'takeoutDouble'
+  | 'advance'
+  | 'compete'
   | 'pass';
 
 export type Forcing = 'round' | 'game';
@@ -46,6 +52,8 @@ export type Meaning = {
   readonly balanced?: boolean;
   /** Number of aces held (Blackwood replies): one of these. */
   readonly aces?: readonly number[];
+  /** Suits held stopped (notrump bids over the opponents' suits). */
+  readonly stoppers?: readonly Suit[];
   /** Partner must bid again (one round) or the side must reach game. */
   readonly forcing?: Forcing;
   /** Says nothing about the suit named (Stayman, transfers, 2♣, Blackwood and its replies). */
@@ -65,6 +73,7 @@ export function fits(m: Meaning, ev: HandEval): boolean {
   if (m.len) for (const s of SUITS) if (!inRange(ev.len[s], m.len[s])) return false;
   if (m.balanced !== undefined && m.balanced !== ev.balanced) return false;
   if (m.aces && !m.aces.includes(ev.aces)) return false;
+  if (m.stoppers && !m.stoppers.every((s) => ev.stoppers[s])) return false;
   return true;
 }
 
@@ -91,6 +100,9 @@ export function hull(ms: readonly Meaning[]): Meaning {
     const r = hullRange(ms.map((m) => m.len?.[s]));
     if (r) len[s] = r;
   }
+  const stoppers = ms.every((m) => m.stoppers)
+    ? SUITS.filter((s) => ms.every((m) => m.stoppers!.includes(s)))
+    : undefined;
   const aces = ms.every((m) => m.aces)
     ? [...new Set(ms.flatMap((m) => m.aces!))].sort((a, b) => a - b)
     : undefined;
@@ -105,6 +117,7 @@ export function hull(ms: readonly Meaning[]): Meaning {
   const balanced = common(ms.map((m) => m.balanced));
   if (balanced !== undefined) out.balanced = balanced;
   if (aces) out.aces = aces;
+  if (stoppers && stoppers.length > 0) out.stoppers = stoppers;
   const forcing = common(ms.map((m) => m.forcing));
   if (forcing) out.forcing = forcing;
   const artificial = common(ms.map((m) => m.artificial));
@@ -118,6 +131,7 @@ export type Shown = {
   readonly len: Readonly<Record<Suit, Range>>;
   readonly balanced: boolean;
   readonly aces: readonly number[];
+  readonly stoppers: readonly Suit[];
 };
 
 export const NOTHING_SHOWN: Shown = {
@@ -125,6 +139,7 @@ export const NOTHING_SHOWN: Shown = {
   len: { S: [0, 13], H: [0, 13], D: [0, 13], C: [0, 13] },
   balanced: false,
   aces: [0, 1, 2, 3, 4],
+  stoppers: [],
 };
 
 const cut = (a: Range, b: Range | undefined): Range =>
@@ -144,5 +159,8 @@ export function narrow(shown: Shown, m: Meaning | null): Shown {
     len,
     balanced,
     aces: m.aces ? shown.aces.filter((a) => m.aces!.includes(a)) : shown.aces,
+    stoppers: m.stoppers
+      ? SUITS.filter((s) => shown.stoppers.includes(s) || m.stoppers!.includes(s))
+      : shown.stoppers,
   };
 }
