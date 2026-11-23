@@ -5,6 +5,7 @@ import {
   cardCode,
   currentTrick,
   dealRandom,
+  decodeAuction,
   isComplete,
   legalPlays,
   mulberry32,
@@ -282,6 +283,21 @@ describe('play store', () => {
     const setup = hand(9, { level: 4, strain: 'S', declarer: 'S' });
     expect(handPath(setup)).toMatch(/^\/play\/[A-Za-z0-9_-]{18}\/4S$/);
     expect(handPath({ ...setup, vulnerability: 'ns' })).toMatch(/\/4S\?v=ns$/);
+  });
+
+  it('isSameHand tells hands with and without an auction apart (M27)', () => {
+    const { solver } = ddsSolver({ hang: true });
+    const store = createPlayStore({ solver, pace: NO_PACE });
+    const plain = hand(9, { level: 4, strain: 'S', declarer: 'S' });
+    const bid = { ...plain, auction: decodeAuction('S', '1S-P-3S-P-4S-P-P-P')! };
+    store.getState().startHand(bid);
+    expect(isSameHand(store.getState(), bid)).toBe(true);
+    expect(isSameHand(store.getState(), { ...bid, auction: { ...bid.auction } })).toBe(true);
+    expect(isSameHand(store.getState(), plain)).toBe(false);
+    expect(isSameHand(store.getState(), { ...bid, auction: { ...bid.auction, dealer: 'N' } })).toBe(
+      false,
+    );
+    store.getState().leave();
   });
 });
 

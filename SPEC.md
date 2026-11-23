@@ -10,7 +10,7 @@
 
 - ผู้เล่นเป็น **South (declarer) เสมอ** และเป็นคนเล่นไพ่ของ **North (dummy)** ด้วย
 - **West / East เป็นบอทฝั่งป้องกัน** เล่นแบบ **double-dummy** (มองเห็นไพ่ทุกมือ และเลือกใบที่ดีที่สุดเสมอ)
-- **ไม่มีการประมูล** — ระบบแจกไพ่แล้วกำหนด contract ให้เลย จากผลวิเคราะห์ double-dummy
+- **ผู้เล่นไม่ได้ประมูลเอง** — ระบบแจกไพ่แล้วกำหนด contract ให้เลย จากผลวิเคราะห์ double-dummy (มือที่มาพร้อมการประมูล เช่นเปิดจากลิงก์ที่มีการประมูล แสดงตารางการประมูลเหนือโต๊ะ — §4.5, §8; การแจกไพ่พร้อมการประมูลแบบ SAYC กำลังทำใน M28–M30)
 - เป้าหมายคือการฝึก: มีปุ่มขอคำใบ้ ย้อนไพ่ เล่นมือเดิมซ้ำ และหลังจบมือมีหน้าวิเคราะห์ว่า **เสีย trick ที่จังหวะไหน และควรเล่นใบไหน**
 - **รองรับคนที่ไม่รู้จัก bridge เลย** — มีคู่มือแบบบทเรียนทีละขั้น พร้อมแบบฝึกที่กดเล่นได้จริง (§7.7) และโหมดมือใหม่ที่คอยอธิบายระหว่างเล่น (§7.8)
 - **ไม่มี backend / database** — ทุกอย่างรันในเบราว์เซอร์ (solver รันใน Web Worker) deploy เป็นไฟล์ static
@@ -25,6 +25,7 @@
 | Frontend   | React 18 + Vite, Tailwind CSS v4 (`@tailwindcss/vite`), Framer Motion, Zustand |
 | Routing    | hash routing (`#/...`) เพื่อให้ host เป็นไฟล์ static ที่ไหนก็ได้          |
 | Worker     | Web Worker แบบ module ของ Vite (`new Worker(new URL(...), { type: 'module' })`) |
+| Solver     | DDS 3.1.1 (Bo Haglund, Soren Hein และคณะ, Apache-2.0) compile เป็น WebAssembly ด้วย Emscripten (`pnpm build:dds`, ไฟล์ผลลัพธ์ commit ไว้ใน `src/solver/dds/`) — §5 |
 | Test       | Vitest (unit + solver), Playwright (e2e พื้นฐาน)                      |
 | Lint       | ESLint + Prettier                                                     |
 | Deploy     | Docker (nginx-unprivileged เสิร์ฟ `dist/`) + docker-compose, แพ็กเป็นไฟล์เดียวแบบโปรเจกต์ Blackjack |
@@ -34,8 +35,8 @@
 ```
 bridge/                     # = D:\Hobby\Bridge (ใช้โฟลเดอร์นี้เป็น root เลย)
 ├── src/
-│   ├── engine/             # กติกา bridge ล้วน (pure TS): card, deal, play, scoring, encode
-│   ├── solver/             # double-dummy solver (pure TS) + reference brute-force
+│   ├── engine/             # กติกา bridge ล้วน (pure TS): card, deal, play, scoring, encode, auction
+│   ├── solver/             # double-dummy solver: DDS ใน wasm (ใช้ในแอป) + solver TS และ reference brute-force (ใช้เทียบใน test) — §5
 │   ├── bot/                # เลือกใบของบอทจากผล solver
 │   ├── worker/             # Web Worker ห่อ solver + protocol ข้อความ
 │   ├── game/               # Zustand store: state ของมือที่กำลังเล่น, history, undo
@@ -44,6 +45,7 @@ bridge/                     # = D:\Hobby\Bridge (ใช้โฟลเดอร�
 │   ├── ui/                 # React components + pages
 │   └── main.tsx
 ├── bench/                  # สคริปต์วัดความเร็ว solver (รันด้วย Node)
+├── native/dds/             # bridge.cpp: ฟังก์ชัน C ที่ wasm ของ DDS export ให้ src/solver/dds.ts
 ├── e2e/
 ├── docker/                 # nginx.conf, security-headers.conf, install.sh
 ├── scripts/                # package-release.mjs
@@ -80,6 +82,8 @@ type Seat = 'N' | 'E' | 'S' | 'W';             // เดินตามเข็
 type Strain = Suit | 'NT';
 type Deal = Record<Seat, Card[]>;              // คนละ 13 ใบ
 type Contract = { level: 1|2|3|4|5|6|7; strain: Strain; declarer: 'S' };
+type Call = { kind: 'bid'; level: Level; strain: Strain } | { kind: 'pass' } | { kind: 'double' } | { kind: 'redouble' };
+type Auction = { dealer: Seat; calls: Call[] };   // calls เรียงตามเข็มนาฬิกาเริ่มจาก dealer (§4.5)
 ```
 
 - HCP: A=4, K=3, Q=2, J=1
@@ -130,10 +134,28 @@ undo = ตัด `plays` ท้าย ๆ ทิ้ง จึงไม่ต้�
 - ไล่ไพ่ 52 ใบตามลำดับตายตัว (♠A..♠2, ♥A..♥2, ♦A..♦2, ♣A..♣2) แต่ละใบเก็บเจ้าของ 2 bit (N=0, E=1, S=2, W=3) → 104 bit → 13 byte → base64url ยาว 18 ตัวอักษร
 - decode แล้วต้อง validate ว่าทุกมือมี 13 ใบ ถ้าไม่ผ่านให้แสดงข้อความ "ลิงก์มือไพ่ไม่ถูกต้อง"
 - URL: `#/play/<dealCode>/<contract>` เช่น `#/play/Ab3x...Q/4S` (strain เป็น `S|H|D|C|N`) ส่วนตั้งค่า vul ใส่เป็น query ต่อท้ายได้ เช่น `?v=ns`
+- มือที่มีการประมูล (M27): query `d=<dealer N|E|S|W>` และ `a=<calls คั่นด้วย ->` — `1H`, `3N` (NT), `P` (pass), `X` (double), `XX` (redouble)
+  เช่น `#/play/<dealCode>/3H?v=ns&d=S&a=1H-2D-2H-3D-3H-P-P-P` การประมูลต้องถูกกติกา จบแล้ว, South เป็น declarer, ไม่ถูก double
+  และได้ contract เดียวกับใน path ไม่งั้นถือว่า "ลิงก์มือไพ่ไม่ถูกต้อง" — `d` ที่ไม่มี `a` ไม่มีผล
+- ลิงก์ที่ไม่มี `a` (รวมทุกลิงก์ก่อน M27) เปิดได้เหมือนเดิม โดยไม่มีตารางการประมูล ปุ่มแชร์ใส่ `d` / `a` เมื่อมือนั้นมีการประมูล
+- ความหมายของ call ไม่เก็บใน URL (จะคำนวณจากระบบประมูลตามบริบท — M28)
+
+### 4.5 การประมูล (`src/engine/auction.ts`)
+
+- bid ต้องสูงกว่า bid ก่อนหน้า: level ก่อน แล้วตาม strain ♣ < ♦ < ♥ < ♠ < NT
+- double ได้เฉพาะเมื่อ call ล่าสุดที่ไม่ใช่ pass เป็น bid ของฝั่งตรงข้าม; redouble ได้เฉพาะเมื่อ call ล่าสุดที่ไม่ใช่ pass เป็น double ของฝั่งตรงข้าม
+- จบเมื่อ pass 3 ครั้งต่อจาก bid / double / redouble หรือ pass 4 ครั้งตั้งแต่ต้น (passed out)
+- contract = bid สุดท้าย (พร้อมสถานะ double / redouble ที่ตามมา), declarer = คนแรกของฝั่งที่ได้ contract ที่ประมูล strain นั้น
+- หมุนโต๊ะครึ่งรอบ: N↔S, E↔W ทั้งมือไพ่และ dealer (call เหมือนเดิม) — declarer ที่เป็น North กลายเป็น South โดยการประมูลยังสอดคล้องกับไพ่ และ vul ไม่เปลี่ยนเพราะคู่เดิม
+- เกมรับเฉพาะการประมูลที่ South เป็น declarer และ contract ไม่ถูก double (ไม่มีการคิดแต้มแบบ double — §4.3)
 
 ## 5. Double-Dummy Solver (`src/solver`)
 
 หัวใจของโปรเจกต์ ต้องถูกต้อง 100% และเร็วพอจะใช้ในเบราว์เซอร์
+
+**ตัวที่ใช้จริง (ตั้งแต่ M4 — ดู DECISIONS):** solver TS ที่เขียนตาม §5.2 ถูกต้องแต่ช้าเกินเป้าที่มือเต็ม 13 ใบ จึงใช้ทางสำรองที่กำหนดไว้ใน §5.4:
+DDS 3.1.1 compile เป็น WebAssembly (`src/solver/dds.ts` → `src/solver/dds/dds-wasm.mjs` ผ่าน `native/dds/bridge.cpp`, build ด้วย `pnpm build:dds`)
+API เหมือน §5.1 ทุกตัว worker และ `pnpm bench` ใช้ DDS ส่วน solver TS (`src/solver/solve.ts`) และ reference ยังอยู่ ใช้เทียบผลใน test และ `pnpm bench --engine ts`
 
 ### 5.1 API
 
@@ -155,7 +177,9 @@ analyze(pos: Position): { card: Card; nsTricks: number }[];
 ddTable(deal: Deal): Record<Strain, number>;
 ```
 
-### 5.2 อัลกอริทึม
+(DDS คำนวณตารางครบทุก declarer ในครั้งเดียว แต่ `ddTable` คืนเฉพาะของ South)
+
+### 5.2 อัลกอริทึม (solver TS — ใช้เทียบผลใน test)
 
 - **ค้นแบบ null-window:** ถามว่า "NS ทำได้ ≥ t trick ไหม" (คำตอบ true/false) แล้วหาค่าจริงด้วยการค้นหา t (เริ่มจากค่าประมาณ แล้วขยับขึ้นลงแบบ MTD(f)) แทนการทำ alpha-beta ช่วงกว้าง
 - **ตัดกิ่งด้วยขอบเขต:** ถ้าได้ไปแล้ว ≥ t → true ถ้าได้ไปแล้ว + trick ที่เหลือ < t → false
@@ -169,6 +193,7 @@ ddTable(deal: Deal): Record<Strain, number>;
 ### 5.3 ความถูกต้อง
 
 - มี **reference solver แบบ brute-force minimax** (ไม่มี optimization) ไว้ใน `src/solver/reference.ts`
+- ใช้กับทั้ง DDS และ solver TS
 - test สุ่มตำแหน่งท้ายเกม (มือละ ≤ 5 ใบ, ทั้ง suit และ NT, เริ่มกลาง trick ด้วย) ≥ 2,000 ตำแหน่งแบบ seed คงที่ แล้วเทียบ `solve` กับ reference ต้องตรงกันทั้งหมด
 - test คุณสมบัติ: สลับที่ N↔S และ E↔W พร้อมกัน (ย้ายคนที่ถึงตาและใบใน trick ตามไปด้วย) แล้วผลต้องเท่ากัน, ใน NT สลับชื่อดอกแล้วผลต้องเท่ากัน, ผลรวม NS + EW = trick ที่เหลือ
 - `analyze` ต้องสอดคล้องกับ `solve`: ค่าสูงสุด (ถ้า N/S ถึงตา) หรือค่าต่ำสุด (ถ้า E/W ถึงตา) ของ `analyze` ต้องเท่ากับ `solve`
@@ -181,7 +206,9 @@ ddTable(deal: Deal): Record<Strain, number>;
 | `analyze` ตำแหน่งเต็ม 13 ใบ        | < 1.5 วินาที |
 | `ddTable` (5 strain)               | < 4 วินาที |
 
-ถ้าทำ optimization ครบแล้วยังช้าเกินเป้า **มากกว่า 3 เท่า** ให้หยุดแล้วจดใน `DECISIONS.md` ทางเลือกสำรองคือ compile DDS ของ Bo Haglund (Apache-2.0) เป็น WebAssembly แล้วเรียกผ่าน interface เดิมใน §5.1
+ผล DDS (`pnpm bench --deals 30`, 2026-11-23): solve p95 344 ms, analyze p95 588 ms, ddTable p95 1.56 s — ผ่านทุกเป้า
+
+ถ้าทำ optimization ครบแล้วยังช้าเกินเป้า **มากกว่า 3 เท่า** ให้หยุดแล้วจดใน `DECISIONS.md` ทางเลือกสำรองคือ compile DDS ของ Bo Haglund (Apache-2.0) เป็น WebAssembly แล้วเรียกผ่าน interface เดิมใน §5.1 — **เกิดขึ้นจริงใน M4 จึงใช้ DDS (ดูต้น §5)**
 
 ### 5.5 Worker
 
@@ -279,7 +306,7 @@ ddTable(deal: Deal): Record<Strain, number>;
 | 11 | สร้างดอกยาวให้กินได้ | establish long suit, นับว่าต้องเสียกี่ trick ก่อนจะได้กิน |
 | 12 | ทางเข้ามือ (entry) และ unblock | ต้องมีใบที่พาไปอีกมือได้, เล่นใบสูงจากมือที่สั้นก่อน |
 | 13 | Hold-up ใน NT | ปล่อยให้ฝั่งป้องกันกินก่อนเพื่อตัดการติดต่อระหว่างสองมือของเขา |
-| 14 | ใช้เกมนี้ฝึกยังไง | คำใบ้, ย้อน, Claim, หน้าวิเคราะห์, โหมดศึกษา, และบอกตรง ๆ ว่า **บอทเห็นไพ่ทุกมือ** จึงป้องกันได้แม่นกว่าคนจริง |
+| 14 | ใช้เกมนี้ฝึกยังไง | ตารางการประมูล (M27), คำใบ้, ย้อน, Claim, หน้าวิเคราะห์, โหมดศึกษา, และบอกตรง ๆ ว่า **บอทเห็นไพ่ทุกมือ** จึงป้องกันได้แม่นกว่าคนจริง |
 | — | อภิธานศัพท์ | ทุกศัพท์ที่ใช้ในเกมและในคู่มือ พร้อมคำอธิบาย 1–2 บรรทัด (ไทย / อังกฤษตามภาษาที่เลือก) |
 
 **หมวด (M21)** — รายการบทแบ่งเป็น 3 หมวด เพื่อให้คนที่ไม่รู้จัก bridge เห็นว่าอ่านแค่ 6 บทก็เล่นได้ ไม่ต้องอ่านทั้งหมดก่อน
@@ -346,6 +373,10 @@ ddTable(deal: Deal): Record<Strain, number>;
   - มือ South: ไพ่เรียงแนวนอนแบบซ้อนกัน
   - dummy: เรียงเป็นคอลัมน์ตามดอก (แบบที่ dummy วางบนโต๊ะจริง)
   - West/East: หลังไพ่ + จำนวนใบที่เหลือ (เปิดหน้าได้ในโหมดศึกษา / ตอนดูย้อนหลัง)
+- **ตารางการประมูล** (M27 — เฉพาะมือที่มีการประมูล §4.5): แถบใต้แผงข้อมูล ตาราง 4 คอลัมน์ West North East South บนพื้นขาว
+  ชื่อ dealer ขีดเส้นใต้, หัวคอลัมน์ฝั่งที่ vul เป็นสีแดง, บรรทัดบอก "แจก: <ทิศ> · <vul>", bid แสดงตัวเลข + สัญลักษณ์ดอก (สีดอก), pass = `Pass`, double = `X`, redouble = `XX`
+  เปิดอยู่ตอนเริ่มมือจนผู้เล่นลงไพ่ใบแรก (South หรือ dummy) แล้วพับเหลือบรรทัดเดียว (call ที่ไม่ใช่ pass พร้อมอักษรทิศ เช่น `S 1♥ W 2♦ N 2♥`)
+  แตะบรรทัดเพื่อเปิด ปุ่ม "ซ่อน" เพื่อพับ — ที่ผู้เล่นเลือกเองคงอยู่จนจบมือนั้น ("เล่นมือนี้ใหม่" ไม่รีเซ็ต) มือที่ไม่มีการประมูลไม่มีแถบนี้
 - **แผงข้อมูล:** contract (เช่น `4♠ โดย South`), trick ที่ต้องได้, trick ที่ NS / EW ได้แล้ว, vulnerability, ปุ่ม คำใบ้ / ย้อน (เฉพาะโหมดมือใหม่) / Claim / เมนู
 - ใบที่ลงได้กดได้ ใบที่ลงไม่ได้ให้จางลง ถึงตาใครให้มีไฮไลต์ที่ที่นั่งนั้น (ถึงตา North ต้องเห็นชัดว่าต้องกดจาก dummy)
 - สีดอก: ♠♣ ดำ, ♥♦ แดง และมีสัญลักษณ์เสมอ (ไม่อาศัยสีอย่างเดียว)
@@ -369,7 +400,7 @@ ddTable(deal: Deal): Record<Strain, number>;
 
 - `pnpm test` (Vitest): engine (กติกา, การนับ trick, scoring, encode/decode, มือไม่ครบ 13 ใบ, PBN), solver (§5.3), bot (เลือกใบถูกต้องตามกติกา tie-break), การเลือก contract (ด้วย RNG แบบ seed), **แบบฝึกทุกข้อในคู่มือ** (§7.7 — ข้อมูลถูกรูปแบบ, เป้าทำได้จริง, ใบที่สอนว่าผิดทำให้พลาดจริง)
 - `pnpm bench`: วัดตาม §5.4 แล้วพิมพ์ p50 / p95
-- `pnpm test:e2e` (Playwright): (1) เปิดเว็บครั้งแรก → ตอบ "ไม่เคยเล่น" → คู่มือฉบับย่อ → อ่านคู่มือเต็ม → อ่านบทที่ 1 → ทำแบบฝึกบทที่ 2 ผ่าน; (2) เปิดเว็บ → เริ่มมือจากลิงก์มือไพ่ที่กำหนด → เล่นจนจบด้วยการกดคำใบ้แล้วลงใบที่ไฮไลต์ทุกตา → ต้องทำ contract ได้ และหน้าสรุปต้องแสดง "เสีย 0 trick" ทั้งบน desktop และมือถือ และต้องไม่มี error ใน console (รวม CSP)
+- `pnpm test:e2e` (Playwright): (1) เปิดเว็บครั้งแรก → ตอบ "ไม่เคยเล่น" → คู่มือฉบับย่อ → อ่านคู่มือเต็ม → อ่านบทที่ 1 → ทำแบบฝึกบทที่ 2 ผ่าน; (2) เปิดเว็บ → เริ่มมือจากลิงก์มือไพ่ที่กำหนด → เล่นจนจบด้วยการกดคำใบ้แล้วลงใบที่ไฮไลต์ทุกตา → ต้องทำ contract ได้ และหน้าสรุปต้องแสดง "เสีย 0 trick" ทั้งบน desktop และมือถือ และต้องไม่มี error ใน console (รวม CSP); (3) ลิงก์มือที่มีการประมูล → เห็นตารางการประมูล → เล่นตามคำใบ้จนจบ เสีย 0 trick, ลิงก์เก่าไม่มีตาราง, การประมูลที่ไม่ตรง contract = ลิงก์ไม่ถูกต้อง (M27)
 - `pnpm typecheck`, `pnpm lint`, `pnpm format:check` ต้องผ่าน
 
 ## 11. Definition of Done

@@ -1,26 +1,22 @@
-// #/play/<dealCode>/<contract>[?v=ns] — plays the hand in the link (SPEC §4.4). The hand
-// already in the store is kept when it is the same one (e.g. right after dealing it).
+// #/play/<dealCode>/<contract>[?v=ns][&d=<dealer>&a=<calls>] — plays the hand in the link
+// (SPEC §4.4). The hand already in the store is kept when it is the same one (e.g. right after
+// dealing it).
 
 import { useEffect, useMemo } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { decodeContract, decodeDeal } from '../../engine';
-import type { HandSetup } from '../../game/playStore';
+import { handFromLink } from '../../game/handLink';
 import { isSameHand } from '../../game/playStore';
 import { gameStore, useGame, useT } from '../gameStore';
 import { PlayTable } from '../table/PlayTable';
 
-function handFromLink(code: string, contract: string, vul: string | null): HandSetup | null {
-  const deal = decodeDeal(code);
-  const c = decodeContract(contract);
-  if (!deal || !c) return null;
-  return { deal, contract: c, vulnerability: vul === 'ns' ? 'ns' : 'none' };
-}
-
 export function PlayPage() {
   const { code = '', contract = '' } = useParams();
   const [params] = useSearchParams();
-  const vul = params.get('v');
-  const setup = useMemo(() => handFromLink(code, contract, vul), [code, contract, vul]);
+  const query = params.toString();
+  const setup = useMemo(
+    () => handFromLink(code, contract, new URLSearchParams(query)),
+    [code, contract, query],
+  );
   const ready = useGame((s) => setup !== null && isSameHand(s, setup));
   const t = useT();
 

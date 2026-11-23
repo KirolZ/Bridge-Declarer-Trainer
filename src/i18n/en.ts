@@ -218,6 +218,17 @@ export const en: Messages = {
     gotIt: 'Got it',
   },
 
+  auction: {
+    title: 'Auction',
+    show: 'Show the auction',
+    hide: 'Hide',
+    dealer: (seat) => `Dealer: ${SEAT[seat]}`,
+    pass: 'Pass',
+    double: 'X',
+    redouble: 'XX',
+    vulnerableSeat: 'vul',
+  },
+
   coach: {
     who: (seat) => (seat === 'S' ? 'you (South)' : seat === 'N' ? 'dummy (North)' : SEAT[seat]),
     contractNT: (level, needed) =>

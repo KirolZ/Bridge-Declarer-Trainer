@@ -50,6 +50,21 @@ export const CH14: Chapter<Bilingual> = {
         en: 'If you play against real people and find it easier than this game, that is normal — people make mistakes, the bots do not.',
       },
     },
+    { kind: 'h', text: { th: 'ตารางการประมูล', en: 'The auction table' } },
+    {
+      kind: 'p',
+      text: {
+        th: 'มือที่มี[[auction|การประมูล]]มาด้วย (เช่นเปิดจากลิงก์ที่มีการประมูล) จะมีตาราง**การประมูล**เหนือโต๊ะ เรียงคอลัมน์ West, North, East, South แถวบนบอกว่าใครเป็น [[dealer]] (ชื่อขีดเส้นใต้ และเป็นคนประมูลก่อน) ฝั่งที่ [[vulnerable|vul]] เป็นสีแดง [[pass|Pass]] คือไม่ประมูลเพิ่ม',
+        en: 'A hand that comes with its [[auction]] (such as one opened from a link that has it) shows an **Auction** table above the table, in columns West, North, East, South. The [[dealer]] is underlined and calls first; the [[vulnerable]] side is in red. [[pass|Pass]] means no bid on that turn.',
+      },
+    },
+    {
+      kind: 'p',
+      text: {
+        th: 'ตารางเปิดอยู่จนคุณลงไพ่ใบแรก แล้วพับเหลือบรรทัดเดียว แตะบรรทัดนั้นเพื่อเปิดดูอีกครั้ง หรือกด **ซ่อน** เพื่อพับเอง',
+        en: 'The table stays open until you play your first card, then folds into one line. Tap the line to open it again, or press **Hide** to fold it yourself.',
+      },
+    },
     { kind: 'h', text: { th: 'คำใบ้', en: 'Hints' } },
     {
       kind: 'p',

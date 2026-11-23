@@ -13,6 +13,7 @@ import {
   legalPlays,
   remainingHands,
   sameCard,
+  sideOf,
   toPlay,
   totalTricks,
   tricksNeeded,
@@ -34,6 +35,7 @@ import {
 } from '../gameStore';
 import { GuidePanel } from '../learn/GuidePanel';
 import { ActionBar } from './ActionBar';
+import { AuctionTable } from './AuctionTable';
 import { ClaimDialog } from './ClaimDialog';
 import { CoachTipView } from './CoachTip';
 import { useCardPick } from './cardPick';
@@ -127,6 +129,10 @@ export function PlayTable() {
   /** Why the card just clicked cannot be played (beginner mode), for position `at`. */
   const [blocked, setBlocked] = useState<{ at: number; text: string } | null>(null);
   const beginner = useSettings((s) => s.settings.beginnerMode);
+  /** The player opened or closed the auction during hand number `serial`. */
+  const [auctionToggle, setAuctionToggle] = useState<{ serial: number; open: boolean } | null>(
+    null,
+  );
   const dismissedTips = useLearn((s) => s.progress.tips);
 
   const seat = play ? toPlay(play) : null;
@@ -247,6 +253,10 @@ export function PlayTable() {
   const blockedText = blocked?.at === plays ? blocked.text : null;
   const tip = beginner && !over ? coachTip(play, dismissedTips) : null;
   const active = (s: Seat) => !trickPause && !over && seat === s;
+  // The auction is open until the player's first card, unless they opened or closed it.
+  const playerPlayed = play.plays.slice(state.startPlays).some((p) => sideOf(p.seat) === 'NS');
+  const auctionOpen =
+    auctionToggle?.serial === state.handSerial ? auctionToggle.open : !playerPlayed;
 
   let status = '';
   if (over) status = '';
@@ -307,6 +317,15 @@ export function PlayTable() {
             {t.common.close}
           </button>
         </div>
+      )}
+
+      {hand.auction && (
+        <AuctionTable
+          auction={hand.auction}
+          vulnerability={hand.vulnerability}
+          open={auctionOpen}
+          onToggle={() => setAuctionToggle({ serial: state.handSerial, open: !auctionOpen })}
+        />
       )}
 
       <main className="flex flex-1 flex-col p-2 sm:p-4">

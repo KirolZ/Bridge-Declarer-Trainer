@@ -226,6 +226,18 @@ export const th = {
     gotIt: 'เข้าใจแล้ว',
   },
 
+  /** The auction above the table (SPEC §8, M27). Calls are written the same in both languages. */
+  auction: {
+    title: 'การประมูล',
+    show: 'ดูการประมูล',
+    hide: 'ซ่อน',
+    dealer: (seat: Seat) => `แจก: ${SEAT[seat]}`,
+    pass: 'Pass',
+    double: 'X',
+    redouble: 'XX',
+    vulnerableSeat: 'vul',
+  },
+
   /** Beginner-mode tips on the table (SPEC §7.8), in guide markup. */
   coach: {
     who: (seat: Seat): string =>

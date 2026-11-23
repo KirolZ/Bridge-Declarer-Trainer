@@ -11,8 +11,8 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     term: 'auction',
     thai: 'การประมูล',
     text: {
-      th: 'ช่วงก่อนเล่นไพ่ในเกมจริง ที่ทั้ง 4 คนผลัดกันเสนอ [[contract]] แข่งกัน (เรียกอีกอย่างว่า bidding) เกมนี้ข้ามช่วงนี้ไป ระบบเลือก contract ให้',
-      en: 'In a real game, the part before the cards are played, when the 4 players take turns offering [[contract|contracts]] against each other (also called bidding). This game skips it and picks the contract for you.',
+      th: 'ช่วงก่อนเล่นไพ่ ที่ทั้ง 4 คนผลัดกันเสนอ [[contract]] แข่งกัน (เรียกอีกอย่างว่า bidding) เริ่มจาก [[dealer]] คุณไม่ต้องประมูลเอง: ระบบเลือก contract ให้ และมือที่มีการประมูลจะมีตารางให้ดูเหนือโต๊ะ',
+      en: 'The part before the cards are played, when the 4 players take turns offering [[contract|contracts]] against each other (also called bidding), starting with the [[dealer]]. You never bid here: the game picks the contract, and a hand that comes with its auction shows it above the table.',
     },
     chapter: 4,
     aliases: ['bidding'],
@@ -36,6 +36,16 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
       en: "How many [[trick|tricks]] [[declarer|declarer's]] side must take, and which suit is [[trump|trumps]] (or NT = no trumps). Written as a number + a suit: 4{S} = 6 + 4 = 10 tricks with {S} as trumps.",
     },
     chapter: 4,
+  },
+  {
+    id: 'dealer',
+    term: 'dealer',
+    thai: 'คนแจก',
+    text: {
+      th: 'คนที่แจกไพ่ของมือนั้น และเป็นคนแรกที่ประมูลใน[[auction|การประมูล]] แล้วผลัดกันไปตามเข็มนาฬิกา ในตารางการประมูลชื่อของ dealer มีขีดเส้นใต้',
+      en: 'The player who deals the cards of the hand, and the first to call in the [[auction]]; the others follow clockwise. In the auction table the dealer’s name is underlined.',
+    },
+    chapter: 14,
   },
   {
     id: 'declarer',
@@ -286,6 +296,16 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
       en: 'A [[contract]] whose contract tricks are worth less than 100 (below a [[game]]). Making it earns a bonus of 50.',
     },
     chapter: 6,
+  },
+  {
+    id: 'pass',
+    term: 'Pass',
+    thai: 'ผ่าน',
+    text: {
+      th: 'ใน[[auction|การประมูล]] คือไม่เสนออะไรเพิ่มในตานั้น ถ้ามีคน Pass ต่อกัน 3 คนหลังจากมีคนเสนอ การประมูลจบ และสิ่งที่เสนอล่าสุดเป็น [[contract]]',
+      en: 'In the [[auction]], making no offer on your turn. When 3 players in a row pass after someone has made an offer, the auction ends and the last offer is the [[contract]].',
+    },
+    chapter: 14,
   },
   {
     id: 'ruff',

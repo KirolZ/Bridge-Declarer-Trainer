@@ -707,3 +707,41 @@ e2e 26.2 ผ่านทั้ง desktop + มือถือ, check ทั้�
 > **สถานะ (2026-11-10):** 26.5 — เอา 🧪 ออกจากข้อความทั้งสองภาษา (ข้อความในบันทึกสถานะก่อนหน้าที่มี 🧪 เป็นของรุ่นแรก)
 > e2e เปลี่ยนจาก regex เป็นตรวจข้อความเต็มของส่วนข้อความ (`test-site-notice-text` — ข้อความทั้งแถบมี ✕ ของปุ่มปิดต่อท้าย) ดูภาพหน้าแรกไทย / อังกฤษ ที่ 1280 และ 360 px: ภาษาไทยที่ 360 px เหลือบรรทัดเดียว
 > ไม่ทับปุ่มธง ไม่มี scroll แนวนอน ไม่มี error ใน console — `pnpm test` 453 ข้อ, `pnpm test:e2e` 96 ข้อผ่าน, lint / typecheck / format ผ่าน
+
+## M27 — Auction: โครงสร้าง + ตารางประมูล
+
+> ที่มา (2026-11-23): ผู้ใช้ขอเพิ่มการแสดงการประมูล SAYC ของบอร์ด (brief `D:\Hobby\AUCTION_FEATURE_BRIEF.md`,
+> แผน `D:\Hobby\AUCTION_PLAN.md` — ผู้ใช้ยืนยันแผนและให้เริ่ม M27–M28) milestone นี้ทำโครงข้อมูล การ์ดกติกา ลิงก์ และตาราง
+> ด้วย auction ที่ใส่ตายตัว (ยังไม่มี bidder และยังไม่แจกไพ่แบบมีการประมูล) · branch `feature/auction-core`
+
+- [x] **27.1** เอกสาร: SPEC §2 / §3 / §5 ให้ตรงของจริง (solver ในแอปคือ DDS → wasm ตั้งแต่ M4, TS solver ใช้เทียบใน test)
+      + เพิ่ม §4.1 type `Call` / `Auction`, §4.5 การประมูล, §4.4 query `d` / `a`
+- [x] **27.2** ~~`src/bidding/` + ESLint~~ → ย้ายไป M28 (กติกาการประมูลอยู่ใน `src/engine/auction.ts` ซึ่งอยู่ใต้กฎ import ของ engine แล้ว — DECISIONS M27)
+- [x] **27.3** engine: type `Call` / `Auction`, ตรวจกติกา (bid สูงขึ้น, X / XX ถูกจังหวะ, จบด้วย pass 3 / passed out 4),
+      หา contract + declarer + doubled จาก auction, หมุนโต๊ะ 180° (deal + dealer + auction)
+- [x] **27.4** encode / decode auction (`1H-P-2H-P-4H-P-P-P`) + dealer; ลิงก์ `#/play/<deal>/<contract>?d=E&a=…` —
+      ต้องถูกกติกา จบแล้ว declarer เป็น S ไม่ doubled และ contract ตรงกับ path ไม่งั้น "ลิงก์มือไพ่ไม่ถูกต้อง"; ลิงก์เก่า (ไม่มี `a`) เปิดได้เหมือนเดิม
+- [x] **27.5** state ของมือเก็บ auction (ถ้ามี) ส่งต่อไป "เล่นมือนี้ใหม่" และปุ่มแชร์ใส่ `d` / `a`
+- [x] **27.6** UI: ตารางประมูล 4 คอลัมน์ W N E S (เน้น dealer, แสดง vul) บนโต๊ะ — ก่อน opening lead แสดงเต็ม
+      ระหว่างเล่นพับเป็นบรรทัดเดียว กดเปิดดูได้; มือที่ไม่มี auction ไม่มีอะไรเปลี่ยน; สองภาษา; 360 px ไม่ล้น
+- [x] **27.7** test: unit กติกา / contract / หมุนโต๊ะ / encode-decode ไปกลับ / ลิงก์ไม่ถูกต้อง; e2e เปิดลิงก์ที่มี auction
+      → เห็นตาราง → เล่นตามคำใบ้จนจบ เสีย 0 trick; ลิงก์เก่ายังเหมือนเดิม (desktop + มือถือ)
+- [x] **27.8** เอกสาร: SPEC §8 (ตารางประมูล), ตรวจบท 14 + อภิธานศัพท์ (ศัพท์ใหม่บนจอ เช่น dealer / auction)
+
+**เสร็จเมื่อ:** unit 27.7 ผ่าน, e2e ลิงก์ที่มี auction ผ่านทั้ง desktop + มือถือ, ลิงก์เก่าผ่าน e2e เดิมทั้งหมด,
+ภาพโต๊ะ 1280 / 360 px มีตาราง (เต็ม / พับ) ไม่ล้น ไม่บัง ไม่มี error console, check ทั้งหมดผ่าน
+
+> **สถานะ (2026-11-23):** M27 เสร็จ — กติกาการประมูลใน `src/engine/auction.ts` (`Call` / `Auction`, `callError` / `auctionError`,
+> `isAuctionComplete` / `isPassedOut`, `auctionResult` → contract + declarer + double, `rotateDeal` / `rotateAuction` ครึ่งรอบ,
+> `encodeCalls` / `decodeAuction`), ลิงก์ใน `src/game/handLink.ts` (`handPath` ย้ายมา, `handFromLink` ใหม่ ใช้ใน `PlayPage`),
+> `HandSetup.auction` + `isSameHand` เทียบการประมูล, ตาราง `src/ui/table/AuctionTable.tsx` ใต้แผงข้อมูลใน `PlayTable`
+> (เปิดจนผู้เล่นลงใบแรก แล้วพับเป็นบรรทัดเดียว), i18n `auction.*`, อภิธานศัพท์ `dealer` / `Pass` + แก้ `auction`, บท 14 หัวข้อ "ตารางการประมูล",
+> SPEC §1 / §2 / §3 / §4.1 / §4.4 / §4.5 (ใหม่) / §5 (ตรงกับ DDS) / §7.7 / §8 / §10 — ดู DECISIONS M27
+> ดูภาพโต๊ะจากลิงก์ที่มีการประมูล (เปิด / พับ) ที่ 1280 และ 360 px: ไม่มี scroll แนวนอน ไม่บังกัน ไม่มี error ใน console
+> test: unit `engine/auction.test.ts` (16 ข้อ), `game/handLink.test.ts` (3), `playStore.test.ts` +1 (isSameHand กับการประมูล);
+> e2e `auction.spec.ts` (3 ข้อ × desktop + มือถือ: ลิงก์มีการประมูล → ตาราง 8 call → เล่นตามคำใบ้ 26 ตา ทำได้ เสีย 0 trick และตารางพับหลังใบแรก;
+> เปิด / พับเอง + ภาษาอังกฤษ "Dealer: South · NS vul"; ลิงก์เก่าไม่มีตาราง, การประมูลไม่ตรง contract / declarer ไม่ใช่ South = ลิงก์ไม่ถูกต้อง)
+> — `pnpm test` 474 ข้อ, `pnpm test:e2e` 102 ข้อผ่าน, lint / typecheck / format ผ่าน (ไม่ได้แตะ `src/solver/`)
+>
+> **ส่งต่อ:** ยังไม่มีมือที่แจกพร้อมการประมูล — เห็นตารางได้เฉพาะจากลิงก์ที่มี `a` จนกว่า M30; ความหมายของ call (แตะดู) มาใน M28 / M31;
+> บท 4 และคำว่า "เกมนี้ไม่มี double" ในอภิธานศัพท์ `double` รอแก้ใน M32

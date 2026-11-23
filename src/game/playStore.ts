@@ -10,10 +10,11 @@
 // generation is still current before touching state.
 
 import { createStore } from 'zustand/vanilla';
-import type { Card, Contract, Deal, PlayState, Seat, Vulnerability } from '../engine';
+import type { Auction, Card, Contract, Deal, PlayState, Seat, Vulnerability } from '../engine';
 import {
   applyPlay,
   completedTricks,
+  encodeCalls,
   encodeContract,
   encodeDeal,
   illegalReason,
@@ -50,6 +51,11 @@ export type HandSetup = {
    * in the middle of a trick). Undo, restart and rewinds never go back before them.
    */
   readonly plays?: readonly Card[];
+  /**
+   * How the board was bid (SPEC §4.5), shown above the table. Its final contract is `contract`
+   * with South declaring. Absent for hands dealt without an auction and for old links.
+   */
+  readonly auction?: Auction;
 };
 
 /** Best cards for the player's position after `at` cards (SPEC §7.2). */
@@ -169,15 +175,16 @@ export function isSameHand(state: PlayStoreState, hand: HandSetup): boolean {
     state.hand !== null &&
     state.dealCode === encodeDeal(hand.deal) &&
     encodeContract(state.hand.contract) === encodeContract(hand.contract) &&
-    state.hand.vulnerability === hand.vulnerability
+    state.hand.vulnerability === hand.vulnerability &&
+    auctionKey(state.hand.auction) === auctionKey(hand.auction)
   );
 }
 
-/** Link path of a hand: `/play/<dealCode>/<contract>` plus `?v=ns` when NS is vulnerable. */
-export function handPath(hand: HandSetup): string {
-  const path = `/play/${encodeDeal(hand.deal)}/${encodeContract(hand.contract)}`;
-  return hand.vulnerability === 'ns' ? `${path}?v=ns` : path;
+function auctionKey(auction: Auction | undefined): string {
+  return auction ? `${auction.dealer}:${encodeCalls(auction.calls)}` : '';
 }
+
+export { handPath } from './handLink';
 
 /** The hand is finished: all tricks played (and the last one gathered), or a claim accepted. */
 export function isHandOver(state: PlayStoreState): boolean {

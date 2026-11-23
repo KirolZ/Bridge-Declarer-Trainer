@@ -6,3 +6,4 @@ export * from './deal';
 export * from './encode';
 export * from './play';
 export * from './scoring';
+export * from './auction';
