@@ -87,7 +87,21 @@ describe('settings', () => {
       contractType: 'any',
       difficulty: 'exact',
       vulnerability: 'ns',
+      showAuction: true,
     });
+  });
+
+  it('shows the auction for everyone unless turned off, older saves included (M30)', () => {
+    expect(DEFAULT_SETTINGS.showAuction).toBe(true);
+    // A save from before M30 has no such field: the auction is on for existing players too.
+    const old = { ...DEFAULT_SETTINGS } as Record<string, unknown>;
+    delete old.showAuction;
+    expect(parseSettings(old).showAuction).toBe(true);
+    expect(parseSettings({ showAuction: false }).showAuction).toBe(false);
+    expect(parseSettings({ showAuction: 'no' }).showAuction).toBe(true);
+    const off = { ...DEFAULT_SETTINGS, showAuction: false };
+    expect(dealSettingsOf(off).showAuction).toBe(false);
+    expect(dealSettingsOf({ ...off, beginnerMode: true }).showAuction).toBe(false);
   });
 
   it('beginner mode deals easy contracts and slows the bots (SPEC §7.8)', () => {
@@ -103,6 +117,7 @@ describe('settings', () => {
       contractType: 'noSlam',
       difficulty: 'cushion',
       vulnerability: 'ns',
+      showAuction: true,
     });
     expect(botSpeedOf(beginner)).toBe('slow');
     expect(botSpeedOf({ ...beginner, beginnerMode: false })).toBe('fast');
@@ -212,6 +227,7 @@ describe('recording finished hands', () => {
 
   const solver = (): PlaySolver => ({
     analyze: (pos) => Promise.resolve(dds.analyze(pos)),
+    solve: (pos) => Promise.resolve(dds.solve(pos)),
     ddTable: (deal) => Promise.resolve(dds.ddTable(deal)),
   });
 

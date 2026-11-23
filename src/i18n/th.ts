@@ -95,6 +95,8 @@ export const th = {
           `หามือแบบ "${CONTRACT_TYPE[m.wanted]}" ไม่เจอใน 30 มือ ` +
           `เลยแจกแบบ "${CONTRACT_TYPE[m.got]}" แทน`
         );
+      case 'dealNoAuction':
+        return 'หาบอร์ดที่มีการประมูลตามตั้งค่าไม่เจอ มือนี้เลยแจกแบบไม่มีการประมูล';
     }
   },
 
@@ -136,13 +138,19 @@ export const th = {
     /** A setting decided by beginner mode: why it is locked. */
     locked: (why: string) => `${BEGINNER_ON}: ${why}`,
     dealSection: 'การแจกไพ่ (มีผลตั้งแต่มือถัดไป)',
+    showAuction: 'แสดงการประมูล',
+    showAuctionNote:
+      'contract มาจากการประมูลที่ระบบประมูลให้ดู (คุณไม่ต้องประมูลเอง) ใช้เดาไพ่ของฝั่งป้องกันได้ — ปิด: ระบบเลือก contract จากผลวิเคราะห์ double dummy โดยไม่มีการประมูล',
     contractType: 'ประเภท contract',
     contractTypeLocked: 'partscore หรือ game เท่านั้น ไม่มี slam',
     difficulty: 'ความยาก',
     difficultyLocked: 'ใช้แบบมีเผื่อเสมอ',
     difficultyOptions: {
-      exact: { label: 'พอดี', note: 'contract เท่ากับที่ทำได้สูงสุด ต้องเล่นแม่นทุกใบ' },
-      cushion: { label: 'มีเผื่อ', note: 'ต่ำกว่าที่ทำได้ 1 level (ถ้าลดได้) พลาดได้ 1 trick' },
+      exact: { label: 'พอดี', note: 'contract ทำได้พอดี ไม่มี trick เหลือ ต้องเล่นแม่นทุกใบ' },
+      cushion: {
+        label: 'มีเผื่อ',
+        note: 'contract ทำได้เกินอย่างน้อย 1 trick (ถ้าเป็นไปได้) พลาดได้ 1 trick',
+      },
     } as Readonly<Record<Difficulty, Option>>,
     vulnerability: 'Vulnerability',
     vulnerabilityOptions: {

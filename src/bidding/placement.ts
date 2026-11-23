@@ -88,12 +88,35 @@ export function placement(ctx: BidContext): Candidate[] {
   return finish(ctx, out);
 }
 
-/** When pass is not allowed, a last resort that keeps the auction going. */
+/**
+ * When pass is not allowed: natural calls that still say something (raise partner's last suit
+ * with four, go back to a suit partner showed earlier with three, rebid my own suit with one more
+ * card), below game; then a last resort that keeps the auction going and says nothing.
+ * (M30: before, the last resort was partner's suit, with any length.)
+ */
 export function finish(ctx: BidContext, out: Candidate[]): Candidate[] {
   if (!ctx.forced) return out;
   const last = ctx.partnerLast?.call;
+  const lastSuit =
+    last?.kind === 'bid' && last.strain !== 'NT' && !ctx.partnerLast?.meaning?.artificial
+      ? last.strain
+      : null;
+  const p = ctx.shownByPartner.len;
+  const me = ctx.shownByMe.len;
+  const natural: Candidate[] = [];
+  const add = (s: Suit, len: number, name: 'raise' | 'preference' | 'rebid', rule: string) => {
+    const b = cheapest(ctx, s);
+    if (b.level <= 3 && b.level < gameLevel(s))
+      natural.push(c(b, { name, len: { [s]: [len, 13] } }, rule));
+  };
+  if (lastSuit) add(lastSuit, 4, 'raise', 'forced.raise');
+  for (const s of SUIT_PREFERENCE)
+    if (s !== lastSuit && p[s][0] >= 3) add(s, 3, 'preference', `forced.back${s}`);
+  for (const s of SUIT_PREFERENCE)
+    if (me[s][0] >= 4 && p[s][0] < 3) add(s, me[s][0] + 1, 'rebid', `forced.own${s}`);
+  // Notrump first: raising partner's suit without support would read as a raise.
   const options: Bid[] = [cheapest(ctx, 'NT')];
-  if (last?.kind === 'bid' && last.strain !== 'NT') options.unshift(cheapest(ctx, last.strain));
+  if (lastSuit) options.push(cheapest(ctx, lastSuit));
   const fallback = options.find((b) => b.level <= 5 && !(b.level === 4 && b.strain === 'NT'));
-  return fallback ? [...out, c(fallback, NO_INFO, 'place.forced')] : out;
+  return [...out, ...natural, ...(fallback ? [c(fallback, NO_INFO, 'place.forced')] : [])];
 }

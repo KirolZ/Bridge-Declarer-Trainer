@@ -75,8 +75,8 @@ export const CH4: Chapter<Bilingual> = {
     {
       kind: 'note',
       text: {
-        th: '**เกมนี้ข้ามการประมูล** — ระบบแจกไพ่ แล้วเลือก contract ให้ฝั่งคุณ (NS) จากการคำนวณว่าถ้าเล่นดีที่สุดจะได้กี่ trick คุณจึงเริ่มเล่นไพ่ได้ทันที',
-        en: '**This game skips the auction** — it deals the cards and picks a contract for your side (NS) from a count of how many tricks best play makes, so you can start playing at once.',
+        th: '**คุณไม่ต้องประมูลเอง** — ระบบประมูลให้ทั้ง 4 ที่นั่งแล้วแสดงตารางการประมูลเหนือโต๊ะ ฝั่งคุณ (NS) ได้ contract และ South เป็น [[declarer]] เสมอ ระบบเลือกเฉพาะมือที่ contract ทำได้ถ้าเล่นดีที่สุด (ปิด**แสดงการประมูล**ในหน้าตั้งค่าได้ แล้วระบบจะเลือก contract ให้จากการคำนวณว่าถ้าเล่นดีที่สุดจะได้กี่ trick)',
+        en: '**You never bid** — the game bids for all 4 seats and shows the auction above the table; your side (NS) gets the contract and South is always [[declarer]]. The game only keeps hands where the contract makes with best play. (Turn off **Show the auction** in Settings and the game picks the contract from a count of how many tricks best play makes instead.)',
       },
     },
   ],

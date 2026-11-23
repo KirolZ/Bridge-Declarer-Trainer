@@ -16,6 +16,7 @@ export type MeaningName =
   | 'weakTwo'
   | 'preempt'
   | 'raise'
+  | 'preference'
   | 'limitRaise'
   | 'preemptiveRaise'
   | 'newSuit'

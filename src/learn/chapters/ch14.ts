@@ -54,8 +54,8 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'มือที่มี[[auction|การประมูล]]มาด้วย (เช่นเปิดจากลิงก์ที่มีการประมูล) จะมีตาราง**การประมูล**เหนือโต๊ะ เรียงคอลัมน์ West, North, East, South แถวบนบอกว่าใครเป็น [[dealer]] (ชื่อขีดเส้นใต้ และเป็นคนประมูลก่อน) ฝั่งที่ [[vulnerable|vul]] เป็นสีแดง [[pass|Pass]] คือไม่ประมูลเพิ่ม',
-        en: 'A hand that comes with its [[auction]] (such as one opened from a link that has it) shows an **Auction** table above the table, in columns West, North, East, South. The [[dealer]] is underlined and calls first; the [[vulnerable]] side is in red. [[pass|Pass]] means no bid on that turn.',
+        th: 'มือที่แจกในเกมมี[[auction|การประมูล]]มาด้วย: ระบบประมูลให้ทั้ง 4 ที่นั่งแล้วแสดงตาราง**การประมูล**เหนือโต๊ะ (คุณไม่ต้องประมูลเอง และ South เป็น [[declarer]] เสมอ) เรียงคอลัมน์ West, North, East, South แถวบนบอกว่าใครเป็น [[dealer]] (ชื่อขีดเส้นใต้ และเป็นคนประมูลก่อน) ฝั่งที่ [[vulnerable|vul]] เป็นสีแดง [[pass|Pass]] คือไม่ประมูลเพิ่ม ไม่อยากเห็นการประมูล? ปิด**แสดงการประมูล**ในหน้าตั้งค่า แล้วระบบจะเลือก contract ให้แบบไม่มีการประมูล',
+        en: 'Hands dealt in the game come with their [[auction]]: the game bids for all 4 seats and shows an **Auction** table above the table (you never bid, and South is always [[declarer]]). The columns are West, North, East, South. The [[dealer]] is underlined and calls first; the [[vulnerable]] side is in red. [[pass|Pass]] means no bid on that turn. Rather not see the auction? Turn off **Show the auction** in Settings and the game picks the contract without one.',
       },
     },
     {
@@ -195,8 +195,8 @@ export const CH14: Chapter<Bilingual> = {
           en: 'Press "Play this hand again" and fix the mistake',
         },
         {
-          th: 'คล่องแล้วตั้งความยากเป็น **พอดี** — contract เท่ากับที่ทำได้สูงสุด ต้องเล่นถูกทุกใบ',
-          en: 'Once you are comfortable, set the difficulty to **Exact** — the contract is the most the hand can make, so every card has to be right',
+          th: 'คล่องแล้วตั้งความยากเป็น **พอดี** — contract ทำได้พอดี ไม่มี trick เหลือ ต้องเล่นถูกทุกใบ',
+          en: 'Once you are comfortable, set the difficulty to **Exact** — the contract makes with no trick to spare, so every card has to be right',
         },
         { th: 'ดูความก้าวหน้าในหน้า**สถิติ**', en: 'Follow your progress on the **Stats** page' },
       ],

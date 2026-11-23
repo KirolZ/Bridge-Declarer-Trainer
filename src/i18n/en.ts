@@ -82,6 +82,8 @@ export const en: Messages = {
           `No "${CONTRACT_TYPE[m.wanted]}" hand came up in 30 deals, ` +
           `so this is a "${CONTRACT_TYPE[m.got]}" hand instead`
         );
+      case 'dealNoAuction':
+        return 'No board with an auction came up in time, so this hand was dealt without one';
     }
   },
 
@@ -123,15 +125,21 @@ export const en: Messages = {
       'Easy contracts (with a cushion, no slams), slow bots, a reason when you tap a card you cannot play, tips on the table, and the score explained part by part at the end',
     locked: (why) => `${BEGINNER_ON}: ${why}`,
     dealSection: 'Dealing (from the next hand)',
+    showAuction: 'Show the auction',
+    showAuctionNote:
+      "The contract comes from an auction the game bids for you to see (you do not bid), and it tells you about the defenders' cards — off: the game picks the contract from the double-dummy analysis, with no auction",
     contractType: 'Contract type',
     contractTypeLocked: 'partscore or game only, no slams',
     difficulty: 'Difficulty',
     difficultyLocked: 'always with a cushion',
     difficultyOptions: {
-      exact: { label: 'Exact', note: 'The most the hand can make — every card has to be right' },
+      exact: {
+        label: 'Exact',
+        note: 'The contract makes with no trick to spare — every card has to be right',
+      },
       cushion: {
         label: 'Cushion',
-        note: 'One level below the most (when possible) — one trick to spare',
+        note: 'The contract makes with at least one trick to spare (when possible)',
       },
     },
     vulnerability: 'Vulnerability',

@@ -125,6 +125,19 @@ export function SettingsPage() {
       </section>
 
       <Section title={w.dealSection}>
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            name="showAuction"
+            checked={settings.showAuction}
+            onChange={(e) => updateSettings({ showAuction: e.target.checked })}
+            className="mt-1 size-5 shrink-0 accent-amber-300"
+          />
+          <span className="flex flex-col">
+            <span className="font-semibold">{w.showAuction}</span>
+            <span className="text-sm text-white/70">{w.showAuctionNote}</span>
+          </span>
+        </label>
         <Choice<ContractType>
           name="contractType"
           legend={w.contractType}

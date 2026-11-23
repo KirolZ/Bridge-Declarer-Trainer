@@ -366,7 +366,14 @@ function rebidAfterTwoOverOne(ctx: BidContext, open: Suit, resp: Suit): Candidat
     if (s === open || s === resp) continue;
     const low = cheapest(ctx, s);
     if (low.level === 2) {
-      out.push(c(low, { name: 'newSuit', hcp: [12, 21], len: { [s]: [4, 13] } }, `rebid2.2${s}`));
+      // A new suit by opener after a 2/1 is forcing (M30: responder used to pass it in a 4-2 fit).
+      out.push(
+        c(
+          low,
+          { name: 'newSuit', hcp: [12, 21], len: { [s]: [4, 13] }, forcing: 'round' },
+          `rebid2.2${s}`,
+        ),
+      );
     }
   }
   out.push(

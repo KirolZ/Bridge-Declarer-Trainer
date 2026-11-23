@@ -3,7 +3,7 @@
 import type { Contract, Deal, Level, Strain } from '../engine';
 import { hcp, isDeclarerVulnerable, score } from '../engine';
 import type { DDTable } from '../solver/solve';
-import type { ContractType, DealSettings, Difficulty } from './settings';
+import type { ContractSettings, ContractType, Difficulty } from './settings';
 
 /** Minimum NS HCP before a deal is worth solving (SPEC §7.1 step 2). */
 export const MIN_NS_HCP: Readonly<Record<ContractType, number>> = {
@@ -84,7 +84,10 @@ export function contractCandidates(
  * The highest-scoring candidate of the wanted type (ties go to the preferred strain), or
  * null when the deal has none.
  */
-export function chooseContract(table: DDTable, settings: DealSettings): ContractCandidate | null {
+export function chooseContract(
+  table: DDTable,
+  settings: ContractSettings,
+): ContractCandidate | null {
   const vulnerable = isDeclarerVulnerable(settings.vulnerability);
   let best: ContractCandidate | null = null;
   for (const c of contractCandidates(table, settings.difficulty, vulnerable)) {

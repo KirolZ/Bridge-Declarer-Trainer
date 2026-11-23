@@ -5,6 +5,9 @@
 //   pnpm bench --deals 10 --cards 8  10 deals cut down to 8 cards per hand
 //   pnpm bench --only solve          one job (solve | analyze | ddTable)
 //   pnpm bench --only play           cache kept vs cleared along played-out deals (SPEC §5.5)
+//   pnpm bench --only board          boards dealt with an auction, per contract type × difficulty
+//                                    (SPEC §7.1.1); --deals = boards per row (default 30),
+//                                    --rows slam,nt (types to run), --old (no auction, SPEC §7.1.2)
 //
 // Every solve / analyze / ddTable job starts from an empty cache (`clear()`), so the numbers are
 // cold-start times. The `play` job (not run by default) plays each deal out with seeded random
@@ -23,10 +26,12 @@ import {
 } from '../src/engine';
 import type { CardAnalysis, DDTable, Position } from '../src/solver';
 import { Solver, loadDds, positionFromPlayState } from '../src/solver';
+import type { ContractType, DealSettings, Difficulty, RejectReason } from '../src/game';
+import { newBoard, nsHcp } from '../src/game';
 
-type Job = 'solve' | 'analyze' | 'ddTable' | 'play';
+type Job = 'solve' | 'analyze' | 'ddTable' | 'play' | 'board';
 
-const TARGETS_MS: Record<Exclude<Job, 'play'>, number> = {
+const TARGETS_MS: Record<Exclude<Job, 'play' | 'board'>, number> = {
   solve: 1000,
   analyze: 1500,
   ddTable: 4000,
@@ -37,7 +42,7 @@ function arg(name: string): string | undefined {
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
 
-const deals = Number(arg('deals') ?? 50);
+const deals = Number(arg('deals') ?? (arg('only') === 'board' ? 30 : 50));
 const cards = Number(arg('cards') ?? 13);
 const only = arg('only') as Job | undefined;
 const engine = arg('engine') ?? 'dds';
@@ -143,10 +148,99 @@ function benchPlay(): void {
   }
 }
 
+const BOARD_ROWS: readonly [ContractType, Difficulty][] = [
+  ['any', 'exact'],
+  ['any', 'cushion'],
+  ['gameUp', 'exact'],
+  ['gameUp', 'cushion'],
+  ['slam', 'exact'],
+  ['slam', 'cushion'],
+  ['nt', 'exact'],
+  ['suit', 'exact'],
+  ['noSlam', 'cushion'], // beginner mode
+];
+
+/**
+ * `deals` boards per row, dealt with an auction as the app does (seeded). Prints the time to a
+ * board (all of it, and the bidding part alone), solves and bid deals per board, why bid deals
+ * were dropped, and the share of boards where NS hold fewer HCP than EW (brief §4.1).
+ */
+async function benchBoard(): Promise<void> {
+  const pct = (n: number, of: number) => `${((100 * n) / Math.max(1, of)).toFixed(1)}%`;
+  console.log(
+    'type/difficulty      board p50 / p95       bidding p50 / p95    solves  bids/board  ' +
+      'NS<EW  relaxed  no auction',
+  );
+  const allRejects: Partial<Record<RejectReason, number>> = {};
+  let allBids = 0;
+  let row = 0;
+  const rows = arg('rows')?.split(',');
+  const showAuction = !process.argv.includes('--old');
+  for (const [contractType, difficulty] of BOARD_ROWS) {
+    if (rows && !rows.includes(contractType)) continue;
+    const settings: DealSettings = { contractType, difficulty, vulnerability: 'none', showAuction };
+    const total: number[] = [];
+    const bidding: number[] = [];
+    let solves = 0;
+    let bids = 0;
+    let weaker = 0;
+    let relaxed = 0;
+    let without = 0;
+    for (let i = 0; i < deals; i++) {
+      let solveMs = 0;
+      solver.reset();
+      const t0 = performance.now();
+      const board = await newBoard(settings, {
+        rng: mulberry32(5000 + 1000 * row + i),
+        solve: (deal, trump) => {
+          const s0 = performance.now();
+          const tricks = solver.solve({ hands: deal, trump, trick: [], toPlay: 'W' });
+          solveMs += performance.now() - s0;
+          return tricks;
+        },
+        ddTable: (deal) => {
+          const s0 = performance.now();
+          const table = solver.ddTable(deal);
+          solveMs += performance.now() - s0;
+          return table;
+        },
+        onReject: (r) => (allRejects[r] = (allRejects[r] ?? 0) + 1),
+      });
+      const t = performance.now() - t0;
+      total.push(t);
+      bidding.push(t - solveMs);
+      solves += board.solvedDeals;
+      bids += board.biddenDeals;
+      if (nsHcp(board.deal) < 20) weaker++;
+      if (board.relaxed) relaxed++;
+      if (board.withoutAuction) without++;
+    }
+    allBids += bids;
+    total.sort((a, b) => a - b);
+    bidding.sort((a, b) => a - b);
+    const pp = (xs: number[]) =>
+      `${fmt(percentile(xs, 50)).padStart(8)} / ${fmt(percentile(xs, 95)).padStart(8)}`;
+    console.log(
+      `${`${contractType}/${difficulty}`.padEnd(17)}  ${pp(total)}  ${pp(bidding)}  ` +
+        `${(solves / deals).toFixed(1).padStart(6)}  ${(bids / deals).toFixed(0).padStart(10)}  ` +
+        `${pct(weaker, deals).padStart(5)}  ${String(relaxed).padStart(7)}  ${String(without).padStart(10)}`,
+    );
+    row++;
+  }
+  const dropped = Object.entries(allRejects)
+    .map(([r, n]) => `${r} ${pct(n, allBids)}`)
+    .join(', ');
+  console.log(`bid deals dropped (all rows, ${allBids.toLocaleString('en')} bid): ${dropped}`);
+}
+
 let failed = false;
 for (const job of jobs) {
   if (job === 'play') {
     benchPlay();
+    continue;
+  }
+  if (job === 'board') {
+    await benchBoard();
     continue;
   }
   const times: number[] = [];

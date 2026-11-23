@@ -102,7 +102,13 @@ test('home → start deals a hand and opens it at its link', async ({ page }) =>
   await page.goto('/');
   // First visit asks whether the player knows bridge (SPEC §7.7); "yes" goes straight to play.
   await page.getByRole('button', { name: /เคยเล่นแล้ว/ }).click();
-  await expect(page).toHaveURL(/#\/play\/[A-Za-z0-9_-]{18}\/[1-7][SHDCN]$/, { timeout: 30_000 });
+  // The board comes with its auction (M30): the link carries the dealer and the calls.
+  await expect(page).toHaveURL(
+    /#\/play\/[A-Za-z0-9_-]{18}\/[1-7][SHDCN]\?(v=ns&)?d=[NESW]&a=\S+$/,
+    {
+      timeout: 30_000,
+    },
+  );
   await expect(page.getByTestId('contract')).toBeVisible();
   await expect(page.locator('[data-trick-card]')).toHaveCount(1, { timeout: 15_000 });
   // Asked once only; beginner mode stays off.

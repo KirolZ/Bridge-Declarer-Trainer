@@ -20,6 +20,7 @@ beforeAll(async () => {
 
 const solver: PlaySolver = {
   analyze: (pos: Position) => Promise.resolve(dds.analyze(pos) as CardAnalysis[]),
+  solve: (pos: Position) => Promise.resolve(dds.solve(pos)),
   ddTable: (deal) => Promise.resolve(dds.ddTable(deal)),
 };
 

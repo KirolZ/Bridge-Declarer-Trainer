@@ -6,7 +6,7 @@ import { cryptoRng, dealRandom, withStrongerSouth } from '../engine';
 import type { Rng } from '../engine';
 import type { DDTable } from '../solver/solve';
 import { chooseContract, passesHcpFilter, relaxContractType } from './contract';
-import type { ContractType, DealSettings } from './settings';
+import type { ContractSettings, ContractType } from './settings';
 
 /** Deals sent to the solver per contract type before relaxing it (SPEC §7.1 step 5). */
 export const MAX_SOLVED_DEALS = 30;
@@ -70,7 +70,10 @@ function filteredDeal(rng: Rng, type: ContractType, signal: AbortSignal | undefi
  * and `relaxed` is set so the UI can tell the player. A deal whose `ddTable` times out counts
  * as a miss. Aborting `signal` rejects with its reason (an `AbortError`).
  */
-export async function newHand(settings: DealSettings, options: NewHandOptions): Promise<NewHand> {
+export async function newHand(
+  settings: ContractSettings,
+  options: NewHandOptions,
+): Promise<NewHand> {
   const { signal } = options;
   const rng = options.rng ?? cryptoRng();
   const timeoutMs = options.timeoutMs ?? DD_TABLE_TIMEOUT_MS;

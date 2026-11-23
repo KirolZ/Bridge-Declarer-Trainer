@@ -30,13 +30,14 @@ import type { CardAnalysis, DDTable, Position } from '../solver';
 import { positionFromPlayState } from '../solver/position';
 import type { ContractType, DealSettings, Pace } from './settings';
 import { BOT_PACE } from './settings';
-import type { NewHand } from './newHand';
-import { newHand } from './newHand';
+import type { Board } from './newBoard';
+import { newBoard } from './newBoard';
 import { reviewKeys } from './review';
 
 /** What the store needs from the solver (the app passes the worker client). */
 export type PlaySolver = {
   analyze(pos: Position, options: { signal: AbortSignal }): Promise<CardAnalysis[]>;
+  solve(pos: Position, options: { signal?: AbortSignal; timeoutMs: number }): Promise<number>;
   ddTable(deal: Deal, options: { signal?: AbortSignal; timeoutMs: number }): Promise<DDTable>;
 };
 
@@ -77,7 +78,9 @@ export type StoreMessage =
       readonly kind: 'botFailed' | 'hintFailed' | 'claimFailed' | 'dealFailed';
       readonly detail: string;
     }
-  | { readonly kind: 'dealRelaxed'; readonly wanted: ContractType; readonly got: ContractType };
+  | { readonly kind: 'dealRelaxed'; readonly wanted: ContractType; readonly got: ContractType }
+  /** No board with an auction matched in time: this one was dealt without (SPEC §7.1.1). */
+  | { readonly kind: 'dealNoAuction' };
 
 export type PlayStoreState = {
   readonly hand: HandSetup | null;
@@ -540,9 +543,11 @@ export function createPlayStore(options: PlayStoreOptions) {
         const ctrl = new AbortController();
         dealAbort = ctrl;
         set({ dealing: true, dealError: null });
-        let result: NewHand;
+        let result: Board;
         try {
-          result = await newHand(settings, {
+          result = await newBoard(settings, {
+            solve: (deal, trump, o) =>
+              solver.solve({ hands: deal, trump, trick: [], toPlay: 'W' }, o),
             ddTable: (deal, o) => solver.ddTable(deal, o),
             signal: ctrl.signal,
           });
@@ -557,14 +562,17 @@ export function createPlayStore(options: PlayStoreOptions) {
         }
         if (dealAbort !== ctrl) return false;
         dealAbort = null;
-        const notice: StoreMessage | null = result.relaxed
-          ? { kind: 'dealRelaxed', wanted: settings.contractType, got: result.contractType }
-          : null;
+        const notice: StoreMessage | null = result.withoutAuction
+          ? { kind: 'dealNoAuction' }
+          : result.relaxed
+            ? { kind: 'dealRelaxed', wanted: settings.contractType, got: result.contractType }
+            : null;
         set({ dealing: false, notice });
         get().startHand({
           deal: result.deal,
           contract: result.contract,
           vulnerability: settings.vulnerability,
+          ...(result.auction && { auction: result.auction }),
         });
         return true;
       },

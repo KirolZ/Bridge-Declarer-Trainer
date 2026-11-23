@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { Card, Contract, Deal, PlayState } from '../engine';
 import {
   applyPlay,
+  auctionResult,
   cardCode,
   currentTrick,
   dealRandom,
@@ -44,7 +45,7 @@ const NO_PACE = { cardMs: 0, trickMs: 0 };
 
 /** Solver backed by DDS in this thread; counts calls and can be made to hang or fail. */
 function ddsSolver(opts: { hang?: boolean | (() => boolean); fail?: () => boolean } = {}) {
-  const calls = { analyze: 0, ddTable: 0, aborted: 0 };
+  const calls = { analyze: 0, solve: 0, ddTable: 0, aborted: 0 };
   const hangs = () => (typeof opts.hang === 'function' ? opts.hang() : opts.hang === true);
   const solver: PlaySolver = {
     analyze(pos: Position, { signal }) {
@@ -59,6 +60,17 @@ function ddsSolver(opts: { hang?: boolean | (() => boolean); fail?: () => boolea
         );
       }
       return Promise.resolve(dds.analyze(pos));
+    },
+    solve(pos: Position, { signal }) {
+      calls.solve++;
+      if (hangs()) {
+        return new Promise((_, reject) =>
+          signal?.addEventListener('abort', () =>
+            reject(Object.assign(new Error('aborted'), { name: 'AbortError' })),
+          ),
+        );
+      }
+      return Promise.resolve(dds.solve(pos));
     },
     ddTable(deal: Deal, { signal }) {
       calls.ddTable++;
@@ -260,14 +272,26 @@ describe('play store', () => {
   });
 
   it('dealNew deals and starts a hand; cancelDeal stops it', async () => {
-    const { solver } = ddsSolver();
+    const { solver, calls } = ddsSolver();
     const store = createPlayStore({ solver, pace: NO_PACE });
     await expect(store.getState().dealNew(DEFAULT_DEAL_SETTINGS)).resolves.toBe(true);
     const { hand: h, play, dealing } = store.getState();
     expect(dealing).toBe(false);
     expect(h).not.toBeNull();
     expect(play!.contract).toEqual(h!.contract);
+    // With an auction (the default, M30): bid boards go to `solve`, never `ddTable`.
+    expect(h!.auction).toBeDefined();
+    expect(auctionResult(h!.auction!)).toMatchObject({ ...h!.contract, doubling: 0 });
+    expect(calls.solve).toBeGreaterThan(0);
+    expect(calls.ddTable).toBe(0);
+    expect(handPath(h!)).toContain('&a=');
     store.getState().leave();
+
+    const plain = createPlayStore({ solver, pace: NO_PACE });
+    await plain.getState().dealNew({ ...DEFAULT_DEAL_SETTINGS, showAuction: false });
+    expect(plain.getState().hand!.auction).toBeUndefined();
+    expect(calls.ddTable).toBeGreaterThan(0);
+    plain.getState().leave();
 
     const hanging = createPlayStore({ solver: ddsSolver({ hang: true }).solver, pace: NO_PACE });
     const p = hanging.getState().dealNew(DEFAULT_DEAL_SETTINGS);
@@ -585,6 +609,7 @@ describe('post-hand review (M10)', () => {
         failNs && sideOf(pos.toPlay) === 'NS'
           ? Promise.reject(new Error('boom'))
           : inner.analyze(pos, o),
+      solve: (pos, o) => inner.solve(pos, o),
       ddTable: (deal, o) => inner.ddTable(deal, o),
     };
     const store = createPlayStore({ solver, pace: NO_PACE });

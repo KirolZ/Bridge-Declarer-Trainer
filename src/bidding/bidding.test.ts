@@ -145,6 +145,12 @@ describe('responses and rebids', () => {
     ['1C-P-1H-P', 'AQ3.K84.Q72.K962', '1N', '12–14 balanced'],
     ['1D-P-1S-P', 'A3.KJ84.AQ762.K2', '2H', 'reverse with 17'],
     ['1S-P-1N-P', 'AQJ864.K4.Q72.82', '2S', 'six spades, 12'],
+    // M30: opener's new suit after a 2/1 is forcing; responder answers with something natural.
+    ['1D-P-2C-P-2S-P', '93.K84.Q72.KQJ62', '3D', 'preference with three diamonds, 11'],
+    ['1D-P-2C-P-2S-P', '9632.K8.Q7.KQJ62', '3S', 'four spades: raise, 11'],
+    ['1D-P-2C-P-2S-P', '93.KQ4.Q72.AKJ62', '3N', 'game with 15'],
+    ['1D-P-2C-P-2S-P', '93.K84.Q7.KQJ862', '3C', 'six clubs, no fit'],
+    ['1S-P-2C-P-2S-P', '93.K84.Q72.KQJ62', 'P', 'a 2/1 is not game forcing: 11 passes 2♠ (six)'],
   ])('after %s, %s bids %s (%s)', (calls, hand, call) => {
     expect(callFor(hand, calls)).toBe(call);
   });

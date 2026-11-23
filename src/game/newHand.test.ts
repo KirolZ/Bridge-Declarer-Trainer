@@ -7,7 +7,7 @@ import type { DDTable } from '../solver/solve';
 import { MIN_NS_HCP, matchesType, nsHcp } from './contract';
 import type { DdTableFn } from './newHand';
 import { DD_TABLE_TIMEOUT_MS, MAX_SOLVED_DEALS, NoDealError, newHand } from './newHand';
-import type { ContractType, DealSettings, Difficulty } from './settings';
+import type { ContractSettings, ContractType, Difficulty } from './settings';
 import { CONTRACT_TYPES } from './settings';
 
 const flat = (n: number): DDTable => ({ C: n, D: n, H: n, S: n, NT: n });
@@ -30,7 +30,10 @@ class FakeTimeout extends Error {
   override name = 'SolverTimeoutError';
 }
 
-const settings = (contractType: ContractType, difficulty: Difficulty = 'exact'): DealSettings => ({
+const settings = (
+  contractType: ContractType,
+  difficulty: Difficulty = 'exact',
+): ContractSettings => ({
   contractType,
   difficulty,
   vulnerability: 'none',

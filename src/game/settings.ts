@@ -11,10 +11,19 @@ export type ContractType = 'any' | 'gameUp' | 'slam' | 'nt' | 'suit' | 'noSlam';
 /** `exact`: contract = DD maximum. `cushion`: one level lower when possible. */
 export type Difficulty = 'exact' | 'cushion';
 
-export type DealSettings = {
+/** What the contract is chosen by (SPEC §7.1 step 4). */
+export type ContractSettings = {
   readonly contractType: ContractType;
   readonly difficulty: Difficulty;
   readonly vulnerability: Vulnerability;
+};
+
+export type DealSettings = ContractSettings & {
+  /**
+   * Deal boards with a SAYC auction that reaches the contract (SPEC §7.1.1); off: the contract is
+   * chosen from the double-dummy table as before M30 (SPEC §7.1.2).
+   */
+  readonly showAuction: boolean;
 };
 
 /** Bot timing: at least `cardMs` per card, and a finished trick stays up `trickMs` (SPEC §6). */
@@ -67,6 +76,7 @@ export const DEFAULT_DEAL_SETTINGS: DealSettings = {
   contractType: 'any',
   difficulty: 'exact',
   vulnerability: 'none',
+  showAuction: true,
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -81,10 +91,10 @@ export const DEFAULT_SETTINGS: Settings = {
 
 /** What the next deal uses: the settings, or in beginner mode an easy contract (SPEC §7.8). */
 export function dealSettingsOf(settings: Settings): DealSettings {
-  const { contractType, difficulty, vulnerability } = settings;
+  const { contractType, difficulty, vulnerability, showAuction } = settings;
   if (settings.beginnerMode)
-    return { contractType: 'noSlam', difficulty: 'cushion', vulnerability };
-  return { contractType, difficulty, vulnerability };
+    return { contractType: 'noSlam', difficulty: 'cushion', vulnerability, showAuction };
+  return { contractType, difficulty, vulnerability, showAuction };
 }
 
 /** Bot speed in effect: always slow in beginner mode (SPEC §7.8). */
@@ -111,6 +121,8 @@ export function parseSettings(raw: unknown): Settings {
     contractType: pick(o.contractType, CONTRACT_TYPES, d.contractType),
     difficulty: pick(o.difficulty, DIFFICULTIES, d.difficulty),
     vulnerability: pick(o.vulnerability, VULNERABILITIES, d.vulnerability),
+    // New in M30: settings saved before it have no value and get the default (on).
+    showAuction: flag(o.showAuction, d.showAuction),
     botSpeed: pick(o.botSpeed, BOT_SPEEDS, d.botSpeed),
     suitOrder: pick(o.suitOrder, SUIT_ORDER_OPTIONS, d.suitOrder),
     studyMode: flag(o.studyMode, d.studyMode),

@@ -4,6 +4,7 @@
 export * from './settings';
 export * from './contract';
 export * from './newHand';
+export * from './newBoard';
 export * from './playStore';
 export * from './ddLog';
 export * from './review';

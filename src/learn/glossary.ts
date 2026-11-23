@@ -11,8 +11,8 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     term: 'auction',
     thai: 'การประมูล',
     text: {
-      th: 'ช่วงก่อนเล่นไพ่ ที่ทั้ง 4 คนผลัดกันเสนอ [[contract]] แข่งกัน (เรียกอีกอย่างว่า bidding) เริ่มจาก [[dealer]] คุณไม่ต้องประมูลเอง: ระบบเลือก contract ให้ และมือที่มีการประมูลจะมีตารางให้ดูเหนือโต๊ะ',
-      en: 'The part before the cards are played, when the 4 players take turns offering [[contract|contracts]] against each other (also called bidding), starting with the [[dealer]]. You never bid here: the game picks the contract, and a hand that comes with its auction shows it above the table.',
+      th: 'ช่วงก่อนเล่นไพ่ ที่ทั้ง 4 คนผลัดกันเสนอ [[contract]] แข่งกัน (เรียกอีกอย่างว่า bidding) เริ่มจาก [[dealer]] คุณไม่ต้องประมูลเอง: ระบบประมูลให้ทั้ง 4 ที่นั่งแล้วแสดงตารางเหนือโต๊ะ (ปิดได้ในตั้งค่า แล้วระบบจะเลือก contract ให้แบบไม่มีการประมูล)',
+      en: 'The part before the cards are played, when the 4 players take turns offering [[contract|contracts]] against each other (also called bidding), starting with the [[dealer]]. You never bid here: the game bids for all 4 seats and shows the auction above the table (you can turn it off in Settings, and the game then picks the contract without one).',
     },
     chapter: 4,
     aliases: ['bidding'],
