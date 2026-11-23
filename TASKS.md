@@ -745,3 +745,35 @@ e2e 26.2 ผ่านทั้ง desktop + มือถือ, check ทั้�
 >
 > **ส่งต่อ:** ยังไม่มีมือที่แจกพร้อมการประมูล — เห็นตารางได้เฉพาะจากลิงก์ที่มี `a` จนกว่า M30; ความหมายของ call (แตะดู) มาใน M28 / M31;
 > บท 4 และคำว่า "เกมนี้ไม่มี double" ในอภิธานศัพท์ `double` รอแก้ใน M32
+
+## M28 — Bidder: ประเมินมือ + ประมูลฝั่งเดียว (SAYC)
+
+> ที่มา (2026-11-23): ต่อจาก M27 ตามแผน `D:\Hobby\AUCTION_PLAN.md` (ผู้ใช้ให้เริ่ม M27–M28) — ระบบประมูล SAYC ช่วงที่ฝั่งตรงข้าม pass ตลอด
+> (การแข่งประมูลเป็น M29) ทุก call มีความหมายเป็นข้อมูล และ bidder เลือกได้เฉพาะ call ที่มือเข้าความหมายของ call นั้น · branch `feature/bidder-uncontested` (ต่อจาก `feature/auction-core`)
+
+- [x] **28.1** `src/bidding/` (pure TS) + ESLint `no-restricted-imports` / `Math.random` และ `tsconfig.core.json` แบบเดียวกับ engine/solver/bot
+- [x] **28.2** ประเมินมือ: HCP, ความยาวดอก, balanced (4333 / 4432 / 5332), จำนวน A
+- [x] **28.3** โครง meaning (`hcp`, `len`, `balanced`, `aces`, `forcing`, `artificial`, `name`) + ตรวจว่ามือเข้า meaning,
+      รวม (hull) และ intersect เป็น "สิ่งที่คนนั้นแสดงแล้ว"; `chooseCall` / `bidDeal` / `explainAuction` — อธิบายได้โดยไม่ดูมือ
+- [x] **28.4** เปิดประมูล: 1♣ / 1♦ / 1♥ / 1♠, 1NT, 2NT, 2♣ strong, weak two 2♦ / 2♥ / 2♠, preempt ระดับ 3, pass
+- [x] **28.5** ตอบ 1 ในดอก: raise / limit raise / raise ไป game (preemptive), ดอกใหม่ระดับ 1, 2/1, 1NT, 2NT, 3NT; rebid ของผู้เปิด
+- [x] **28.6** 1NT / 2NT: Stayman, Jacoby transfer; 2♣ → 2♦ waiting → rebid; Blackwood; ที่เหลือใช้การตัดสินแบบรวมแต้ม (game / invite / partscore / slam)
+- [x] **28.7** test: มือ PBN ตัวอย่างต่อ rule, property ≥ 5,000 มือ (seed คงที่) — ทุก call meaning ครอบมือจริง, auction ถูกกติกาและจบ,
+      มีฝั่งเดียวที่ประมูล, explain ตรงกับที่ bidder ใช้, deterministic; พิมพ์อัตรา fallback / การกระจาย contract
+- [x] **28.8** เอกสาร: SPEC §3 / §6.5 (ระบบประมูล), DECISIONS (ช่วงแต้มเทียบ ACBL SAYC booklet ทุกจุดที่ต่าง), ตรวจบท 14 (หน้าจอไม่เปลี่ยน)
+
+**เสร็จเมื่อ:** test 28.7 ผ่าน (property 5,000 มือ ไม่มี meaning ที่ไม่ครอบมือจริงเลย), check ทั้งหมดผ่าน, อัตรา fallback และตารางช่วงแต้มอยู่ใน DECISIONS
+
+> **สถานะ (2026-11-23):** M28 เสร็จ — ระบบประมูล SAYC ช่วงที่ฝั่งตรงข้าม pass ตลอด ใน `src/bidding/` (pure TS, อยู่ใต้กฎ import / `Math.random`
+> เดียวกับ engine และ `tsconfig.core.json`): `evaluate.ts` (HCP, ความยาว, balanced, A), `meaning.ts` (`Meaning`, `fits`, `hull`, `narrow` / `Shown`),
+> `context.ts` (`buildContext` จาก call + meaning เท่านั้น), `system.ts` (rule ตามลำดับความชอบ: เปิด, ตอบ 1M / 1m, rebid ผู้เปิด, 1NT / 2NT + Stayman /
+> transfer, 2♣ → 2♦ waiting, Blackwood, และ `placement` ตัดสิน game / invite / partscore / slam จากแต้มที่คู่แสดงแล้ว), `bidder.ts`
+> (`chooseCall`, `bidDeal`, `explainAuction`) — SPEC §3 / §6.5 (ใหม่), DECISIONS M28 (ตารางช่วงแต้มเทียบ booklet + ผลวัด)
+> test: `bidding.test.ts` 56 ข้อ — ประเมินมือ, meaning, มือตัวอย่าง 13 การเปิด / 17 การตอบและ rebid / 15 ข้อ NT + Blackwood (รวม `AKJ52.K4.Q73.A82` → 1♠ ตาม brief),
+> property 5,000 มือ seed คงที่: ถูกกติกาและจบ, meaning ครอบมือจริงทุก call ที่ไม่ใช่ fallback (fallback ≤ 3 — วัดได้ 0 ใน 5,000, 2 ใน 40,000),
+> `explainAuction` = ที่ bidder ใช้, ฝั่งเดียวประมูล, deterministic, มี game / slam และ passed out < 6%
+> — `pnpm test` 530 ข้อ, `pnpm test:e2e` 102 ข้อผ่าน, lint / typecheck / format ผ่าน; ไม่ได้แตะ `src/solver/` และหน้าจอไม่เปลี่ยน (บท 14 ไม่ต้องแก้)
+>
+> **ส่งต่อ:** (1) ยังไม่มีอะไรใช้ bidder ในแอป — M30 ต่อเข้า pipeline และต้อง**ทิ้งบอร์ดที่มี step `rule === 'fallback'`**
+> (2) ฝั่งที่ไม่ได้เปิดยัง pass ทุกครั้ง (meaning `null`) — M29 เพิ่มการแข่งประมูล ซึ่งจะเปลี่ยน `candidates` ตอน `theyActed` และ test "ฝั่งเดียวประมูล" ต้องเอาออก
+> (3) ยังไม่ใช้ vul ในการตัดสินใจ (weak two / preempt เหมือนกันทุก vul) (4) slam เกิดน้อย (0.28%) — ดูเวลาแจกประเภท slam ใน bench M30

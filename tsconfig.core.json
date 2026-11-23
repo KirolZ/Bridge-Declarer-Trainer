@@ -6,6 +6,6 @@
     "lib": ["ES2022"],
     "types": []
   },
-  "include": ["src/engine", "src/solver", "src/bot"],
+  "include": ["src/engine", "src/solver", "src/bot", "src/bidding"],
   "exclude": ["src/**/*.test.ts"]
 }

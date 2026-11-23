@@ -6,7 +6,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 // Folders that hold pure bridge logic: must run in Node (tests) and in the Web Worker.
-const CORE = ['src/engine/**/*.ts', 'src/solver/**/*.ts', 'src/bot/**/*.ts'];
+const CORE = ['src/engine/**/*.ts', 'src/solver/**/*.ts', 'src/bot/**/*.ts', 'src/bidding/**/*.ts'];
 
 export default tseslint.config(
   {
@@ -56,7 +56,7 @@ export default tseslint.config(
     },
   },
   {
-    // SPEC §3: engine / solver / bot stay framework- and DOM-free.
+    // SPEC §3: engine / solver / bot / bidding stay framework- and DOM-free.
     files: CORE,
     rules: {
       'no-restricted-imports': [

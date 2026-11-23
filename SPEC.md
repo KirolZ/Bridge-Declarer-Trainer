@@ -38,6 +38,7 @@ bridge/                     # = D:\Hobby\Bridge (ใช้โฟลเดอร�
 │   ├── engine/             # กติกา bridge ล้วน (pure TS): card, deal, play, scoring, encode, auction
 │   ├── solver/             # double-dummy solver: DDS ใน wasm (ใช้ในแอป) + solver TS และ reference brute-force (ใช้เทียบใน test) — §5
 │   ├── bot/                # เลือกใบของบอทจากผล solver
+│   ├── bidding/            # ระบบประมูล SAYC (pure TS): ประเมินมือ, meaning, rule, bidder, อธิบายการประมูล (§6.5)
 │   ├── worker/             # Web Worker ห่อ solver + protocol ข้อความ
 │   ├── game/               # Zustand store: state ของมือที่กำลังเล่น, history, undo
 │   ├── learn/              # คู่มือมือใหม่: เนื้อหาแต่ละบท + ข้อมูลแบบฝึก (§7.7)
@@ -56,7 +57,7 @@ bridge/                     # = D:\Hobby\Bridge (ใช้โฟลเดอร�
 └── README.md
 ```
 
-กฎ: `src/engine`, `src/solver`, `src/bot` **ห้าม import** React, DOM, Zustand หรือโฟลเดอร์ `ui/` / `game/` (บังคับด้วย ESLint `no-restricted-imports`) เพื่อให้ test ใน Node ได้ 100% และรันใน Worker ได้
+กฎ: `src/engine`, `src/solver`, `src/bot`, `src/bidding` **ห้าม import** React, DOM, Zustand หรือโฟลเดอร์ `ui/` / `game/` (บังคับด้วย ESLint `no-restricted-imports`) เพื่อให้ test ใน Node ได้ 100% และรันใน Worker ได้
 
 ### ของที่ยกมาจากโปรเจกต์ Blackjack ได้
 
@@ -226,6 +227,29 @@ ddTable(deal: Deal): Record<Strain, number>;
   3. นำ: ลงใบต่ำสุดของดอกที่เลือก ถ้าหลายดอกเท่ากัน สุ่มแบบ seed ตามรหัสมือ (มือเดิมได้ผลเดิม)
 - **opening lead** ก็ใช้วิธีเดียวกัน (จะเจอ lead ที่ "รู้ใจ" บ่อย ซึ่งเป็นปกติของบอท double-dummy ให้บอกผู้ใช้ไว้ในคู่มือบทที่ 14)
 - จังหวะ: บอทรออย่างน้อย 500 ms ต่อใบ (ถ้า solver เสร็จก่อน) และพักให้ดู trick ที่ครบ 4 ใบ 800 ms ก่อนเก็บ ปรับได้ในตั้งค่า (ช้า / ปกติ / เร็ว)
+
+## 6.5 ระบบประมูล (`src/bidding`, M28–M29)
+
+ระบบสร้างการประมูลของบอร์ดให้ผู้เล่นดู (ผู้เล่นไม่ได้ประมูลเอง) ทั้ง 4 ที่นั่งใช้ bidder ตัวเดียวกัน ระบบ = SAYC ตาม ACBL booklet
+(จุดที่ใช้ค่าต่างจาก booklet จดใน DECISIONS M28) — pure TS, deterministic (มือ + dealer + vul เดิม → การประมูลเดิม)
+
+- **meaning เป็นข้อมูล:** ทุก call มี `{ name?, hcp?, len? (ต่อดอก [min, max]), balanced?, aces?, forcing?, artificial? }`
+  meaning ขึ้นกับการประมูลที่ผ่านมา (และ vul) เท่านั้น ไม่ขึ้นกับมือ — `explainAuction(auction, vul)` อธิบายการประมูลใดก็ได้โดยไม่ต้องเห็นไพ่
+- **ระบบ = รายการ call ตามลำดับความชอบ** ณ จุดหนึ่งของการประมูล แต่ละตัวมี meaning; bidder ประมูล call แรกที่**มือเข้า meaning**
+  (+ เงื่อนไขเลือกระหว่าง call ที่ meaning ไม่ได้บอก เช่นดอกยาวสองดอกประมูลอันไหนก่อน — ไม่ทำให้ meaning ผิด)
+  ถ้า call เดียวกันมาจากหลาย rule ความหมายที่แสดงคือ hull (ช่วงที่ครอบทุก rule)
+- **สิ่งที่แต่ละคนแสดงแล้ว** = meaning ทุกตัวของคนนั้นซ้อนกัน (มือ balanced → ทุกดอก 2–5 ใบ) ใช้ตัดสินใจต่อ และใช้สรุปการอนุมานให้ผู้เล่น (M31)
+- **ไม่มี rule ไหนเข้ากับมือ** → `fallback` (pass ถ้า pass ได้) ซึ่ง meaning อาจไม่ตรงกับมือ — บอร์ดที่มี fallback จะไม่ถูกใช้ (M30)
+- **จุดที่ระบบไม่มีอะไรจะพูด** (เฟสแรก: ฝั่งที่ไม่ได้เปิดประมูล หลังอีกฝั่งเปิดแล้ว — การแข่งประมูลมาใน M29) → pass ที่ไม่มีความหมาย (`null`)
+- ขอบเขตเฟสแรก (M28, ฝั่งตรงข้าม pass ตลอด):
+  - เปิด: 1♣ / 1♦ (12–21, ไม่มี major 5 ใบ, ดอกยาวกว่า — 4-4 เปิด 1♦, 3-3 เปิด 1♣), 1♥ / 1♠ (12–21, 5 ใบขึ้นไป), 1NT (15–17 balanced),
+    2NT (20–21 balanced) — NT ไม่มี major 5 ใบ, 2♣ (22+ artificial), weak two 2♦ / 2♥ / 2♠ (5–10, 6 ใบพอดี), preempt 3 ในดอก (5–10, 7 ใบขึ้นไป), pass (0–11)
+  - ตอบ 1 ในดอก: preemptive raise 4M (0–9, 5 ใบ), limit raise (10–12), raise (6–10), ดอกใหม่ระดับ 1 (6+, 4 ใบ), 2/1 (10+, 4 ใบ / ♥ 5 ใบ), 1NT (6–12 ไม่มี fit), 2NT (13–15 balanced, บังคับถึง game), 3NT (16+ balanced), pass (0–5)
+  - rebid ของผู้เปิด: raise / jump raise / game ในดอกคู่, ดอกใหม่, 1NT (12–14) / 2NT (18–19), rebid ดอกเดิม 6 ใบ, reverse (17+), jump shift (19–21 บังคับถึง game)
+  - 1NT / 2NT (รวม 2♣–2♦–2NT): Stayman, Jacoby transfer, 2NT invite / 3NT / 6NT; 2♣ → 2♦ waiting → rebid; Blackwood (5♣ = 0 / 4, 5♦ = 1, 5♥ = 2, 5♠ = 3)
+  - จากนั้น "ตัดสิน contract" จากแต้มที่คู่แสดงแล้ว: fit 8 ใบใน major → 4M, 3NT, fit ใน minor → 5m (รวม 29+), slam (รวม 33+ — Blackwood ถ้ามี fit, ไม่มี → 6NT),
+    invite เมื่อรู้แต้มคู่แคบพอ (ช่วงกว้าง ≤ 5), ไม่งั้นหยุดใน partscore ที่มี fit หรือ NT
+- ไม่ทำ: sacrifice, penalty double, convention ขั้นสูง (Michaels, Unusual 2NT, Jacoby 2NT, splinter, 4NT quantitative, positive response ของ 2♣), นับแต้มจากการกระจายไพ่
 
 ## 7. ฟีเจอร์ฝึก
 
