@@ -132,6 +132,43 @@ describe('responses and rebids', () => {
   ])('after %s, %s bids %s (%s)', (calls, hand, call) => {
     expect(callFor(hand, calls)).toBe(call);
   });
+
+  // TASKS 28.9: a balanced hand with five spades opens 1♠ at 12–19, so each range has its own rebid.
+  it.each([
+    ['1S-P-1N-P', 'AJ852.K4.Q73.K82', 'P', '12–14: pass 1NT'],
+    ['1S-P-1N-P', 'AKJ52.K4.Q73.A82', '2N', '15–17: 2NT invitation'],
+    ['1S-P-1N-P', 'AKJ52.K4.KJ3.A82', '3N', '18–19: 3NT'],
+    ['1H-P-1S-P', 'K4.AJ852.Q73.K82', '1N', 'after 1♠: 12–14 = 1NT'],
+    ['1H-P-1S-P', 'K4.AKJ52.Q73.A82', '2N', 'after 1♠: 15–17 = 2NT'],
+    ['1H-P-1S-P', 'K4.AKJ52.KJ3.A82', '3N', 'after 1♠: 18–19 = 3NT'],
+    ['1S-P-2C-P', 'AJ852.K4.Q73.K82', '2N', 'after 2/1: 12–14 = 2NT'],
+    ['1S-P-2C-P', 'AKJ52.K4.KJ3.A82', '3N', 'after 2/1: 15–19 = 3NT'],
+    ['1C-P-1S-P', 'K4.AJ5.KQ3.AQ852', '2N', 'a minor opener: 2NT = 18–19'],
+  ])('balanced five-card major: after %s, %s bids %s (%s)', (calls, hand, call) => {
+    expect(callFor(hand, calls)).toBe(call);
+  });
+
+  it('says what each balanced rebid shows, so responder can add up', () => {
+    const meaningOf = (calls: string) => {
+      const a = decodeAuction('N', calls)!;
+      return explainAuction(a, 'none').at(-1);
+    };
+    expect(meaningOf('1S-P-1N-P-2N')).toMatchObject({ hcp: [15, 17], balanced: true });
+    expect(meaningOf('1S-P-1N-P-3N')).toMatchObject({ hcp: [18, 19], balanced: true });
+    expect(meaningOf('1S-P-1N-P-P')).toMatchObject({ hcp: [12, 15] });
+    expect(meaningOf('1H-P-1S-P-1N')).toMatchObject({ hcp: [12, 14], balanced: true });
+    expect(meaningOf('1H-P-1S-P-2N')).toMatchObject({ hcp: [15, 17], balanced: true });
+    expect(meaningOf('1S-P-2C-P-2N')).toMatchObject({ hcp: [12, 14], balanced: true });
+    expect(meaningOf('1S-P-2C-P-3N')).toMatchObject({ hcp: [15, 19], balanced: true });
+    expect(meaningOf('1C-P-1S-P-2N')).toMatchObject({ hcp: [18, 19], balanced: true });
+    // 2NT opening may hold five hearts, so Stayman's 3♥ reply says 4–5.
+    expect(meaningOf('2N-P-3C-P-3H')).toMatchObject({ len: { H: [4, 5] } });
+    expect(meaningOf('1N-P-2C-P-2H')).toMatchObject({ len: { H: [4, 4] } });
+  });
+
+  it('opens 2NT with 20–21 balanced even with five hearts', () => {
+    expect(callFor('AK3.KQJ42.AJ5.K3')).toBe('2N');
+  });
 });
 
 describe('notrump conventions', () => {

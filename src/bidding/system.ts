@@ -53,6 +53,7 @@ function withRange(out: Candidate[], range: Range | null, make: (hcp: Range) => 
 }
 
 const higher = (a: Strain, b: Strain) => STRAINS.indexOf(a) > STRAINS.indexOf(b);
+const isMajor = (s: Strain) => s === 'H' || s === 'S';
 const isSuit = (s: string): s is Suit => s === 'S' || s === 'H' || s === 'D' || s === 'C';
 
 /** The lowest bid of `strain` above the last bid. */
@@ -87,7 +88,8 @@ function openingMinor(ev: HandEval): Suit {
 
 function opening(): Candidate[] {
   const one: Range = [12, 21];
-  // A balanced hand with a five-card major opens the major (as the brief's 1♠ example).
+  // 15–17 balanced with a five-card major opens the major (the brief's 1♠ example); its
+  // rebids are fixed in the opener's rebid rules. 20–21 balanced opens 2NT with or without one.
   const noFiveMajor = { H: [0, 4] as Range, S: [0, 4] as Range };
   return [
     c(
@@ -95,11 +97,7 @@ function opening(): Candidate[] {
       { name: 'strongTwoClubs', hcp: [22, MAX_HCP], artificial: true, forcing: 'round' },
       'open.2C',
     ),
-    c(
-      bid(2, 'NT'),
-      { name: 'notrump', hcp: [20, 21], balanced: true, len: noFiveMajor },
-      'open.2NT',
-    ),
+    c(bid(2, 'NT'), { name: 'notrump', hcp: [20, 21], balanced: true }, 'open.2NT'),
     c(
       bid(1, 'NT'),
       { name: 'notrump', hcp: [15, 17], balanced: true, len: noFiveMajor },
@@ -211,8 +209,6 @@ function majorResponses(major: Suit): Candidate[] {
     ),
     c(bid(3, 'NT'), { name: 'notrump', hcp: [16, MAX_HCP], balanced: true }, 'resp1M.3NT'),
     c(bid(1, 'NT'), { name: 'notrump', hcp: [6, 10], len: noFit }, 'resp1M.1NT'),
-    // 11–12 with no raise, no new suit and no 2NT: the nearest is 1NT.
-    c(bid(1, 'NT'), { name: 'notrump', hcp: [11, 12], len: noFit }, 'resp1M.1NT.max'),
     // Game values and support but no other bid: a new minor of three cards first (fit shown later).
     c(
       bid(2, 'C'),
@@ -331,8 +327,19 @@ function rebidAfterOneLevel(ctx: BidContext, open: Suit, resp: Suit): Candidate[
   const noFit: Partial<Record<Suit, Range>> = resp === 'D' ? {} : { [resp]: [0, 3] };
   if (resp === 'D') out.push(...showMajor, ...raises);
   else out.push(...raises, ...showMajor);
+  // Balanced: a major opener (a five-card major) holds 12–19, so 1NT / 2NT / 3NT = 12–14 / 15–17 /
+  // 18–19; a minor opener holds 12–14 or 18–19 (15–17 and 20–21 open in notrump).
+  if (isMajor(open)) {
+    out.push(
+      c(bid(3, 'NT'), { name: 'notrump', hcp: [18, 19], balanced: true, len: noFit }, 'rebid1.3NT'),
+      c(bid(2, 'NT'), { name: 'notrump', hcp: [15, 17], balanced: true, len: noFit }, 'rebid1.2NT'),
+    );
+  } else {
+    out.push(
+      c(bid(2, 'NT'), { name: 'notrump', hcp: [18, 19], balanced: true, len: noFit }, 'rebid1.2NT'),
+    );
+  }
   out.push(
-    c(bid(2, 'NT'), { name: 'notrump', hcp: [18, 19], balanced: true, len: noFit }, 'rebid1.2NT'),
     c(bid(1, 'NT'), { name: 'notrump', hcp: [12, 14], balanced: true, len: noFit }, 'rebid1.1NT'),
   );
   const others = SUIT_PREFERENCE.filter((s) => s !== open && s !== resp);
@@ -373,8 +380,6 @@ function rebidAfterOneLevel(ctx: BidContext, open: Suit, resp: Suit): Candidate[
   }
   out.push(
     c(bid(2, open), { name: 'rebid', hcp: [12, 21], len: { [open]: [5, 13] } }, 'rebid1.2O.five'),
-    c(bid(1, 'NT'), { name: 'notrump', hcp: [12, 14], len: noFit }, 'rebid1.1NT.unbalanced'),
-    c(bid(2, 'NT'), { name: 'notrump', hcp: [15, 21], len: noFit }, 'rebid1.2NT.unbalanced'),
   );
   return out;
 }
@@ -398,10 +403,11 @@ function rebidAfterTwoOverOne(ctx: BidContext, open: Suit, resp: Suit): Candidat
     }
   }
   out.push(
+    // Game is reached anyway after a 2/1: 2NT = 12–14, 3NT = 15–19 (a balanced opener of one of a
+    // suit holds at most 19 — 20–21 opens 2NT).
     c(bid(2, 'NT'), { name: 'notrump', hcp: [12, 14], balanced: true }, 'rebid2.2NT'),
-    c(bid(3, 'NT'), { name: 'notrump', hcp: [15, 21], balanced: true }, 'rebid2.3NT'),
+    c(bid(3, 'NT'), { name: 'notrump', hcp: [15, 19], balanced: true }, 'rebid2.3NT'),
     c(bid(2, open), { name: 'rebid', hcp: [12, 21], len: { [open]: [5, 13] } }, 'rebid2.2O.five'),
-    c(bid(2, 'NT'), { name: 'notrump', hcp: [12, 21] }, 'rebid2.2NT.other'),
   );
   return out;
 }
@@ -424,7 +430,9 @@ function rebidAfterOneNT(ctx: BidContext, open: Suit): Candidate[] {
   }
   out.push(
     c(bid(3, open), { name: 'invite', hcp: [16, 18], len: { [open]: [6, 13] } }, 'rebidNT.3O'),
-    c(bid(2, 'NT'), { name: 'invite', hcp: [18, 19], balanced: true }, 'rebidNT.2NT'),
+    // Balanced (5-3-3-2): pass 12–14, 2NT 15–17 (invitation), 3NT 18–19.
+    c(bid(3, 'NT'), { name: 'game', hcp: [18, 19], balanced: true }, 'rebidNT.3NT'),
+    c(bid(2, 'NT'), { name: 'invite', hcp: [15, 17], balanced: true }, 'rebidNT.2NT'),
     c(bid(2, open), { name: 'rebid', hcp: [12, 15], len: { [open]: [6, 13] } }, 'rebidNT.2O'),
   );
   for (const s of SUIT_PREFERENCE) {
@@ -433,7 +441,17 @@ function rebidAfterOneNT(ctx: BidContext, open: Suit): Candidate[] {
       c(bid(2, s), { name: 'newSuit', hcp: [12, 18], len: { [s]: [4, 13] } }, `rebidNT.2${s}`),
     );
   }
-  out.push(c(PASS, { name: 'pass', hcp: [12, 21] }, 'rebidNT.pass'));
+  if (open === 'H') {
+    // 1♥–1NT–2♠: four spades and extra values (1NT denied four spades, so this is not a fit).
+    out.push(
+      c(
+        bid(2, 'S'),
+        { name: 'reverse', hcp: [16, 21], len: { S: [4, 4], H: [5, 13] } },
+        'rebidNT.reverseS',
+      ),
+    );
+  }
+  out.push(c(PASS, { name: 'pass', hcp: [12, 15] }, 'rebidNT.pass'));
   return out;
 }
 
@@ -481,11 +499,13 @@ function notrumpResponses(ctx: BidContext, level: 1 | 2): Candidate[] {
   return out;
 }
 
-function staymanReplies(stayman: Bid): Candidate[] {
+function staymanReplies(ctx: BidContext, stayman: Bid): Candidate[] {
   const l = stayman.level;
+  // 1NT holds at most four cards in a major; 2NT may hold five.
+  const most = (s: Suit) => Math.max(4, ctx.shownByMe.len[s][1]);
   return [
-    c(bid(l, 'H'), { name: 'staymanReply', len: { H: [4, 4] } }, 'stayman.H'),
-    c(bid(l, 'S'), { name: 'staymanReply', len: { S: [4, 4], H: [0, 3] } }, 'stayman.S'),
+    c(bid(l, 'H'), { name: 'staymanReply', len: { H: [4, most('H')] } }, 'stayman.H'),
+    c(bid(l, 'S'), { name: 'staymanReply', len: { S: [4, most('S')], H: [0, 3] } }, 'stayman.S'),
     c(
       bid(l, 'D'),
       { name: 'staymanReply', len: { H: [0, 3], S: [0, 3] }, artificial: true },
@@ -549,7 +569,6 @@ function twoClubRebids(): Candidate[] {
         longest(s),
       ),
     ),
-    c(bid(2, 'NT'), { name: 'notrump' }, '2C.2NT.other'),
   ];
 }
 
@@ -694,7 +713,7 @@ export function candidates(ctx: BidContext): Candidate[] {
   const partnerName = partner?.meaning?.name;
   if (partner?.call.kind === 'bid') {
     if (partnerName === 'blackwood') return aceReplies();
-    if (partnerName === 'stayman') return staymanReplies(partner.call);
+    if (partnerName === 'stayman') return staymanReplies(ctx, partner.call);
     if (partnerName === 'transfer') {
       const target = partner.call.strain === 'D' ? 'H' : 'S';
       return [c(bid(partner.call.level, target), { name: 'transferAccept' }, 'transfer.accept')];
