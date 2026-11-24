@@ -8,6 +8,7 @@ import {
   LearnPage,
   LessonPage,
   QuickGuidePage,
+  SystemPage,
 } from './pages/LearnPages';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PlayPage } from './pages/PlayPage';
@@ -22,6 +23,7 @@ const router = createHashRouter([
   { path: '/stats', element: <StatsPage /> },
   { path: '/learn', element: <LearnPage /> },
   { path: '/learn/glossary', element: <GlossaryPage /> },
+  { path: '/learn/system', element: <SystemPage /> },
   { path: '/learn/quick', element: <QuickGuidePage /> },
   { path: '/learn/ex/:id', element: <ExercisePage /> },
   { path: '/learn/:chapter', element: <LessonPage /> },

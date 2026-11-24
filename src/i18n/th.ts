@@ -439,6 +439,8 @@ export const th = {
     readInOrder: 'อ่านเรียงตามลำดับ หรือข้ามไปบทไหนก็ได้',
     glossary: 'อภิธานศัพท์',
     glossaryNote: 'ศัพท์ bridge ทุกคำพร้อมคำอธิบายภาษาไทย',
+    system: 'ระบบประมูลของเกม',
+    systemNote: 'การประมูลทุกแบบที่ระบบใช้ พร้อมความหมาย (SAYC)',
     chapter: (n: number) => `บทที่ ${n}`,
     chapterOf: (n: number, total: number) => `บทที่ ${n} / ${total}`,
     soon: 'เร็ว ๆ นี้',

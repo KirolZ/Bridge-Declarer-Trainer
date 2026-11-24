@@ -416,6 +416,8 @@ export const en: Messages = {
     readInOrder: 'Read them in order, or skip to any chapter',
     glossary: 'Glossary',
     glossaryNote: 'Every bridge term with a short explanation',
+    system: "The game's bidding system",
+    systemNote: 'Every call the system makes, with its meaning (SAYC)',
     chapter: (n) => `Chapter ${n}`,
     chapterOf: (n, total) => `Chapter ${n} / ${total}`,
     soon: 'Coming soon',

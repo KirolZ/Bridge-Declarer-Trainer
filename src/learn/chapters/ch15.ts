@@ -72,8 +72,8 @@ export const CH15: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'ไม่ต้องจำทั้งหมด: แตะ call ในตารางประมูล แล้วเกมจะบอกความหมายให้ (ศัพท์อื่น ๆ เช่น [[raise]], [[rebid]], [[reverse]], [[jump-shift|jump shift]], [[two-over-one|2/1]], [[stayman|Stayman]], [[transfer]] และ [[blackwood|Blackwood]] มีในอภิธานศัพท์)',
-        en: 'No need to learn it all: tap a call in the auction table and the game tells you what it means. (Other names, such as a [[raise]], a [[rebid]], a [[reverse]], a [[jump-shift|jump shift]], a [[two-over-one|2/1]], [[stayman|Stayman]], a [[transfer]] and [[blackwood|Blackwood]], are in the glossary.)',
+        th: 'ไม่ต้องจำทั้งหมด: แตะ call ในตารางประมูล แล้วเกมจะบอกความหมายให้ (ศัพท์อื่น ๆ เช่น [[raise]], [[rebid]], [[reverse]], [[jump-shift|jump shift]], [[two-over-one|2/1]], [[stayman|Stayman]], [[transfer]] และ [[blackwood|Blackwood]] มีในอภิธานศัพท์) ระบบทั้งหมดพร้อมตัวอย่างอยู่ในหน้า **ระบบประมูลของเกม** ท้ายรายการคู่มือ',
+        en: "No need to learn it all: tap a call in the auction table and the game tells you what it means. (Other names, such as a [[raise]], a [[rebid]], a [[reverse]], a [[jump-shift|jump shift]], a [[two-over-one|2/1]], [[stayman|Stayman]], a [[transfer]] and [[blackwood|Blackwood]], are in the glossary.) The whole system, with examples, is on the page **The game's bidding system** at the end of the guide's list.",
       },
     },
     { kind: 'h', text: { th: 'นับสิ่งที่เหลือ', en: 'Count what is left' } },

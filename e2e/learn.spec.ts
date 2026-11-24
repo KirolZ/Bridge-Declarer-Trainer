@@ -279,6 +279,7 @@ test('guide pages fit a 360 px phone', async ({ page }) => {
     '/#/learn/glossary',
     '/#/learn/ex/ch10-finesse-aq',
     '/#/learn/15',
+    '/#/learn/system',
     '/#/learn/ex/ch15-two-way-finesse',
   ]) {
     await page.goto(path);
@@ -325,6 +326,31 @@ test('chapter 15: auction examples, then the exercises with their auction', asyn
   }
   await expect(feedback).toHaveAttribute('data-tone', 'ok');
   await expect(feedback).toContainText('NS ได้ 4 trick');
+  await noSideScroll(page);
+  expect(errors).toEqual([]);
+});
+
+// TASKS M34: the bidding-system page, reached from the guide's list; its meanings come from the
+// game's own system.
+test('the bidding-system page lists the calls with their meanings', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/#/learn');
+  await page.getByTestId('system-link').click();
+  await expect(page).toHaveURL(/#\/learn\/system$/);
+  await expect(page.getByRole('heading', { name: 'ระบบประมูลของเกม' })).toBeVisible();
+  const reverse = page.getByTestId('system-row').filter({
+    has: page.getByTestId('system-sequence').getByText('1♦ – 1♠ – 2♥', { exact: true }),
+  });
+  await expect(reverse.getByTestId('system-meaning')).toHaveText(
+    'reverse · 17–21 HCP · ♥ 4 ใบขึ้นไป · ♦ 5 ใบขึ้นไป · บังคับคู่ประมูลต่อ',
+  );
+  // Overcalls are written with the other side in brackets.
+  await expect(
+    page.getByTestId('system-sequence').getByText('(1♥) – 1♠', { exact: true }),
+  ).toBeVisible();
+  // Terms open the glossary sheet on the page.
+  await reverse.locator('[data-term="reverse"]').first().click();
+  await expect(page.getByTestId('term-sheet')).toBeVisible();
   await noSideScroll(page);
   expect(errors).toEqual([]);
 });

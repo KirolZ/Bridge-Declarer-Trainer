@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 import type { Language } from '../../game/settings';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import type { Chapter, Exercise, Part } from '../../learn';
 import {
@@ -18,7 +18,12 @@ import {
   partOf,
   partsIn,
   quickGuideIn,
+  auctionSequence,
+  systemPageIn,
 } from '../../learn';
+import { explainAuction } from '../../bidding';
+import { decodeAuction } from '../../engine';
+import { meaningMarkup } from '../table/meaningText';
 import { learnStore, useDealNew, useGame, useLanguage, useLearn, useT } from '../gameStore';
 import { DealingOverlay } from '../DealingOverlay';
 import { Blocks } from '../learn/examples';
@@ -145,6 +150,14 @@ export function LearnPage() {
       >
         <span className="font-semibold">{t.learn.glossary}</span>
         <span className="block text-sm text-white/70">{t.learn.glossaryNote}</span>
+      </Link>
+      <Link
+        to="/learn/system"
+        data-testid="system-link"
+        className="rounded-2xl bg-black/25 px-4 py-3 hover:bg-black/40 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
+      >
+        <span className="font-semibold">{t.learn.system}</span>
+        <span className="block text-sm text-white/70">{t.learn.systemNote}</span>
       </Link>
     </main>
   );
@@ -583,6 +596,92 @@ export function ExercisePage() {
             )
           )}
         </nav>
+      </main>
+    </TermSheetProvider>
+  );
+}
+
+// ---------- #/learn/system (M34) ----------
+
+/** The game's bidding system: example auctions, each with what its last call shows. */
+export function SystemPage() {
+  const t = useT();
+  const lang = useLanguage();
+  const page = systemPageIn(lang);
+  const rows = useMemo(
+    () =>
+      page.sections.map((sec) =>
+        sec.rows.map((r) => {
+          const auction = decodeAuction(r.auction.dealer, r.auction.calls)!;
+          const meaning = explainAuction(auction, 'none').at(-1) ?? null;
+          return {
+            sequence: auctionSequence(auction),
+            meaning: meaningMarkup(meaning, t),
+            note: r.note,
+          };
+        }),
+      ),
+    [page, t],
+  );
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return (
+    <TermSheetProvider>
+      <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-24" data-testid="system-page">
+        <LearnHeader back="/learn" backLabel={t.learn.backToGuide} title={page.title} />
+        {page.intro.map((p, i) => (
+          <p key={i} className="leading-relaxed text-white/85">
+            <Rich text={p} />
+          </p>
+        ))}
+        {page.sections.map((sec, s) => (
+          <section key={sec.id} data-section={sec.id} className="flex flex-col gap-2">
+            <h2 className="mt-2 text-lg font-bold text-amber-200">
+              <Rich text={sec.title} />
+            </h2>
+            {sec.intro && (
+              <p className="leading-relaxed text-white/80">
+                <Rich text={sec.intro} />
+              </p>
+            )}
+            <dl className="flex flex-col gap-1.5">
+              {rows[s]!.map((r, i) => (
+                <div
+                  key={i}
+                  data-testid="system-row"
+                  className="rounded-xl bg-black/25 px-3 py-2 sm:grid sm:grid-cols-[10rem_1fr] sm:gap-3"
+                >
+                  <dt className="font-semibold whitespace-nowrap" data-testid="system-sequence">
+                    <Rich text={r.sequence} />
+                  </dt>
+                  <dd className="leading-relaxed text-white/90">
+                    <span data-testid="system-meaning">
+                      <Rich text={r.meaning} />
+                    </span>
+                    {r.note && (
+                      <span className="mt-0.5 block text-sm text-white/65">
+                        <Rich text={r.note} />
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
+        <section className="flex flex-col gap-2" data-section="not-used">
+          <h2 className="mt-2 text-lg font-bold text-amber-200">{page.notUsedTitle}</h2>
+          <ul className="list-disc space-y-1 pl-5 leading-relaxed text-white/85">
+            {page.notUsed.map((n, i) => (
+              <li key={i}>
+                <Rich text={n} />
+              </li>
+            ))}
+          </ul>
+        </section>
       </main>
     </TermSheetProvider>
   );
