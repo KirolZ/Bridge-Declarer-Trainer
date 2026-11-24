@@ -297,24 +297,7 @@ test('beginner mode starts with the auction folded and a tip about the defender 
   expect(errors).toEqual([]);
 });
 
-// TASKS M33: on a phone the auction never takes the table's room — a sheet the player opens —
-// and each seat's calls and the defenders' HCP stay on the table all hand long.
-test('the calls stay by each seat, with the defenders HCP, on every screen', async ({ page }) => {
-  const errors = collectErrors(page);
-  await page.goto(BID);
-  const calls = (seat: string) => page.locator(`[data-testid="seat-calls"][data-seat="${seat}"]`);
-  await expect(calls('S')).toHaveText('1♥');
-  await expect(calls('W')).toHaveText('2♦');
-  await expect(calls('N')).toHaveText('2♥');
-  await expect(calls('E')).toHaveText('Pass');
-  // Dummy face up after West's lead: 20 HCP out of sight, West showed 10–16.
-  const hcp = (seat: string) => page.locator(`[data-testid="seat-hcp"][data-seat="${seat}"]`);
-  await expect(hcp('W')).toHaveText('10–16 HCP', { timeout: 15_000 });
-  await expect(hcp('E')).toHaveText('4–10 HCP');
-  await noSideScroll(page);
-  expect(errors).toEqual([]);
-});
-
+// TASKS M33: on a phone the auction never takes the table's room — a sheet the player opens.
 test('on a phone the auction opens as a sheet, and closes every way', async ({ page }) => {
   const errors = collectErrors(page);
   await page.setViewportSize({ width: 360, height: 740 });

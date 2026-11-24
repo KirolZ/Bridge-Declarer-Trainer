@@ -61,8 +61,8 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'บนจอกว้าง ตารางการประมูลอยู่ด้านซ้ายของโต๊ะและเปิดอยู่ตลอด บนมือถือหรือจอที่แคบกว่า การประมูลเป็นบรรทัดเดียวเหนือโต๊ะ แตะบรรทัดนั้น (หรือกดปุ่ม A บนคีย์บอร์ด) แล้วตารางเต็มจะขึ้นมาจากด้านล่างของจอ ปิดด้วย **ปิด ✕** หรือแตะนอกกล่อง ส่วนบนโต๊ะ ข้างชื่อแต่ละคนมี call ที่เขาประมูล (เหมือนการ์ดประมูลที่วางไว้หน้าแต่ละคน)',
-        en: "On a wide screen the auction table sits to the left of the table and stays open. On a phone or a narrower screen the auction is one line above the table: tap it (or press the A key) and the whole table comes up from the bottom of the screen; close it with **Close ✕**, a tap outside it or Esc. On the table itself, each player's calls sit by their name, like bidding cards left in front of them.",
+        th: 'บนจอกว้าง ตารางการประมูลอยู่ด้านซ้ายของโต๊ะและเปิดอยู่ตลอด บนมือถือหรือจอที่แคบกว่า การประมูลเป็นบรรทัดเดียวเหนือโต๊ะ แตะบรรทัดนั้น (หรือกดปุ่ม A บนคีย์บอร์ด) แล้วตารางเต็มจะขึ้นมาจากด้านล่างของจอ ปิดด้วย **ปิด ✕** หรือแตะนอกกล่อง',
+        en: 'On a wide screen the auction table sits to the left of the table and stays open. On a phone or a narrower screen the auction is one line above the table: tap it (or press the A key) and the whole table comes up from the bottom of the screen; close it with **Close ✕**, a tap outside it or Esc.',
       },
     },
     {
@@ -75,8 +75,8 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'ใต้ไพ่คว่ำของ West และ East บนโต๊ะมีช่วง HCP ที่เขาน่าจะมี และในตารางการประมูลมี **ฝั่งป้องกันน่าจะมี** แบบละเอียด: West และ East แต่ละคนน่าจะมีกี่ HCP และกี่ใบในดอกไหน นับจากทุก call ของเขารวมกัน และจากไพ่ที่คุณเห็น (ทั้งสำรับมี 40 แต้ม แต่ละดอกมี 13 ใบ ที่ไม่อยู่ในมือ South และ dummy ต้องอยู่ที่ West หรือ East — dummy นับเมื่อหงายแล้ว) ใช้ช่วยเดาว่าใบสำคัญอยู่ที่ใคร เช่นจะ [[finesse]] ทางไหน หน้าสรุปผลและหน้าดูย้อนหลังก็เปิดดูการประมูลได้',
-        en: "Under West's and East's face-down cards on the table is the HCP each probably holds, and the auction table has the full **The defenders probably hold**: how many HCP and how many cards of each suit West and East each probably have, from all of their calls together and the cards you can see (the pack has 40 points and 13 cards in each suit; what is not in South's hand or dummy is with West or East — dummy counts once it is face up). Use it to guess who holds the key cards, such as which way to [[finesse]]. The summary and the replay show the auction too.",
+        th: 'ใต้ตารางการประมูลมี **ฝั่งป้องกันน่าจะมี**: West และ East แต่ละคนน่าจะมีกี่ HCP และกี่ใบในดอกไหน นับจากทุก call ของเขารวมกัน และจากไพ่ที่คุณเห็น (ทั้งสำรับมี 40 แต้ม แต่ละดอกมี 13 ใบ ที่ไม่อยู่ในมือ South และ dummy ต้องอยู่ที่ West หรือ East — dummy นับเมื่อหงายแล้ว) ใช้ช่วยเดาว่าใบสำคัญอยู่ที่ใคร เช่นจะ [[finesse]] ทางไหน หน้าสรุปผลและหน้าดูย้อนหลังก็เปิดดูการประมูลได้',
+        en: "Under the auction table, **The defenders probably hold** says how many HCP and how many cards of each suit West and East each probably have, from all of their calls together and the cards you can see (the pack has 40 points and 13 cards in each suit; what is not in South's hand or dummy is with West or East — dummy counts once it is face up). Use it to guess who holds the key cards, such as which way to [[finesse]]. The summary and the replay show the auction too.",
       },
     },
     { kind: 'h', text: { th: 'คำใบ้', en: 'Hints' } },

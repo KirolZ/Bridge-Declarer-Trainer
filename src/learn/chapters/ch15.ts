@@ -103,8 +103,8 @@ export const CH15: Chapter<Bilingual> = {
     {
       kind: 'note',
       text: {
-        th: 'บนโต๊ะ ใต้ไพ่คว่ำของ West และ East มีช่วง HCP ที่นับแบบนี้ให้แล้ว (ความยาวดอกอยู่ใน**ฝั่งป้องกันน่าจะมี**ในตารางการประมูล) ลองนับเองก่อน แล้วค่อยดูว่าตรงไหม',
-        en: "On the table, the HCP under West's and East's face-down cards is this count done for you (suit lengths are in **The defenders probably hold** in the auction table). Try it yourself first, then check.",
+        th: 'ในตารางการประมูลมี**ฝั่งป้องกันน่าจะมี** ที่นับแบบนี้ให้แล้ว ลองนับเองก่อน แล้วค่อยดูว่าตรงไหม',
+        en: 'In the auction table, **The defenders probably hold** does this count for you. Try it yourself first, then check.',
       },
     },
     { kind: 'h', text: { th: 'ใช้ตอนเล่น', en: 'Using it in play' } },
