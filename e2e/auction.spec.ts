@@ -20,8 +20,12 @@ function collectErrors(page: Page): string[] {
   return errors;
 }
 
-/** Narrow screens open the auction as a sheet the player opens (M33); wide ones open it in place. */
-const narrow = (page: Page) => (page.viewportSize()?.width ?? 0) < 1024;
+/**
+ * M33: with room beside the table (≥ 1280 px, the desktop project) the auction is a panel there,
+ * always open; narrower screens have one line above the table and a sheet the player opens.
+ */
+const hasPanel = (page: Page) => (page.viewportSize()?.width ?? 0) >= 1280;
+const narrow = (page: Page) => !hasPanel(page);
 
 /** Shows the whole auction: on a narrow screen by opening the sheet. */
 async function showAuction(page: Page) {
@@ -80,9 +84,14 @@ test('a link with an auction shows it, and the hand still plays out with 0 trick
     turns++;
     await hinted.first().click(CORNER);
     if (turns === 1) {
-      // After the player's first card the auction folds into one line…
-      await expect(auction).toBeHidden();
-      await expect(page.getByTestId('auction-line')).toHaveText(/S\s*1♥\s*W\s*2♦\s*N\s*2♥/);
+      // The panel beside the table stays; on a narrower screen the auction is one line.
+      if (hasPanel(page)) {
+        await expect(auction).toBeVisible();
+        await expect(page.getByTestId('auction-line')).toHaveCount(0);
+      } else {
+        await expect(auction).toBeHidden();
+        await expect(page.getByTestId('auction-line')).toHaveText(/S\s*1♥\s*W\s*2♦\s*N\s*2♥/);
+      }
       await noSideScroll(page);
     }
   }
@@ -94,16 +103,17 @@ test('a link with an auction shows it, and the hand still plays out with 0 trick
 });
 
 test('the folded auction opens again and closes on demand', async ({ page }) => {
+  // A narrower window: the line above the table opens the sheet, and the sheet closes again.
+  await page.setViewportSize({ width: 1100, height: 800 });
   await page.goto(HAND);
   const auction = page.getByTestId('auction');
   await showAuction(page);
-  // The sheet covers the bar on a phone: it closes from the sheet.
-  if (narrow(page)) await closeSheet(page);
-  else await page.getByTestId('auction-toggle').click();
+  await closeSheet(page);
   await expect(auction).toBeHidden();
   await expect(page.getByTestId('auction-line')).toBeVisible();
   await page.getByTestId('auction-toggle').click();
   await expect(auction).toBeVisible();
+  await closeSheet(page);
 
   await page.goto('/');
   await page.getByTestId('language-switch').getByRole('button', { name: 'English' }).click();
@@ -210,12 +220,16 @@ test('tapping a call shows what it means, with what the defenders probably hold'
   await expect(inference.locator('[data-seat="E"]')).toHaveText('East: 4–10 HCP · ♦ ไม่เกิน 4 ใบ');
   await noSideScroll(page);
 
-  // A folds and opens the table.
+  // A closes and opens the sheet; the panel beside the table is always there.
   await page.keyboard.press('a');
-  await expect(auction).toBeHidden();
-  await expect(page.getByTestId('auction-line')).toBeVisible();
-  await page.keyboard.press('a');
-  await expect(auction).toBeVisible();
+  if (hasPanel(page)) {
+    await expect(auction).toBeVisible();
+  } else {
+    await expect(auction).toBeHidden();
+    await expect(page.getByTestId('auction-line')).toBeVisible();
+    await page.keyboard.press('a');
+    await expect(auction).toBeVisible();
+  }
   expect(errors).toEqual([]);
 });
 
@@ -264,16 +278,21 @@ test('beginner mode starts with the auction folded and a tip about the defender 
     );
   });
   await page.goto(BID);
-  await expect(page.getByTestId('auction-line')).toBeVisible();
-  await expect(page.getByTestId('auction')).toHaveCount(0);
+  if (hasPanel(page)) {
+    // The panel beside the table takes none of the table's room: it stays open.
+    await expect(page.getByTestId('auction')).toBeVisible();
+  } else {
+    await expect(page.getByTestId('auction-line')).toBeVisible();
+    await expect(page.getByTestId('auction')).toHaveCount(0);
+  }
   const tip = page.getByTestId('coach-tip');
   await expect(tip).toHaveAttribute('data-tip', 'auction');
   await expect(tip).toContainText('West ประมูล 2♦ — overcall · 10–16 HCP · ♦ 5 ใบขึ้นไป');
   await noSideScroll(page);
   await tip.getByTestId('coach-dismiss').click();
   await expect(tip).toHaveAttribute('data-tip', 'dummy', { timeout: 15_000 });
-  // The tip points at the bar: it opens.
-  await page.getByTestId('auction-toggle').click();
+  // The tip points at the auction: on a narrower screen the line opens it.
+  if (!hasPanel(page)) await page.getByTestId('auction-toggle').click();
   await expect(page.getByTestId('auction')).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -339,5 +358,27 @@ test('on a phone the auction opens as a sheet, and closes every way', async ({ p
     .locator('[data-playable="true"]')
     .first()
     .click({ position: { x: 6, y: 6 } });
+  expect(errors).toEqual([]);
+});
+
+test('with room on the side, the auction is a panel beside the table', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.goto(BID);
+  const panel = page.locator('[data-testid="auction"][data-layout="panel"]');
+  await expect(panel).toBeVisible();
+  await expect(page.getByTestId('auction-line')).toHaveCount(0);
+  // Beside the table, not above it.
+  const table = page.locator('.table-felt');
+  const [p, t] = [await panel.boundingBox(), await table.boundingBox()];
+  expect(p!.x + p!.width).toBeLessThanOrEqual(t!.x);
+  // Still open after the player's first card.
+  await expect(page.locator('[data-playable="true"]').first()).toBeVisible({ timeout: 15_000 });
+  await page
+    .locator('[data-playable="true"]')
+    .first()
+    .click({ position: { x: 6, y: 6 } });
+  await expect(panel).toBeVisible();
+  await noSideScroll(page);
   expect(errors).toEqual([]);
 });

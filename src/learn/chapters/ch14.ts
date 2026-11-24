@@ -61,8 +61,8 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'บนมือถือ (จอแคบ) การประมูลเป็นบรรทัดเดียวเหนือโต๊ะเสมอ แตะบรรทัดนั้นแล้วตารางเต็มจะขึ้นมาจากด้านล่างของจอ ปิดด้วย **ปิด ✕** หรือแตะนอกกล่อง บนจอกว้างตารางเปิดอยู่เหนือโต๊ะจนคุณลงไพ่ใบแรก แล้วพับเหลือบรรทัดเดียว (กด **ซ่อน** เพื่อพับเอง) ปุ่ม A บนคีย์บอร์ดเปิด / ปิดได้ทั้งสองแบบ ในโหมดมือใหม่ตารางพับไว้ตั้งแต่เริ่มมือ ส่วนบนโต๊ะ ข้างชื่อแต่ละคนมี call ที่เขาประมูล (เหมือนการ์ดประมูลที่วางไว้หน้าแต่ละคน)',
-        en: "On a phone (a narrow screen) the auction is always one line above the table: tap it and the whole table comes up from the bottom of the screen; close it with **Close ✕**, a tap outside it or Esc. On a wide screen the table stays open above the table until you play your first card, then folds into one line (press **Hide** to fold it yourself). The A key opens and closes it either way. In beginner mode it starts folded. On the table itself, each player's calls sit by their name, like bidding cards left in front of them.",
+        th: 'บนจอกว้าง ตารางการประมูลอยู่ด้านซ้ายของโต๊ะและเปิดอยู่ตลอด บนมือถือหรือจอที่แคบกว่า การประมูลเป็นบรรทัดเดียวเหนือโต๊ะ แตะบรรทัดนั้น (หรือกดปุ่ม A บนคีย์บอร์ด) แล้วตารางเต็มจะขึ้นมาจากด้านล่างของจอ ปิดด้วย **ปิด ✕** หรือแตะนอกกล่อง ส่วนบนโต๊ะ ข้างชื่อแต่ละคนมี call ที่เขาประมูล (เหมือนการ์ดประมูลที่วางไว้หน้าแต่ละคน)',
+        en: "On a wide screen the auction table sits to the left of the table and stays open. On a phone or a narrower screen the auction is one line above the table: tap it (or press the A key) and the whole table comes up from the bottom of the screen; close it with **Close ✕**, a tap outside it or Esc. On the table itself, each player's calls sit by their name, like bidding cards left in front of them.",
       },
     },
     {

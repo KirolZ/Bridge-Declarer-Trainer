@@ -315,7 +315,7 @@ export const en: Messages = {
       'North is [[dummy]] — the cards are face up for everyone, and **you choose** every card this hand plays',
     northTurn: "It's dummy's turn — tap one of **North's cards at the top**",
     auction: (who, call, meaning) =>
-      `${call} by ${who} — ${meaning}. The [[auction]] helps you guess where the cards you cannot see are: tap the **Auction** bar above to see every call.`,
+      `${call} by ${who} — ${meaning}. The [[auction]] helps you guess where the cards you cannot see are: tap a call in the **Auction** to see what it means.`,
   },
 
   claim: {

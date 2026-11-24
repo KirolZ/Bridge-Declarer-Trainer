@@ -14,7 +14,6 @@ import {
   legalPlays,
   remainingHands,
   sameCard,
-  sideOf,
   toPlay,
   totalTricks,
   tricksNeeded,
@@ -36,10 +35,10 @@ import {
 } from '../gameStore';
 import { GuidePanel } from '../learn/GuidePanel';
 import { ActionBar } from './ActionBar';
-import { AuctionSheet, AuctionTable, CallLabel } from './AuctionTable';
+import { AuctionPanel, AuctionSheet, AuctionTable, CallLabel } from './AuctionTable';
 import { useAuctionInfo } from './auctionInfo';
 import { rangeText } from './meaningText';
-import { WIDE_SCREEN, useMediaQuery } from '../useMediaQuery';
+import { SIDE_SCREEN, useMediaQuery } from '../useMediaQuery';
 import { MAX_HCP } from '../../bidding';
 import { ClaimDialog } from './ClaimDialog';
 import { CoachTipView } from './CoachTip';
@@ -248,17 +247,11 @@ export function PlayTable() {
   const onCloseReplay = useCallback(() => setReplayTrick(null), []);
   const onCloseGuide = useCallback(() => setGuide(null), []);
   const onDismissTip = useCallback((id: string) => learnStore.getState().dismissTip(id), []);
-  // The auction is open until the player's first card (folded from the start in beginner mode,
-  // M31), unless they opened or closed it during this hand.
-  const playerPlayed =
-    play?.plays.slice(state.startPlays).some((p) => sideOf(p.seat) === 'NS') ?? false;
-  // Wide screens: open above the table until the first card. Narrow screens (M33): a sheet the
-  // player opens, never on its own, so the table keeps its room.
-  const wide = useMediaQuery(WIDE_SCREEN);
-  const auctionOpen =
-    auctionToggle?.serial === state.handSerial
-      ? auctionToggle.open
-      : wide && !beginner && !playerPlayed;
+  // The auction (M33): with room beside the table, a panel there that is always open; otherwise one
+  // line above the table and a sheet the player opens (never on its own, so the table keeps its
+  // room). The sheet stays as the player left it until the hand ends.
+  const side = useMediaQuery(SIDE_SCREEN);
+  const auctionOpen = auctionToggle?.serial === state.handSerial && auctionToggle.open;
   const dummyUp = plays > 0 || studyMode;
   const auctionInfo = useAuctionInfo(hand, dummyUp);
   const handSerial = state.handSerial;
@@ -278,7 +271,7 @@ export function PlayTable() {
     !claimOpen && !dealing && replayTrick === null && guide === null,
     onKeyHint,
     beginner ? onKeyUndo : undefined,
-    hand?.auction && !over ? onToggleAuction : undefined,
+    hand?.auction && !over && !side ? onToggleAuction : undefined,
   );
 
   if (!hand || !play) return null;
@@ -407,17 +400,17 @@ export function PlayTable() {
         </div>
       )}
 
-      {hand.auction && auctionInfo && (
+      {hand.auction && auctionInfo && !side && (
         <AuctionTable
           key={`table${state.handSerial}`}
           auction={hand.auction}
           vulnerability={hand.vulnerability}
           info={auctionInfo}
-          open={wide && auctionOpen}
+          open={false}
           onToggle={onToggleAuction}
         />
       )}
-      {hand.auction && auctionInfo && !wide && auctionOpen && (
+      {hand.auction && auctionInfo && !side && auctionOpen && (
         <AuctionSheet
           key={`sheet${state.handSerial}`}
           auction={hand.auction}
@@ -427,9 +420,17 @@ export function PlayTable() {
         />
       )}
 
-      <main className="flex flex-1 flex-col p-2 sm:p-4">
+      <main className="flex flex-1 flex-col p-2 sm:p-4 xl:flex-row xl:justify-center xl:gap-4">
+        {hand.auction && auctionInfo && side && (
+          <AuctionPanel
+            key={`panel${state.handSerial}`}
+            auction={hand.auction}
+            vulnerability={hand.vulnerability}
+            info={auctionInfo}
+          />
+        )}
         <div
-          className="table-felt relative mx-auto flex w-full max-w-4xl flex-1 flex-col"
+          className="table-felt relative mx-auto flex w-full max-w-4xl flex-1 flex-col xl:mx-0"
           onClick={pick.onTableClick}
           style={{ containerType: 'inline-size' }}
         >

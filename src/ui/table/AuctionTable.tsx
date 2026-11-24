@@ -118,8 +118,9 @@ function AuctionHeader({
 }: {
   auction: Auction;
   vulnerability: Vulnerability;
-  closeLabel: string;
-  onClose(): void;
+  /** The close button; none for the panel beside the table, which is always there. */
+  closeLabel?: string;
+  onClose?(): void;
   testId?: string;
 }) {
   const t = useT();
@@ -129,16 +130,18 @@ function AuctionHeader({
       <span className="min-w-0 flex-1 truncate" data-testid="auction-info">
         {t.auction.dealer(auction.dealer)} · {t.vulnerability[vulnerability]}
       </span>
-      <button
-        type="button"
-        onClick={onClose}
-        aria-expanded
-        aria-keyshortcuts="A"
-        data-testid={testId}
-        className="shrink-0 rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
-      >
-        {closeLabel}
-      </button>
+      {closeLabel && onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-expanded
+          aria-keyshortcuts="A"
+          data-testid={testId}
+          className="shrink-0 rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
+        >
+          {closeLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -305,6 +308,35 @@ export function AuctionTable({
           <AuctionBody auction={auction} vulnerability={vulnerability} info={info} />
         </div>
       </section>
+    </TermSheetProvider>
+  );
+}
+
+/**
+ * The auction beside the table (screens with room on the side, M33): always open, so it never
+ * pushes the table down or folds away while the player is reading it.
+ */
+export function AuctionPanel({
+  auction,
+  vulnerability,
+  info,
+}: {
+  auction: Auction;
+  vulnerability: Vulnerability;
+  info: AuctionInfo;
+}) {
+  const t = useT();
+  return (
+    <TermSheetProvider>
+      <aside
+        aria-label={t.auction.title}
+        data-testid="auction"
+        data-layout="panel"
+        className="sticky top-2 flex w-80 shrink-0 flex-col gap-1.5 self-start rounded-2xl bg-black/25 p-3 text-left ring-1 ring-white/10"
+      >
+        <AuctionHeader auction={auction} vulnerability={vulnerability} />
+        <AuctionBody auction={auction} vulnerability={vulnerability} info={info} />
+      </aside>
     </TermSheetProvider>
   );
 }
