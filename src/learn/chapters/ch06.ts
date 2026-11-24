@@ -110,8 +110,8 @@ export const CH6: Chapter<Bilingual> = {
     {
       kind: 'note',
       text: {
-        th: 'เกมนี้ไม่มีการ [[double]] (การท้าให้แต้มเพิ่ม) และหน้าสรุปผลจะบอกแต้มให้เสมอ เป้าหลักของคุณคือ**ทำ contract ให้ได้**',
-        en: 'This game has no [[double]] (a call that raises the stakes), and the summary always shows the score. Your main goal is to **make the contract**.',
+        th: 'contract ในเกมนี้ไม่เคยถูก [[double]] (การท้าให้แต้มเพิ่ม) และหน้าสรุปผลจะบอกแต้มให้เสมอ เป้าหลักของคุณคือ**ทำ contract ให้ได้**',
+        en: 'Contracts in this game are never [[double|doubled]] (a double makes the score bigger both ways), and the summary always shows the score. Your main goal is to **make the contract**.',
       },
     },
   ],

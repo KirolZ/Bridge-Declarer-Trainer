@@ -237,6 +237,66 @@ export const en: Messages = {
     vulnerableSeat: 'vul',
   },
 
+  meaning: {
+    name: {
+      opening: '[[opening|Opening bid]]',
+      strongTwoClubs: 'Strong 2{C} opening',
+      weakTwo: '[[weak-two|Weak two]]',
+      preempt: '[[preempt|Preempt]]',
+      raise: "[[raise|Raise]] of partner's suit",
+      preference: "Back to partner's suit (preference)",
+      limitRaise: '[[raise|Limit raise]] (invites game)',
+      preemptiveRaise: '[[preempt|Preemptive]] jump [[raise]]',
+      newSuit: 'New suit',
+      twoOverOne: '[[two-over-one|2/1]]: new suit at the 2 level',
+      jumpShift: '[[jump-shift|Jump shift]]',
+      reverse: '[[reverse|Reverse]]',
+      rebid: '[[rebid|Rebid]] of the same suit',
+      notrump: '[[nt|Notrump]]',
+      stayman: '[[stayman|Stayman]]: asks for a 4-card major',
+      staymanReply: 'Reply to [[stayman|Stayman]]',
+      transfer: '[[transfer|Transfer]]: partner bids the next suit',
+      transferAccept: '[[transfer|Transfer]] completed',
+      waiting: 'Waiting reply',
+      blackwood: '[[blackwood|Blackwood]]: asks for aces',
+      aceReply: 'Reply: number of aces',
+      invite: 'Invitation',
+      game: '[[game|Game]]',
+      slam: '[[slam|Slam]]',
+      signoff: 'Sign-off',
+      overcall: '[[overcall|Overcall]]',
+      weakJumpOvercall: 'Weak jump [[overcall]]',
+      notrumpOvercall: 'Notrump [[overcall]]',
+      takeoutDouble: '[[takeout-double|Takeout double]]',
+      advance: "Reply to partner's overcall or double",
+      compete: 'Competing for the [[partscore]]',
+      pass: '[[pass|Pass]]',
+    },
+    none: 'The system does not explain this call',
+    hcp: (range) => `${range} [[hcp|HCP]]`,
+    cards: (suit, min, max) =>
+      max === 0
+        ? `no {${suit}}`
+        : max === null
+          ? `{${suit}} ${min}+`
+          : min === max
+            ? `{${suit}} ${min}`
+            : min === 0
+              ? `{${suit}} at most ${max}`
+              : `{${suit}} ${min}–${max}`,
+    balanced: '[[balanced]]',
+    aces: (counts) =>
+      `${counts.join(' or ')} ace${counts.length === 1 && counts[0] === 1 ? '' : 's'}`,
+    stoppers: (suits) => `[[stopper|stoppers]] in ${suits.map((s) => `{${s}}`).join(' ')}`,
+    forcing: { round: 'forcing: partner must bid', game: 'forcing to [[game]]' },
+    artificial: 'says nothing about the suit bid',
+    call: (call, seat) => `${call} (${SEAT[seat]})`,
+    pick: 'Tap a call to see what it means',
+    inferTitle: 'The defenders probably hold',
+    inferNote: 'from the auction + the cards you see',
+    nothing: 'nothing from the auction',
+  },
+
   coach: {
     who: (seat) => (seat === 'S' ? 'you (South)' : seat === 'N' ? 'dummy (North)' : SEAT[seat]),
     contractNT: (level, needed) =>
@@ -254,6 +314,8 @@ export const en: Messages = {
     dummy:
       'North is [[dummy]] — the cards are face up for everyone, and **you choose** every card this hand plays',
     northTurn: "It's dummy's turn — tap one of **North's cards at the top**",
+    auction: (who, call, meaning) =>
+      `${call} by ${who} — ${meaning}. The [[auction]] helps you guess where the cards you cannot see are: tap the **Auction** bar above to see every call.`,
   },
 
   claim: {

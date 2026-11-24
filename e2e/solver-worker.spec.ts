@@ -28,9 +28,11 @@ test('the page stays usable while the solver worker computes', async ({ page }) 
   // Ten full-deal tables in a row: long enough to click around while it runs.
   await page.getByRole('button', { name: 'ddTable 10 มือ' }).click();
   await expect(status).toHaveAttribute('data-state', 'busy');
-  expect(page.workers().map((w) => w.url())).toContainEqual(
-    expect.stringContaining('solver.worker'),
-  );
+  // Playwright may report the worker a moment after the page says it is busy (M31: checking
+  // once failed about 1 run in 10).
+  await expect
+    .poll(() => page.workers().map((w) => w.url()))
+    .toContainEqual(expect.stringContaining('solver.worker'));
   await counter.click();
   await counter.click();
   await expect(page.getByTestId('busy-clicks')).toHaveText('2');

@@ -14,3 +14,4 @@ export * from './saved';
 export * from './exercise';
 export * from './coach';
 export * from './feedback';
+export * from './inference';

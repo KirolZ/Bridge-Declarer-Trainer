@@ -3,13 +3,15 @@
 // (§7.2), and the ways on: replay, share, new hand, play again, undo (§7.3).
 
 import { motion } from 'framer-motion';
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Card, Contract, Vulnerability } from '../../engine';
 import { contractLabel, isDeclarerVulnerable, scoreBreakdown, tricksNeeded } from '../../engine';
 import type { HandSetup } from '../../game/playStore';
 import type { HandReview, Loss } from '../../game/review';
 import { useT } from '../gameStore';
+import type { AuctionInfo } from './auctionInfo';
+import { AuctionTable } from './AuctionTable';
 import { CardText } from './hands';
 import { SEAT_NAME } from './labels';
 import { explainScore } from './scoreExplain';
@@ -21,6 +23,8 @@ type ResultPanelProps = {
   hand: HandSetup;
   contract: Contract;
   vulnerability: Vulnerability;
+  /** Meanings and what the defenders held, for a hand with an auction (M31). */
+  auctionInfo?: AuctionInfo | null;
   review: HandReview;
   /** `ready` once every analysis the review needs is in. */
   reviewStatus: ReviewStatus;
@@ -203,6 +207,7 @@ export function ResultPanel(props: ResultPanelProps) {
   const needed = tricksNeeded(contract);
   const first = useRef<HTMLButtonElement>(null);
   const t = useT();
+  const [auctionOpen, setAuctionOpen] = useState(false);
   // No scroll: on a phone the buttons are below the fold, the result should stay in view.
   useEffect(() => first.current?.focus({ preventScroll: true }), []);
 
@@ -266,6 +271,19 @@ export function ResultPanel(props: ResultPanelProps) {
             onReplay={props.onReplay}
             onRetry={props.onRetryReview}
           />
+
+          {props.hand.auction && props.auctionInfo && (
+            <div className="w-full rounded-xl bg-black/25 text-left">
+              <AuctionTable
+                auction={props.hand.auction}
+                vulnerability={vulnerability}
+                info={props.auctionInfo}
+                open={auctionOpen}
+                onToggle={() => setAuctionOpen((o) => !o)}
+                className="px-1.5 py-1.5"
+              />
+            </div>
+          )}
 
           <div className="mt-1 flex w-full flex-wrap gap-2">
             <button type="button" onClick={() => props.onReplay(1)} className={SECONDARY}>

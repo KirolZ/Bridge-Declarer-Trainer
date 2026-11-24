@@ -2,8 +2,16 @@
 // and which guide chapter the `?` button opens. Pure functions of the play state, so undo and
 // "play again" need no bookkeeping.
 
-import type { Card, PlayState, Seat, Suit, Trick } from '../engine';
-import { completedTricks, currentTrick, remainingHand, sideOf, toPlay, trumpOf } from '../engine';
+import type { Auction, Card, PlayState, Seat, Suit, Trick } from '../engine';
+import {
+  callerAt,
+  completedTricks,
+  currentTrick,
+  remainingHand,
+  sideOf,
+  toPlay,
+  trumpOf,
+} from '../engine';
 
 /** Why a trick was won. */
 export type TrickWin = {
@@ -41,6 +49,8 @@ export function trickWin(
 export type CoachTip =
   /** Hand start: the contract, tricks needed and trumps. */
   | { readonly id: 'contract' }
+  /** A hand where a defender bid: their first call and what it shows (call `index`, M31). */
+  | { readonly id: 'auction'; readonly index: number; readonly seat: Seat }
   /** After the opening lead: dummy is face up and you pick its cards. */
   | { readonly id: 'dummy' }
   /** North to play: click dummy's cards at the top. */
@@ -60,7 +70,11 @@ export const EXPLAINED_TRICKS = 3;
  * (`dismissed`); several pending tips show one at a time, the one to act on first (North to
  * play), then in the order they came up. `trick-won` always explains the last trick finished.
  */
-export function coachTip(play: PlayState, dismissed: readonly string[]): CoachTip | null {
+export function coachTip(
+  play: PlayState,
+  dismissed: readonly string[],
+  auction?: Auction,
+): CoachTip | null {
   const open = (id: CoachTipId) => !dismissed.includes(id);
   const seat = toPlay(play);
   const trump = trumpOf(play);
@@ -68,6 +82,12 @@ export function coachTip(play: PlayState, dismissed: readonly string[]): CoachTi
 
   if (seat === 'N' && open('north-turn')) return { id: 'north-turn' };
   if (open('contract')) return { id: 'contract' };
+  if (auction && open('auction')) {
+    const index = auction.calls.findIndex(
+      (c, i) => c.kind !== 'pass' && sideOf(callerAt(auction.dealer, i)) === 'EW',
+    );
+    if (index >= 0) return { id: 'auction', index, seat: callerAt(auction.dealer, index) };
+  }
   if (play.plays.length > 0 && open('dummy')) return { id: 'dummy' };
 
   const wins = done.map((t, i) => trickWin(t, i + 1, trump));

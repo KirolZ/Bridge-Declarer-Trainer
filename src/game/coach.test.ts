@@ -1,7 +1,7 @@
 // Beginner-mode tips and the `?` chapter (SPEC §7.7, §7.8).
 
 import { describe, expect, it } from 'vitest';
-import type { Contract, PlayState, Strain } from '../engine';
+import type { Call, Contract, Level, PlayState, Strain } from '../engine';
 import { applyPlay, newPlayState, parseCardCode, parseHand } from '../engine';
 import type { CoachTip } from './coach';
 import { coachTip, guideChapterFor, trickWin } from './coach';
@@ -51,6 +51,34 @@ describe('coachTip', () => {
     expect(summary(coachTip(after(8), [...seen, 'ruff']))).toBe('trick-won:2:S:high');
     expect(summary(coachTip(after(6), [...seen, 'ruff']))).toBe('trick-won:1:S:ruff');
     expect(coachTip(after(12), [...seen, 'ruff', 'trick-won'])).toBeNull();
+  });
+
+  it('points at the first call a defender made, after the contract (M31)', () => {
+    const bid = (level: Level, strain: Strain): Call => ({ kind: 'bid', level, strain });
+    const pass: Call = { kind: 'pass' };
+    // N passes, East opens 1♥, South 1♠, West 2♥, then 2♠ by North and passes.
+    const auction = {
+      dealer: 'N' as const,
+      calls: [pass, bid(1, 'H'), bid(1, 'S'), bid(2, 'H'), bid(2, 'S'), pass, pass, pass],
+    };
+    expect(summary(coachTip(after(0), [], auction))).toBe('contract');
+    expect(coachTip(after(0), ['contract'], auction)).toEqual({
+      id: 'auction',
+      index: 1,
+      seat: 'E',
+    });
+    // It waits behind "North to play" like the others, and goes once dismissed.
+    expect(summary(coachTip(after(1), ['contract'], auction))).toBe('north-turn');
+    expect(summary(coachTip(after(1), ['contract', 'north-turn', 'auction'], auction))).toBe(
+      'dummy',
+    );
+    // No tip when only North-South bid, nor without an auction.
+    const quiet = {
+      dealer: 'S' as const,
+      calls: [bid(1, 'NT'), pass, bid(3, 'NT'), pass, pass, pass],
+    };
+    expect(coachTip(after(0), ['contract'], quiet)).toBeNull();
+    expect(coachTip(after(0), ['contract'])).toBeNull();
   });
 
   it('stops explaining tricks after the third', () => {

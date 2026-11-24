@@ -18,6 +18,36 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     aliases: ['bidding'],
   },
   {
+    id: 'balanced',
+    term: 'balanced',
+    thai: 'มือเฉลี่ย',
+    text: {
+      th: 'มือที่ไม่มีดอกไหนว่างหรือมีใบเดียว และมีดอกที่มี 2 ใบได้ไม่เกินหนึ่งดอก: 4-3-3-3, 4-4-3-2 หรือ 5-3-3-2 มือแบบนี้มักประมูลไปทาง [[nt|NT]] ถ้ารู้ว่าใครมือ balanced ก็รู้ว่าเขามีทุกดอกอย่างน้อย 2 ใบ',
+      en: 'A hand with no void or singleton and at most one doubleton: 4-3-3-3, 4-4-3-2 or 5-3-3-2. Such hands often bid [[nt|notrump]]. If you know a player is balanced, you know they hold at least 2 cards in every suit.',
+    },
+    chapter: 14,
+  },
+  {
+    id: 'blackwood',
+    term: 'Blackwood',
+    thai: 'ถามจำนวน A',
+    text: {
+      th: 'การประมูล 4NT เพื่อถามคู่ว่ามี A กี่ใบ ก่อนตัดสินว่าจะไป [[slam]] ไหม คู่ตอบ 5{C} = 0 หรือ 4 ใบ, 5{D} = 1 ใบ, 5{H} = 2 ใบ, 5{S} = 3 ใบ',
+      en: 'A bid of 4NT that asks partner how many aces they hold, before deciding on a [[slam]]. The replies: 5{C} = 0 or 4, 5{D} = 1, 5{H} = 2, 5{S} = 3.',
+    },
+    chapter: 14,
+  },
+  {
+    id: 'call',
+    term: 'call',
+    thai: 'การประมูลหนึ่งครั้ง',
+    text: {
+      th: 'สิ่งที่แต่ละคนประกาศในตาของตัวเองระหว่าง[[auction|การประมูล]]: เสนอ [[contract]] (เช่น 1{H} หรือ 3NT), [[pass|Pass]] หรือ X ([[double]]) ในตารางการประมูลของเกมนี้ แตะ call เพื่อดูว่าระบบใช้ call นั้นบอกอะไร',
+      en: "What a player says on their turn in the [[auction]]: an offer of a [[contract]] (such as 1{H} or 3NT), [[pass|Pass]], or X (a [[double]]). In this game's auction table, tap a call to see what the system uses it to show.",
+    },
+    chapter: 14,
+  },
+  {
     id: 'claim',
     term: 'claim',
     thai: 'ขอจบมือ',
@@ -82,8 +112,8 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     term: 'double',
     thai: 'ท้า',
     text: {
-      th: 'ในเกมจริง ระหว่าง[[auction|การประมูล]] ฝั่งตรงข้ามประกาศ double ได้ถ้าคิดว่า [[contract]] จะไม่สำเร็จ แล้วแต้มทั้งตอนทำได้และตอนขาดจะสูงขึ้น เกมนี้ไม่มี double',
-      en: 'In a real game, during the [[auction]], an opponent can say double when they think the [[contract]] will fail; then both the score for making it and the penalty for going down get bigger. This game has no doubles.',
+      th: 'ในเกมจริง ระหว่าง[[auction|การประมูล]] ฝั่งตรงข้ามประกาศ double (X) ได้ถ้าคิดว่า [[contract]] จะไม่สำเร็จ แล้วแต้มทั้งตอนทำได้และตอนขาดจะสูงขึ้น contract ในเกมนี้ไม่เคยถูก double ส่วน X ในตารางการประมูลเป็น [[takeout-double|takeout double]] เสมอ',
+      en: 'In a real game, during the [[auction]], an opponent can say double (X) when they think the [[contract]] will fail; then both the score for making it and the penalty for going down get bigger. Contracts in this game are never doubled; an X in the auction table is always a [[takeout-double|takeout double]].',
     },
     chapter: 6,
   },
@@ -178,6 +208,16 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     chapter: 6,
   },
   {
+    id: 'hcp',
+    term: 'HCP',
+    thai: 'แต้มไพ่สูง',
+    text: {
+      th: 'แต้มจากไพ่ใหญ่ที่ใช้วัดว่ามือแข็งแค่ไหน: A = 4, K = 3, Q = 2, J = 1 ทั้งสำรับมี 40 แต้ม ถ้าการ[[auction|ประมูล]]บอกว่าใครมีกี่แต้ม ก็นับได้ว่าแต้มที่เหลืออยู่ที่ใคร',
+      en: 'High card points, the usual measure of a hand: A = 4, K = 3, Q = 2, J = 1, 40 in the pack. When the [[auction]] tells you how many some players hold, you can work out where the rest are.',
+    },
+    chapter: 14,
+  },
+  {
     id: 'hold-up',
     term: 'hold-up',
     thai: 'ปล่อยก่อน',
@@ -186,6 +226,16 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
       en: 'Not yet playing a card that would win (such as an ace), letting the defenders win the suit for 1–2 rounds until one of them runs out of it. Used most in [[nt|NT]].',
     },
     chapter: 13,
+  },
+  {
+    id: 'jump-shift',
+    term: 'jump shift',
+    thai: 'กระโดดดอกใหม่',
+    text: {
+      th: 'ประมูลดอกใหม่สูงกว่าที่จำเป็นหนึ่งระดับ เช่น 1{D} – 1{S} – 3{C} ผู้เปิดบอกว่ามือแรงมาก (19–21 [[hcp|HCP]]) และบังคับให้ไปถึง [[game]]',
+      en: 'A new suit bid one level higher than needed, e.g. 1{D} – 1{S} – 3{C}: opener shows a very strong hand (19–21 [[hcp|HCP]]) and the side must reach [[game]].',
+    },
+    chapter: 14,
   },
   {
     id: 'lead',
@@ -248,6 +298,16 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     chapter: 3,
   },
   {
+    id: 'opening',
+    term: 'opening bid',
+    thai: 'การเปิดประมูล',
+    text: {
+      th: 'การเสนอ [[contract]] ครั้งแรกของ[[auction|การประมูล]] เปิดระดับ 1 บอกว่ามี 12–21 [[hcp|HCP]] เปิด [[weak-two|weak two]] หรือ [[preempt]] บอกว่าแต้มน้อยแต่ดอกยาว และเปิด 2{C} บอกว่ามือแรงมาก (22 ขึ้นไป)',
+      en: 'The first offer of a [[contract]] in the [[auction]]. An opening at the 1 level shows 12–21 [[hcp|HCP]]; a [[weak-two|weak two]] or a [[preempt]] shows few points and a long suit; 2{C} shows a very strong hand (22 or more).',
+    },
+    chapter: 14,
+  },
+  {
     id: 'opening-lead',
     term: 'opening lead',
     thai: 'ใบนำแรก',
@@ -256,6 +316,16 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
       en: "The first card of the hand, led by the player on [[declarer|declarer's]] left. In this game declarer is South, so it is always West.",
     },
     chapter: 5,
+  },
+  {
+    id: 'overcall',
+    term: 'overcall',
+    thai: 'ประมูลแทรก',
+    text: {
+      th: 'ประมูลดอกของตัวเองหลังฝั่งตรงข้าม[[opening|เปิดประมูล]]ไปแล้ว บอกว่ามีดอกนั้น 5 ใบขึ้นไปที่ดีพอ และมีแต้มพอสมควร (ระดับ 1: 8–16 [[hcp|HCP]]) ถ้าฝั่งป้องกัน overcall คุณก็รู้ว่าไพ่ดีของดอกนั้นน่าจะอยู่ที่ใคร',
+      en: 'Bidding your own suit after the other side has opened: it shows a good suit of 5 or more cards and fair values (at the 1 level, 8–16 [[hcp|HCP]]). When a defender overcalls, you know who probably holds the good cards of that suit.',
+    },
+    chapter: 14,
   },
   {
     id: 'overruff',
@@ -308,6 +378,48 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     chapter: 14,
   },
   {
+    id: 'preempt',
+    term: 'preempt',
+    thai: 'ประมูลกันทาง',
+    text: {
+      th: 'เปิดหรือประมูลสูงด้วยมือแต้มน้อยแต่ดอกยาวมาก เช่นเปิด 3 ในดอกที่มี 7 ใบขึ้นไปกับ 5–10 [[hcp|HCP]] เพื่อกินพื้นที่การประมูลของฝั่งตรงข้าม',
+      en: 'Opening or bidding high with few points and a very long suit, such as opening at the 3 level with 7 or more cards and 5–10 [[hcp|HCP]], to take bidding space from the other side.',
+    },
+    chapter: 14,
+    aliases: ['preemptive'],
+  },
+  {
+    id: 'raise',
+    term: 'raise',
+    thai: 'ยกดอกของคู่',
+    text: {
+      th: 'ประมูลดอกเดียวกับที่คู่ประมูลไว้ในระดับที่สูงขึ้น บอกว่ามีดอกนั้นมากพอจะใช้เป็น [[trump]] ด้วยกัน เช่น 1{H} – 2{H} (6–10 [[hcp|HCP]]) ส่วน limit raise คือ raise ข้ามหนึ่งระดับ (1{H} – 3{H}, 10–12) ที่ชวนคู่ไป [[game]]',
+      en: "Bidding partner's suit again at a higher level: it shows enough cards in it to play it as [[trump|trumps]] together, e.g. 1{H} – 2{H} (6–10 [[hcp|HCP]]). A limit raise jumps one level (1{H} – 3{H}, 10–12) and invites [[game]].",
+    },
+    chapter: 14,
+    aliases: ['limit raise'],
+  },
+  {
+    id: 'rebid',
+    term: 'rebid',
+    thai: 'ประมูลครั้งที่สอง',
+    text: {
+      th: 'การประมูลรอบที่สองของคนเดิม โดยเฉพาะของผู้[[opening|เปิดประมูล]] ในความหมายของ call ในเกมนี้ rebid คือประมูลดอกเดิมซ้ำ ซึ่งบอกว่าดอกนั้นยาวกว่าที่บอกไว้ตอนแรก',
+      en: "A player's second bid, above all the opener's. In this game's call meanings a rebid is bidding the same suit again, which shows it is longer than first shown.",
+    },
+    chapter: 14,
+  },
+  {
+    id: 'reverse',
+    term: 'reverse',
+    thai: 'ดอกที่สองที่สูงกว่า',
+    text: {
+      th: 'ผู้เปิดประมูลดอกที่สองที่ระดับ 2 ซึ่งสูงกว่าดอกแรก เช่น 1{D} – 1{S} – 2{H} คู่ต้องขึ้นไประดับ 3 ถ้าจะกลับไปดอกแรก จึงบอกว่ามือแรง (17 [[hcp|HCP]] ขึ้นไป) และดอกแรกยาวกว่าดอกที่สอง',
+      en: 'Opener bids a second suit at the 2 level that ranks above the first, e.g. 1{D} – 1{S} – 2{H}. Partner must go to the 3 level to return to the first suit, so it shows a strong hand (17 or more [[hcp|HCP]]) with the first suit longer.',
+    },
+    chapter: 14,
+  },
+  {
     id: 'ruff',
     term: 'ruff',
     thai: 'ตัด',
@@ -327,6 +439,16 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     },
     chapter: 6,
     aliases: ['small slam', 'grand slam'],
+  },
+  {
+    id: 'stayman',
+    term: 'Stayman',
+    thai: 'ถามหาโพแดง / โพดำ 4 ใบ',
+    text: {
+      th: 'หลังคู่เปิด 1NT ประมูล 2{C} (หลัง 2NT ประมูล 3{C}) เพื่อถามว่าคู่มี {H} หรือ {S} 4 ใบไหม — ไม่ได้บอกว่ามี {C} คู่ตอบ {D} = ไม่มีทั้งสองดอก, {H} = มี {H} 4 ใบ, {S} = มี {S} 4 ใบแต่ไม่มี {H} 4 ใบ',
+      en: 'After partner opens 1NT, a bid of 2{C} (3{C} over 2NT) that asks whether they hold four {H} or four {S} — it says nothing about {C}. The replies: {D} = neither, {H} = four {H}, {S} = four {S} but not four {H}.',
+    },
+    chapter: 14,
   },
   {
     id: 'stopper',
@@ -349,6 +471,26 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     chapter: 1,
   },
   {
+    id: 'takeout-double',
+    term: 'takeout double',
+    thai: 'double ให้คู่เลือกดอก',
+    text: {
+      th: 'X หลังฝั่งตรงข้ามเปิดประมูล ไม่ได้ท้าให้แต้มเพิ่ม แต่บอกว่ามีแต้มตั้งแต่ 12 [[hcp|HCP]] สั้นในดอกของเขา และมีดอกอื่นพอสมควร ให้คู่เลือกดอก (คู่ต้องประมูล) X ทุกตัวในตารางการประมูลของเกมนี้เป็นแบบนี้',
+      en: "X after the other side has opened: not a bid to raise the stakes, but a hand of 12 or more [[hcp|HCP]], short in their suit and with fair length in the others, asking partner to pick a suit (partner must bid). Every X in this game's auction table is a takeout double.",
+    },
+    chapter: 14,
+  },
+  {
+    id: 'transfer',
+    term: 'transfer',
+    thai: 'บอกให้คู่ประมูลดอกถัดไป',
+    text: {
+      th: 'หลังคู่เปิด 1NT (หรือ 2NT) ประมูลดอกที่อยู่ใต้ดอกที่ตัวเองมีจริง: 2{D} บอกว่ามี {H} 5 ใบขึ้นไป, 2{H} บอกว่ามี {S} 5 ใบขึ้นไป แล้วคู่ประมูลดอกนั้นให้ มือที่แข็งกว่าจึงได้เป็น [[declarer]]',
+      en: 'After partner opens 1NT (or 2NT), bidding the suit just below the one you really hold: 2{D} shows 5 or more {H}, 2{H} shows 5 or more {S}, and partner then bids that suit, so the stronger hand becomes [[declarer]].',
+    },
+    chapter: 14,
+  },
+  {
     id: 'trick',
     term: 'trick',
     thai: 'ตา',
@@ -367,6 +509,16 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
       en: 'The suit that beats every other suit, set by the [[contract]]. You may [[lead]] a trump at any time, but when another suit is led you may play a trump only if you have none of that suit. If several are played, the highest trump wins.',
     },
     chapter: 3,
+  },
+  {
+    id: 'two-over-one',
+    term: 'two over one',
+    thai: 'ดอกใหม่ระดับ 2',
+    text: {
+      th: 'เขียนว่า 2/1: หลังคู่[[opening|เปิดประมูล]]ระดับ 1 ผู้ตอบประมูลดอกใหม่ที่ระดับ 2 โดยไม่กระโดด เช่น 1{S} – 2{C} บอกว่ามีตั้งแต่ 10 [[hcp|HCP]] ขึ้นไป และผู้เปิดต้องประมูลต่ออย่างน้อยอีกหนึ่งรอบ',
+      en: 'Written 2/1: after partner opens at the 1 level, responding in a new suit at the 2 level without jumping, e.g. 1{S} – 2{C}. It shows 10 or more [[hcp|HCP]], and opener must bid at least once more.',
+    },
+    chapter: 14,
   },
   {
     id: 'unblock',
@@ -399,6 +551,16 @@ const SOURCE: readonly GlossaryEntry<Bilingual>[] = [
     },
     chapter: 6,
     aliases: ['vul'],
+  },
+  {
+    id: 'weak-two',
+    term: 'weak two',
+    thai: 'เปิด 2 มือเบา',
+    text: {
+      th: 'เปิด 2{D}, 2{H} หรือ 2{S} ด้วยมือ 5–10 [[hcp|HCP]] ที่มีดอกนั้น 6 ใบพอดี เป็น [[preempt]] แบบหนึ่ง (เปิด 2{C} ไม่ใช่ weak two แต่เป็นมือแรงมาก)',
+      en: 'An opening of 2{D}, 2{H} or 2{S} with 5–10 [[hcp|HCP]] and exactly 6 cards in the suit, a kind of [[preempt]] (2{C} is not a weak two but a very strong hand).',
+    },
+    chapter: 14,
   },
   {
     id: 'winner',

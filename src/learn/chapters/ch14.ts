@@ -54,15 +54,58 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'มือที่แจกในเกมมี[[auction|การประมูล]]มาด้วย: ระบบประมูลให้ทั้ง 4 ที่นั่งแล้วแสดงตาราง**การประมูล**เหนือโต๊ะ (คุณไม่ต้องประมูลเอง และ South เป็น [[declarer]] เสมอ) เรียงคอลัมน์ West, North, East, South แถวบนบอกว่าใครเป็น [[dealer]] (ชื่อขีดเส้นใต้ และเป็นคนประมูลก่อน) ฝั่งที่ [[vulnerable|vul]] เป็นสีแดง [[pass|Pass]] คือไม่ประมูลเพิ่ม ไม่อยากเห็นการประมูล? ปิด**แสดงการประมูล**ในหน้าตั้งค่า แล้วระบบจะเลือก contract ให้แบบไม่มีการประมูล',
-        en: 'Hands dealt in the game come with their [[auction]]: the game bids for all 4 seats and shows an **Auction** table above the table (you never bid, and South is always [[declarer]]). The columns are West, North, East, South. The [[dealer]] is underlined and calls first; the [[vulnerable]] side is in red. [[pass|Pass]] means no bid on that turn. Rather not see the auction? Turn off **Show the auction** in Settings and the game picks the contract without one.',
+        th: 'มือที่แจกในเกมมี[[auction|การประมูล]]มาด้วย: ระบบประมูลให้ทั้ง 4 ที่นั่งแล้วแสดงตาราง**การประมูล**เหนือโต๊ะ (คุณไม่ต้องประมูลเอง และ South เป็น [[declarer]] เสมอ) เรียงคอลัมน์ West, North, East, South แถวบนบอกว่าใครเป็น [[dealer]] (ชื่อขีดเส้นใต้ และเป็นคนประมูลก่อน) แต่ละช่องคือ [[call]] หนึ่งครั้ง ฝั่งที่ [[vulnerable|vul]] เป็นสีแดง [[pass|Pass]] คือไม่ประมูลเพิ่ม ไม่อยากเห็นการประมูล? ปิด**แสดงการประมูล**ในหน้าตั้งค่า แล้วระบบจะเลือก contract ให้แบบไม่มีการประมูล',
+        en: 'Hands dealt in the game come with their [[auction]]: the game bids for all 4 seats and shows an **Auction** table above the table (you never bid, and South is always [[declarer]]). The columns are West, North, East, South. The [[dealer]] is underlined and makes the first [[call]]; the [[vulnerable]] side is in red. [[pass|Pass]] means no bid on that turn. Rather not see the auction? Turn off **Show the auction** in Settings and the game picks the contract without one.',
       },
     },
     {
       kind: 'p',
       text: {
-        th: 'ตารางเปิดอยู่จนคุณลงไพ่ใบแรก แล้วพับเหลือบรรทัดเดียว แตะบรรทัดนั้นเพื่อเปิดดูอีกครั้ง หรือกด **ซ่อน** เพื่อพับเอง',
-        en: 'The table stays open until you play your first card, then folds into one line. Tap the line to open it again, or press **Hide** to fold it yourself.',
+        th: 'ตารางเปิดอยู่จนคุณลงไพ่ใบแรก แล้วพับเหลือบรรทัดเดียว แตะบรรทัดนั้นเพื่อเปิดดูอีกครั้ง หรือกด **ซ่อน** เพื่อพับเอง (ปุ่ม A บนคีย์บอร์ดเปิด / พับได้เหมือนกัน) ในโหมดมือใหม่ตารางพับไว้ตั้งแต่เริ่มมือ',
+        en: 'The table stays open until you play your first card, then folds into one line. Tap the line to open it again, or press **Hide** to fold it yourself (the A key opens and folds it too). In beginner mode the table starts folded.',
+      },
+    },
+    {
+      kind: 'p',
+      text: {
+        th: 'แตะ call ในตาราง แล้วบรรทัดใต้ตารางจะบอกว่า call นั้นบอกอะไร เช่น "2{H} (East) — [[weak-two|weak two]] · 5–10 [[hcp|HCP]] · {H} 6 ใบ" ความหมายนี้เป็นข้อมูลชุดเดียวกับที่ระบบใช้ตัดสินใจประมูลจริง: ระบบประมูล call นั้นก็ต่อเมื่อมือเข้ากับความหมายนั้น ชื่อที่จะเห็นบ่อย:',
+        en: 'Tap a call in the table and the line under it says what the call shows, e.g. "2{H} (East) — [[weak-two|Weak two]] · 5–10 [[hcp|HCP]] · {H} 6". It is the same data the system bids with: it only makes a call when the hand fits its meaning. Names you will often see:',
+      },
+    },
+    {
+      kind: 'list',
+      items: [
+        {
+          th: '[[opening|เปิดประมูล]] และ [[overcall]] (ประมูลแทรกหลังฝั่งตรงข้ามเปิด): บอกแต้มและดอกยาว',
+          en: 'An [[opening|opening bid]] and an [[overcall]] (bidding after the other side has opened): points and a long suit',
+        },
+        {
+          th: '[[weak-two|weak two]] และ [[preempt]]: แต้มน้อยแต่ดอกยาวมาก',
+          en: 'A [[weak-two|weak two]] and a [[preempt]]: few points but a very long suit',
+        },
+        {
+          th: '[[raise]] (ยกดอกของคู่), [[rebid]] (ดอกเดิมซ้ำ), [[reverse]], [[jump-shift|jump shift]] และ [[two-over-one|2/1]]: การตอบและการประมูลรอบที่สอง',
+          en: "A [[raise]] of partner's suit, a [[rebid]] of your own suit, a [[reverse]], a [[jump-shift|jump shift]] and a [[two-over-one|2/1]]: responses and second bids",
+        },
+        {
+          th: '[[stayman|Stayman]], [[transfer]] และ [[blackwood|Blackwood]]: ไม่ได้บอกดอกที่ประมูล แต่ถามหรือบอกเรื่องอื่น',
+          en: '[[stayman|Stayman]], a [[transfer]] and [[blackwood|Blackwood]]: they say nothing about the suit bid, but ask or show something else',
+        },
+        {
+          th: 'X ในตารางคือ [[takeout-double|takeout double]]: ให้คู่เลือกดอก',
+          en: 'An X in the table is a [[takeout-double|takeout double]]: partner is asked to pick a suit',
+        },
+        {
+          th: 'มือ [[balanced]]: มีทุกดอกอย่างน้อย 2 ใบ',
+          en: 'A [[balanced]] hand: at least 2 cards in every suit',
+        },
+      ],
+    },
+    {
+      kind: 'p',
+      text: {
+        th: 'ใต้ตารางมี **ฝั่งป้องกันน่าจะมี**: West และ East แต่ละคนน่าจะมีกี่ HCP และกี่ใบในดอกไหน นับจากทุก call ของเขารวมกัน และจากไพ่ที่คุณเห็น (ทั้งสำรับมี 40 แต้ม แต่ละดอกมี 13 ใบ ที่ไม่อยู่ในมือ South และ dummy ต้องอยู่ที่ West หรือ East — dummy นับเมื่อหงายแล้ว) ใช้ช่วยเดาว่าใบสำคัญอยู่ที่ใคร เช่นจะ [[finesse]] ทางไหน หน้าสรุปผลและหน้าดูย้อนหลังก็เปิดดูการประมูลได้',
+        en: "Under the table, **The defenders probably hold** says how many HCP and how many cards of each suit West and East each probably have, from all of their calls together and the cards you can see (the pack has 40 points and 13 cards in each suit; what is not in South's hand or dummy is with West or East — dummy counts once it is face up). Use it to guess who holds the key cards, such as which way to [[finesse]]. The summary and the replay show the auction too.",
       },
     },
     { kind: 'h', text: { th: 'คำใบ้', en: 'Hints' } },

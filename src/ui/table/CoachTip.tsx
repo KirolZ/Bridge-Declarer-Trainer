@@ -2,12 +2,15 @@
 // table; "got it" hides that tip for good. Which tip shows is `coachTip` (src/game/coach.ts).
 
 import { motion } from 'framer-motion';
-import type { Contract } from '../../engine';
+import type { Meaning } from '../../bidding';
+import type { Auction, Contract } from '../../engine';
 import { cardCode, tricksNeeded } from '../../engine';
 import type { CoachTip, TrickWin } from '../../game/coach';
 import type { Messages } from '../../i18n';
 import { useT } from '../gameStore';
 import { Rich, TermSheetProvider } from '../learn/Rich';
+import { callMarkup } from './auctionInfo';
+import { meaningMarkup } from './meaningText';
 
 type Coach = Messages['coach'];
 
@@ -32,10 +35,29 @@ function winText(c: Coach, win: TrickWin, last: boolean): string {
   return text;
 }
 
-function tipText(c: Coach, tip: CoachTip, contract: Contract, totalTricks: number): string {
+/** The hand's auction and the meaning of each call, for the `auction` tip. */
+export type TipAuction = { auction: Auction; meanings: readonly (Meaning | null)[] };
+
+function tipText(
+  t: Messages,
+  tip: CoachTip,
+  contract: Contract,
+  totalTricks: number,
+  bidding: TipAuction | undefined,
+): string {
+  const c = t.coach;
   switch (tip.id) {
     case 'contract':
       return contractText(c, contract);
+    case 'auction': {
+      const call = bidding?.auction.calls[tip.index];
+      if (!bidding || !call) return '';
+      return c.auction(
+        c.who(tip.seat),
+        callMarkup(call, t),
+        meaningMarkup(bidding.meanings[tip.index] ?? null, t),
+      );
+    }
     case 'dummy':
       return c.dummy;
     case 'north-turn':
@@ -51,9 +73,16 @@ type CoachTipViewProps = {
   contract: Contract;
   totalTricks: number;
   onDismiss: (id: CoachTip['id']) => void;
+  bidding?: TipAuction;
 };
 
-export function CoachTipView({ tip, contract, totalTricks, onDismiss }: CoachTipViewProps) {
+export function CoachTipView({
+  tip,
+  contract,
+  totalTricks,
+  onDismiss,
+  bidding,
+}: CoachTipViewProps) {
   const t = useT();
   const key = tip ? `${tip.id}${'win' in tip ? tip.win.trick : ''}` : 'none';
   return (
@@ -71,7 +100,7 @@ export function CoachTipView({ tip, contract, totalTricks, onDismiss }: CoachTip
         >
           <span aria-hidden="true">💬</span>
           <span className="flex-1">
-            <Rich text={tipText(t.coach, tip, contract, totalTricks)} />
+            <Rich text={tipText(t, tip, contract, totalTricks, bidding)} />
             <button
               type="button"
               onClick={() => onDismiss(tip.id)}

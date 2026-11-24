@@ -147,3 +147,108 @@ test('with "แสดงการประมูล" off, new deals have no auct
   await page.goto('/#/settings');
   await expect(page.getByRole('checkbox', { name: /แสดงการประมูล/ })).not.toBeChecked();
 });
+
+// TASKS M31: the auction's meanings and what the defenders hold (SPEC §8). The same deal with the
+// bidder's own auction: S 1♥, W 2♦ (overcall), N 2♥, all pass — 2♥ by South.
+const BID = '/#/play/GNA8WobYT233o4lpzA/2H?d=S&a=1H-2D-2H-P-P-P';
+
+test('tapping a call shows what it means, with what the defenders probably hold', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto(BID);
+  const auction = page.getByTestId('auction');
+  const meaning = page.getByTestId('auction-meaning');
+  await expect(meaning).toHaveText('แตะ call เพื่อดูความหมาย');
+  const button = auction.getByTestId('auction-call-button');
+  await button.nth(1).click();
+  await expect(button.nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await expect(meaning).toHaveText('2♦ (West) — overcall · 10–16 HCP · ♦ 5 ใบขึ้นไป');
+  // The words that are terms open the glossary sheet without leaving the table.
+  await meaning.locator('[data-term="overcall"]').click();
+  await expect(page.getByTestId('term-sheet')).toContainText('ประมูลแทรก');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('term-sheet')).toHaveCount(0);
+  // A second tap clears it; hovering a call tells the same in its title.
+  await button.nth(1).click();
+  await expect(meaning).toHaveText('แตะ call เพื่อดูความหมาย');
+  await expect(button.nth(2)).toHaveAttribute(
+    'title',
+    'North: 2♥ — raise ดอกของคู่ · 6–10 HCP · ♥ 3 ใบขึ้นไป',
+  );
+
+  // Dummy is face up once West has led: 20 HCP out of sight, West showed 10–16.
+  const inference = page.getByTestId('auction-inference');
+  await expect(inference.locator('[data-seat="W"]')).toHaveText('West: 10–16 HCP · ♦ 5 ใบขึ้นไป', {
+    timeout: 15_000,
+  });
+  await expect(inference.locator('[data-seat="E"]')).toHaveText('East: 4–10 HCP · ♦ ไม่เกิน 4 ใบ');
+  await noSideScroll(page);
+
+  // A folds and opens the table.
+  await page.keyboard.press('a');
+  await expect(auction).toBeHidden();
+  await expect(page.getByTestId('auction-line')).toBeVisible();
+  await page.keyboard.press('a');
+  await expect(auction).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('the summary and the replay show the auction too', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(BID);
+  await expect(page.locator('[data-playable="true"]').first()).toBeVisible({ timeout: 15_000 });
+  await page.getByRole('button', { name: 'Claim' }).click();
+  const dialog = page.getByTestId('claim-dialog');
+  for (let n = 13; n > 0; n--) await dialog.getByRole('button', { name: 'ลด' }).click();
+  await dialog.getByRole('button', { name: 'Claim 0 trick' }).click();
+
+  const result = page.getByTestId('result');
+  await expect(result).toBeVisible();
+  // Folded at first, like the other extras of the summary.
+  await expect(result.getByTestId('auction')).toHaveCount(0);
+  await result.getByTestId('auction-toggle').click();
+  await result.getByTestId('auction-call-button').first().click();
+  await expect(result.getByTestId('auction-meaning')).toContainText('1♥ (South) — เปิดประมูล');
+  await expect(result.getByTestId('auction-inference')).toContainText('West: 10–16 HCP');
+  await noSideScroll(page);
+
+  await result.getByRole('button', { name: 'ดูย้อนหลัง' }).click();
+  const replay = page.getByTestId('replay');
+  await expect(replay.getByTestId('auction-line')).toBeVisible();
+  await replay.getByTestId('auction-toggle').click();
+  await expect(replay.getByTestId('auction-call')).toHaveCount(6);
+  await noSideScroll(page);
+  expect(errors).toEqual([]);
+});
+
+test('beginner mode starts with the auction folded and a tip about the defender who bid', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('seeded')) return;
+    sessionStorage.setItem('seeded', '1');
+    localStorage.setItem(
+      'bridge-trainer.settings.v1',
+      JSON.stringify({ beginnerMode: true, cardPlay: 'tap' }),
+    );
+    localStorage.setItem(
+      'bridge-trainer.learn.v1',
+      JSON.stringify({ welcomed: true, tips: ['contract', 'north-turn'] }),
+    );
+  });
+  await page.goto(BID);
+  await expect(page.getByTestId('auction-line')).toBeVisible();
+  await expect(page.getByTestId('auction')).toHaveCount(0);
+  const tip = page.getByTestId('coach-tip');
+  await expect(tip).toHaveAttribute('data-tip', 'auction');
+  await expect(tip).toContainText('West ประมูล 2♦ — overcall · 10–16 HCP · ♦ 5 ใบขึ้นไป');
+  await noSideScroll(page);
+  await tip.getByTestId('coach-dismiss').click();
+  await expect(tip).toHaveAttribute('data-tip', 'dummy', { timeout: 15_000 });
+  // The tip points at the bar: it opens.
+  await page.getByTestId('auction-toggle').click();
+  await expect(page.getByTestId('auction')).toBeVisible();
+  expect(errors).toEqual([]);
+});

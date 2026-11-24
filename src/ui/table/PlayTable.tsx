@@ -36,6 +36,7 @@ import {
 import { GuidePanel } from '../learn/GuidePanel';
 import { ActionBar } from './ActionBar';
 import { AuctionTable } from './AuctionTable';
+import { useAuctionInfo } from './auctionInfo';
 import { ClaimDialog } from './ClaimDialog';
 import { CoachTipView } from './CoachTip';
 import { useCardPick } from './cardPick';
@@ -85,7 +86,12 @@ function SeatTag({ seat, active, thinking, className }: SeatTagProps) {
  * Keys for the practice tools; ignored while typing or with a modifier held. No `onUndo`: U does
  * nothing (undo is for beginner mode only, M22).
  */
-function useShortcuts(enabled: boolean, onHint: () => void, onUndo?: () => void) {
+function useShortcuts(
+  enabled: boolean,
+  onHint: () => void,
+  onUndo?: () => void,
+  onAuction?: () => void,
+) {
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
@@ -96,12 +102,13 @@ function useShortcuts(enabled: boolean, onHint: () => void, onUndo?: () => void)
       // `code` is the physical key, so H / U also work with the Thai keyboard layout.
       if (e.code === 'KeyH') onHint();
       else if (e.code === 'KeyU' && onUndo) onUndo();
+      else if (e.code === 'KeyA' && onAuction) onAuction();
       else return;
       e.preventDefault();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [enabled, onHint, onUndo]);
+  }, [enabled, onHint, onUndo, onAuction]);
 }
 
 function reviewStatus(complete: boolean, failed: boolean): ReviewStatus {
@@ -201,10 +208,24 @@ export function PlayTable() {
   const onCloseReplay = useCallback(() => setReplayTrick(null), []);
   const onCloseGuide = useCallback(() => setGuide(null), []);
   const onDismissTip = useCallback((id: string) => learnStore.getState().dismissTip(id), []);
+  // The auction is open until the player's first card (folded from the start in beginner mode,
+  // M31), unless they opened or closed it during this hand.
+  const playerPlayed =
+    play?.plays.slice(state.startPlays).some((p) => sideOf(p.seat) === 'NS') ?? false;
+  const auctionOpen =
+    auctionToggle?.serial === state.handSerial ? auctionToggle.open : !beginner && !playerPlayed;
+  const dummyUp = plays > 0 || studyMode;
+  const auctionInfo = useAuctionInfo(hand, dummyUp);
+  const handSerial = state.handSerial;
+  const onToggleAuction = useCallback(
+    () => setAuctionToggle({ serial: handSerial, open: !auctionOpen }),
+    [handSerial, auctionOpen],
+  );
   useShortcuts(
     !claimOpen && !dealing && replayTrick === null && guide === null,
     onKeyHint,
     beginner ? onKeyUndo : undefined,
+    hand?.auction && !over ? onToggleAuction : undefined,
   );
 
   if (!hand || !play) return null;
@@ -251,12 +272,8 @@ export function PlayTable() {
       }
     : undefined;
   const blockedText = blocked?.at === plays ? blocked.text : null;
-  const tip = beginner && !over ? coachTip(play, dismissedTips) : null;
+  const tip = beginner && !over ? coachTip(play, dismissedTips, hand.auction) : null;
   const active = (s: Seat) => !trickPause && !over && seat === s;
-  // The auction is open until the player's first card, unless they opened or closed it.
-  const playerPlayed = play.plays.slice(state.startPlays).some((p) => sideOf(p.seat) === 'NS');
-  const auctionOpen =
-    auctionToggle?.serial === state.handSerial ? auctionToggle.open : !playerPlayed;
 
   let status = '';
   if (over) status = '';
@@ -319,12 +336,14 @@ export function PlayTable() {
         </div>
       )}
 
-      {hand.auction && (
+      {hand.auction && auctionInfo && (
         <AuctionTable
+          key={state.handSerial}
           auction={hand.auction}
           vulnerability={hand.vulnerability}
+          info={auctionInfo}
           open={auctionOpen}
-          onToggle={() => setAuctionToggle({ serial: state.handSerial, open: !auctionOpen })}
+          onToggle={onToggleAuction}
         />
       )}
 
@@ -339,6 +358,11 @@ export function PlayTable() {
             contract={play.contract}
             totalTricks={total}
             onDismiss={onDismissTip}
+            bidding={
+              hand.auction && auctionInfo
+                ? { auction: hand.auction, meanings: auctionInfo.meanings }
+                : undefined
+            }
           />
           <div className="table-cards flex flex-1 flex-col justify-between gap-2 p-2 sm:gap-3 sm:p-4">
             <section
@@ -353,7 +377,7 @@ export function PlayTable() {
             >
               {/* Wider screens: name tags in the corner, to save height. */}
               <SeatTag seat="N" active={active('N')} className="sm:absolute sm:top-2 sm:left-3" />
-              {plays > 0 || studyMode ? (
+              {dummyUp ? (
                 <DummyHand
                   cards={hands.N}
                   trump={trump}
@@ -457,6 +481,7 @@ export function PlayTable() {
           hand={hand}
           contract={play.contract}
           vulnerability={hand.vulnerability}
+          auctionInfo={auctionInfo}
           review={review}
           reviewStatus={reviewStatus(review.complete, reviewFailed)}
           claimed={claimed !== null}
@@ -473,6 +498,9 @@ export function PlayTable() {
       {review && replayTrick !== null && (
         <ReplayView
           play={play}
+          auction={hand.auction}
+          vulnerability={hand.vulnerability}
+          auctionInfo={auctionInfo}
           analyses={analyses}
           review={review}
           claimed={claimed}

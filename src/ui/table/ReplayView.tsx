@@ -1,14 +1,16 @@
 // Replay of the hand, one trick at a time (SPEC §7.5): all four hands as they stood before the
 // trick, the trick itself, where the player lost tricks in it, and "play again from here".
 
-import { useEffect, useRef } from 'react';
-import type { Card, PlayState, Seat } from '../../engine';
+import { useEffect, useRef, useState } from 'react';
+import type { Auction, Card, PlayState, Seat, Vulnerability } from '../../engine';
 import { completedTricks, remainingHands, sameCard, toPlay, tricksWon } from '../../engine';
 import type { CardAnalysis } from '../../solver';
 import type { HandReview } from '../../game/review';
 import { ddValueAt, replayTrickCount } from '../../game/review';
 import type { Messages } from '../../i18n';
 import { useT } from '../gameStore';
+import type { AuctionInfo } from './auctionInfo';
+import { AuctionTable } from './AuctionTable';
 import type { CardMark } from './hands';
 import { OpenHand } from './hands';
 import { SEAT_NAME } from './labels';
@@ -17,6 +19,10 @@ import { TrickArea } from './TrickArea';
 
 type ReplayViewProps = {
   play: PlayState;
+  /** The hand's auction (M31), folded above the tricks. */
+  auction?: Auction;
+  vulnerability: Vulnerability;
+  auctionInfo?: AuctionInfo | null;
   analyses: Readonly<Record<number, readonly CardAnalysis[]>>;
   review: HandReview;
   /** NS tricks of an accepted claim, or null. */
@@ -58,6 +64,7 @@ export function ReplayView(props: ReplayViewProps) {
   const lossTricks = new Set(review.losses.map((l) => l.trick));
 
   const next = useRef<HTMLButtonElement>(null);
+  const [auctionOpen, setAuctionOpen] = useState(false);
   useEffect(() => next.current?.focus({ preventScroll: true }), []);
 
   useEffect(() => {
@@ -123,6 +130,16 @@ export function ReplayView(props: ReplayViewProps) {
           NS {won.NS} · EW {won.EW}
         </span>
       </header>
+
+      {props.auction && props.auctionInfo && (
+        <AuctionTable
+          auction={props.auction}
+          vulnerability={props.vulnerability}
+          info={props.auctionInfo}
+          open={auctionOpen}
+          onToggle={() => setAuctionOpen((o) => !o)}
+        />
+      )}
 
       <nav
         aria-label={t.replay.pickTrick}

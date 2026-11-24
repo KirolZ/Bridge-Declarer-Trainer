@@ -7,6 +7,7 @@ import type { Card, IllegalReason, Seat, Suit, SuitOrder, Vulnerability } from '
 import { SUIT_INFO, rankLabel } from '../engine';
 import type { StoreMessage } from '../game/playStore';
 import type { BotSpeed, CardPlay, ContractType, Difficulty } from '../game/settings';
+import type { Forcing, MeaningName } from '../bidding';
 
 type Option = { readonly label: string; readonly note?: string };
 
@@ -246,6 +247,72 @@ export const th = {
     vulnerableSeat: 'vul',
   },
 
+  /**
+   * The meaning of a call and what the defenders hold (SPEC §6.5, §8 — M31), in guide markup:
+   * `[[term]]` opens the glossary, `{H}` is a suit symbol.
+   */
+  meaning: {
+    name: {
+      opening: '[[opening|เปิดประมูล]]',
+      strongTwoClubs: 'เปิด 2{C} มือแรงมาก',
+      weakTwo: '[[weak-two|weak two]]',
+      preempt: '[[preempt]]',
+      raise: '[[raise]] ดอกของคู่',
+      preference: 'กลับไปดอกของคู่',
+      limitRaise: '[[raise|limit raise]] (ชวนไป game)',
+      preemptiveRaise: '[[raise]] ข้ามระดับแบบ [[preempt]]',
+      newSuit: 'ดอกใหม่',
+      twoOverOne: '[[two-over-one|2/1]] ดอกใหม่ระดับ 2',
+      jumpShift: '[[jump-shift|jump shift]]',
+      reverse: '[[reverse]]',
+      rebid: '[[rebid]] ดอกเดิม',
+      notrump: '[[nt|NT]]',
+      stayman: '[[stayman|Stayman]] ถามว่ามี {H} หรือ {S} 4 ใบไหม',
+      staymanReply: 'ตอบ [[stayman|Stayman]]',
+      transfer: '[[transfer]] ให้คู่ประมูลดอกถัดไป',
+      transferAccept: 'รับ [[transfer]]',
+      waiting: 'ตอบรอดูมือ',
+      blackwood: '[[blackwood|Blackwood]] ถามจำนวน A',
+      aceReply: 'ตอบจำนวน A',
+      invite: 'ชวนคู่ไปต่อ',
+      game: '[[game]]',
+      slam: '[[slam]]',
+      signoff: 'หยุดที่นี่',
+      overcall: '[[overcall]]',
+      weakJumpOvercall: '[[overcall]] กระโดดแบบมือเบา',
+      notrumpOvercall: '[[overcall]] [[nt|NT]]',
+      takeoutDouble: '[[takeout-double|takeout double]]',
+      advance: 'ตอบคู่ที่แทรกประมูล',
+      compete: 'แย่ง [[partscore]]',
+      pass: '[[pass|Pass]]',
+    } satisfies Record<MeaningName, string>,
+    none: 'ระบบไม่มีคำอธิบายของ call นี้',
+    hcp: (range: string) => `${range} [[hcp|HCP]]`,
+    /** Cards of a suit, from `min` to `max` (null: no limit). */
+    cards: (suit: Suit, min: number, max: number | null) =>
+      max === 0
+        ? `ไม่มี {${suit}}`
+        : max === null
+          ? `{${suit}} ${min} ใบขึ้นไป`
+          : min === max
+            ? `{${suit}} ${min} ใบ`
+            : min === 0
+              ? `{${suit}} ไม่เกิน ${max} ใบ`
+              : `{${suit}} ${min}–${max} ใบ`,
+    balanced: 'มือ [[balanced]]',
+    aces: (counts: readonly number[]) => `A ${counts.join(' หรือ ')} ใบ`,
+    stoppers: (suits: readonly Suit[]) =>
+      `มี[[stopper|ใบกั้น]]ใน ${suits.map((s) => `{${s}}`).join(' ')}`,
+    forcing: { round: 'บังคับคู่ประมูลต่อ', game: 'บังคับถึง [[game]]' } as Record<Forcing, string>,
+    artificial: 'ไม่ได้บอกว่ามีดอกที่ประมูล',
+    /** The detail line: "2♥ (East) — …" */
+    call: (call: string, seat: Seat) => `${call} (${SEAT[seat]})`,
+    pick: 'แตะ call เพื่อดูความหมาย',
+    inferTitle: 'ฝั่งป้องกันน่าจะมี',
+    inferNote: 'จากการประมูล + ไพ่ที่คุณเห็น',
+    nothing: 'การประมูลไม่ได้บอกอะไร',
+  },
+
   /** Beginner-mode tips on the table (SPEC §7.8), in guide markup. */
   coach: {
     who: (seat: Seat): string =>
@@ -264,6 +331,8 @@ export const th = {
     nextLead: (who: string) => ` · ${who} นำ trick ถัดไป`,
     dummy: 'North คือ [[dummy]] — หงายไพ่ให้ทุกคนเห็น และ**คุณเป็นคนเลือก**ทุกใบที่มือนี้ลง',
     northTurn: 'ตอนนี้ถึงตา dummy — กดไพ่ของ **North ด้านบน**',
+    auction: (who: string, call: string, meaning: string) =>
+      `${who} ประมูล ${call} — ${meaning} · [[auction|การประมูล]]ช่วยเดาว่าไพ่ที่คุณไม่เห็นอยู่ที่ใคร แตะแถบ**การประมูล**ด้านบนเพื่อดูทุก call`,
   },
 
   claim: {
