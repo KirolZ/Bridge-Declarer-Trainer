@@ -60,10 +60,18 @@ export type Block<T extends Text = Rich> =
       /** Shown in the middle when given (left out before trumps are taught). */
       readonly trump?: Strain;
       readonly caption?: T;
-    };
+    }
+  /** An auction table (M32): tap a call for its meaning, as on the game table. */
+  | ({ readonly kind: 'auction'; readonly caption?: T } & AuctionExample);
+
+/**
+ * An auction as written in a hand link (SPEC §4.4): the dealer and the calls, e.g. `1H-P-4H-P-P-P`.
+ * Nobody vulnerable. The meanings come from the game's own system (src/bidding).
+ */
+export type AuctionExample = { readonly dealer: Seat; readonly calls: string };
 
 export type Chapter<T extends Text = Rich> = {
-  /** 1–14, also the URL: `#/learn/<n>`. */
+  /** 1–15, also the URL: `#/learn/<n>`. Listed in reading order, so 15 comes before 14. */
   readonly n: number;
   readonly title: T;
   /** One line for the chapter list. */
@@ -121,6 +129,8 @@ type ExerciseCommon<T extends Text> = {
   readonly explanation: T;
   /** A nudge shown on request. */
   readonly hint: T;
+  /** The auction the question is about, shown under the instruction (M32). */
+  readonly auction?: AuctionExample;
 };
 
 /** A position on the table: hands of equal size, trump, first leader, cards already played. */
@@ -170,6 +180,11 @@ export type PlayExercise<T extends Text = Rich> = ExerciseCommon<T> &
     /** NS cards of a winning line, in order ("show the answer" plays these). */
     readonly solution: readonly string[];
     readonly wrong: readonly WrongCard<T>[];
+    /**
+     * West's and East's cards stay face down until the end (M32): the exercise is about telling
+     * where a card is from the auction, which open hands would give away.
+     */
+    readonly hideDefenders?: boolean;
   };
 
 export type Exercise<T extends Text = Rich> =

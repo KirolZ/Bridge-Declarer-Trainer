@@ -428,7 +428,7 @@ export const en: Messages = {
     rulesDoneNote:
       'The playing technique in chapters 7–13 can wait until you have played a few hands. While you play, the ? button on the table opens the guide at any time.',
     backToChapters: 'Back to the chapters',
-    quickNote: 'No time for 14 chapters? Two minutes and you can play.',
+    quickNote: 'No time for 15 chapters? Two minutes and you can play.',
     quickDone: 'That is all you need to play',
     quickDoneNote:
       'Once you have played a few hands and want the details, the full guide is always there: the rules in chapters 1–6, playing technique in chapters 7–13.',

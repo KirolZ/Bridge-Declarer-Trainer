@@ -37,7 +37,7 @@ test('first visit: "never played" opens the quick guide with beginner mode on (M
   await page.goto('/');
   await expect(page.getByTestId('welcome')).toBeVisible();
   await expect(page.getByRole('button', { name: 'เริ่มเล่น', exact: true })).toHaveCount(0);
-  await expect(page.getByTestId('home-guide-progress')).toHaveText('0/14 บท');
+  await expect(page.getByTestId('home-guide-progress')).toHaveText('0/15 บท');
   await noSideScroll(page);
 
   await expect(page.getByTestId('welcome')).toContainText('เริ่มจากคู่มือ + โหมดมือใหม่');
@@ -68,8 +68,8 @@ test('first visit: "never played" opens the quick guide with beginner mode on (M
   await page.goto('/');
   await expect(page.getByTestId('welcome')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'เริ่มเล่น', exact: true })).toBeVisible();
-  // The quick guide is not one of the 14 chapters.
-  await expect(page.getByTestId('home-guide-progress')).toHaveText('0/14 บท');
+  // The quick guide is not one of the 15 chapters.
+  await expect(page.getByTestId('home-guide-progress')).toHaveText('0/15 บท');
   expect(errors).toEqual([]);
 });
 
@@ -114,7 +114,7 @@ test('beginner mode: tips, why a card cannot be played, the ? panel, the score e
   // The chapter picker groups the chapters by part (M21).
   await expect(panel.locator('optgroup')).toHaveCount(3);
   await expect(panel.locator('optgroup').first()).toHaveAttribute('label', 'กฎการเล่น');
-  await expect(panel.locator('optgroup[label="เทคนิคการเล่น"] option')).toHaveCount(7);
+  await expect(panel.locator('optgroup[label="เทคนิคการเล่น"] option')).toHaveCount(8);
   await panel.getByRole('button', { name: 'บทถัดไป →' }).click();
   await expect(panel).toHaveAttribute('data-chapter', '6');
   await noSideScroll(page);

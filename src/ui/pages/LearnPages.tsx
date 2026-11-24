@@ -9,6 +9,7 @@ import type { Chapter, Exercise, Part } from '../../learn';
 import {
   CHAPTERS,
   EXERCISES,
+  chapterNextTo,
   chapterOf,
   exerciseById,
   exercisesOf,
@@ -23,6 +24,7 @@ import { DealingOverlay } from '../DealingOverlay';
 import { Blocks } from '../learn/examples';
 import { AnswerExerciseView, LegalExerciseView, PRIMARY, SECONDARY } from '../learn/ExerciseViews';
 import { PlayExerciseView } from '../learn/PlayExerciseView';
+import { AuctionExampleView } from '../learn/AuctionExampleView';
 import { Rich, TermSheetProvider } from '../learn/Rich';
 import { NotSavedNotice, PageHeader } from './PageHeader';
 
@@ -399,8 +401,8 @@ export function LessonPage() {
 
   if (!chapter) return <NotFound what={t.learn.thisChapter} />;
   const exercises = exercisesOf(n, lang);
-  const prev = chapterOf(n - 1, lang);
-  const next = chapterOf(n + 1, lang);
+  const prev = chapterNextTo(n, -1, lang);
+  const next = chapterNextTo(n, 1, lang);
 
   return (
     <TermSheetProvider>
@@ -521,7 +523,7 @@ export function ExercisePage() {
   const siblings = exercisesOf(ex.chapter);
   const i = siblings.findIndex((e) => e.id === ex.id);
   const next = siblings[i + 1];
-  const nextChapter = chapterOf(ex.chapter + 1);
+  const nextChapter = chapterNextTo(ex.chapter, 1);
 
   return (
     <TermSheetProvider>
@@ -550,6 +552,8 @@ export function ExercisePage() {
             )}
           </div>
         </section>
+
+        {ex.auction && <AuctionExampleView key={`a${ex.id}`} example={ex.auction} />}
 
         <ExerciseBody key={ex.id} ex={ex} onPass={onPass} />
 

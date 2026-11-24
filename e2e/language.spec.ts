@@ -151,7 +151,7 @@ test('the quick guide in English (M25)', async ({ page }) => {
   const errors = collectErrors(page);
   await switchToEnglish(page);
   await page.goto('/#/learn');
-  await expect(page.getByTestId('quick-guide-link')).toContainText('No time for 14 chapters?');
+  await expect(page.getByTestId('quick-guide-link')).toContainText('No time for 15 chapters?');
   await page.getByTestId('quick-guide-link').click();
   await expect(page.getByRole('heading', { name: 'Quick guide', level: 1 })).toBeVisible();
   await expect(page.getByTestId('quick-guide')).toContainText(
@@ -197,14 +197,14 @@ test('the guide in English: chapters, terms, the four kinds of exercise, glossar
 
   await page.goto('/#/learn');
   await expect(page.locator('[data-chapter="1"]')).toContainText('What is bridge?');
-  await expect(page.getByTestId('learn-progress')).toContainText('Read 0/14 chapters');
+  await expect(page.getByTestId('learn-progress')).toContainText('Read 0/15 chapters');
   // The parts of the guide (M21), technique folded.
   await expect(page.getByRole('heading', { name: 'The rules' })).toBeVisible();
   await expect(page.locator('[data-part="rules"]')).toContainText('0/6 read');
-  await expect(page.getByTestId('part-toggle')).toContainText('Show 7 chapters');
+  await expect(page.getByTestId('part-toggle')).toContainText('Show 8 chapters');
   await noThai(page);
   await page.getByTestId('part-toggle').click();
-  await expect(page.locator('[data-chapter]')).toHaveCount(14);
+  await expect(page.locator('[data-chapter]')).toHaveCount(15);
   await noThai(page);
 
   // A lesson, and a term opened from it: no Thai gloss on the English screens.

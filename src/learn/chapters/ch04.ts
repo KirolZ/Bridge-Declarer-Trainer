@@ -68,8 +68,8 @@ export const CH4: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'ในเกมจริง ก่อนเล่นไพ่ทั้ง 4 คนจะผลัดกันเสนอ contract แข่งกัน เรียกว่า [[auction|การประมูล]] (auction หรือ bidding) ฝั่งที่เสนอสูงสุดได้ contract นั้นไปเล่น',
-        en: 'In a real game, before any card is played, the 4 players take turns offering contracts against each other. This is the [[auction]] (or bidding). The side that offers the highest contract gets to play it.',
+        th: 'ในเกมจริง ก่อนเล่นไพ่ทั้ง 4 คนจะผลัดกันเสนอ contract แข่งกัน เรียกว่า [[auction|การประมูล]] (auction หรือ bidding) ฝั่งที่เสนอสูงสุดได้ contract นั้นไปเล่น และคนแรกของฝั่งนั้นที่เอ่ยดอกของ contract เป็นคนเล่น (บท 5 และบท 15)',
+        en: 'In a real game, before any card is played, the 4 players take turns offering contracts against each other. This is the [[auction]] (or bidding). The side that offers the highest contract gets to play it, and the first player of that side to name the suit of the contract plays it (chapters 5 and 15).',
       },
     },
     {

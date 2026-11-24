@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { SEATS, parseHand, trickWinner } from '../engine';
-import { CHAPTERS, PARTS, chaptersIn, partOf, partsIn } from './chapters';
+import { CHAPTERS, PARTS, chapterNextTo, chaptersIn, partOf, partsIn } from './chapters';
 import { trickPlays } from './exercise';
 import { EXERCISES, exercisesIn } from './exercises';
 import { GLOSSARY, glossaryEntry, glossaryIn } from './glossary';
@@ -138,8 +138,13 @@ function blockTexts(b: Block): string[] {
 }
 
 describe('chapters', () => {
-  it('are numbered 1–14 in order, each with a title and topic', () => {
-    expect(CHAPTERS.map((c) => c.n)).toEqual(Array.from({ length: 14 }, (_, i) => i + 1));
+  it('are numbered 1–15, in reading order (15 is read before 14, M32), each with a title and topic', () => {
+    expect(CHAPTERS.map((c) => c.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 14]);
+    expect(chapterNextTo(13, 1)?.n).toBe(15);
+    expect(chapterNextTo(15, 1)?.n).toBe(14);
+    expect(chapterNextTo(14, -1)?.n).toBe(15);
+    expect(chapterNextTo(14, 1)).toBeUndefined();
+    expect(chapterNextTo(1, -1)).toBeUndefined();
     for (const c of CHAPTERS) {
       expect(c.title.trim()).not.toBe('');
       expect(c.topic.trim()).not.toBe('');
@@ -158,7 +163,8 @@ describe('chapters', () => {
     expect(partOf(6)?.id).toBe('rules');
     expect(partOf(7)?.id).toBe('technique');
     expect(partOf(14)?.id).toBe('app');
-    expect(partOf(15)).toBeUndefined();
+    expect(partOf(15)?.id).toBe('technique');
+    expect(partOf(16)).toBeUndefined();
     expect(partsIn('en').map((p) => [p.id, p.chapters])).toEqual(
       PARTS.map((p) => [p.id, p.chapters]),
     );

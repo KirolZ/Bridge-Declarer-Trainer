@@ -1,5 +1,5 @@
 // The quick guide (M25): one short page with just enough to play the first hand, for players who
-// will not read six chapters first. The full guide (chapters 1–14) stays as it is; this page
+// will not read six chapters first. The full guide (chapters 1–15) stays as it is; this page
 // links to it. Same blocks and markup as a chapter, so the guide's content tests cover it too.
 
 import { localize, perLanguage } from './localize';

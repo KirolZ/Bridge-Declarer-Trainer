@@ -1,5 +1,5 @@
 // Play an end position out against the double-dummy defenders (SPEC §7.7). All four hands are
-// open (a double-dummy problem); the player plays North and South. On a miss it names the card
+// open (a double-dummy problem) unless the exercise hides the defenders' until the end (M32); the player plays North and South. On a miss it names the card
 // that lost the goal; "show the answer" steps through a winning line one card at a time.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -25,7 +25,7 @@ import { getSolver } from '../../worker';
 import type { Messages } from '../../i18n';
 import { exerciseStore, useExercise, useT } from '../gameStore';
 import type { CardMode, PlayHandler } from '../table/hands';
-import { CardText, DummyHand, FannedHand, OpenHand } from '../table/hands';
+import { CardText, DummyHand, FannedHand, HiddenHand, OpenHand } from '../table/hands';
 import { SEAT_NAME } from '../table/labels';
 import { CardList } from '../table/ResultPanel';
 import type { CardPick } from '../table/cardPick';
@@ -46,6 +46,8 @@ type BoardProps = {
   pick?: CardPick;
   /** Remounts the trick area (no animation after a restart). */
   trickKey: string | number;
+  /** The defenders' cards face down (exercises about placing the missing cards, M32). */
+  hideDefenders?: boolean;
 };
 
 const idle = () => (): CardMode => 'idle';
@@ -84,6 +86,7 @@ function Board({
   onPlay = () => {},
   pick,
   trickKey,
+  hideDefenders = false,
 }: BoardProps) {
   const t = useT();
   const done = completedTricks(play);
@@ -121,7 +124,11 @@ function Board({
               className={`flex flex-col items-center gap-1 ${s === 'E' ? 'order-3' : ''}`}
             >
               <SeatLabel seat={s} active={active === s} thinking={active === s && thinking} />
-              <OpenHand cards={hands[s]} trump={trump} label={SEAT_NAME[s]} />
+              {hideDefenders ? (
+                <HiddenHand count={hands[s].length} label={SEAT_NAME[s]} />
+              ) : (
+                <OpenHand cards={hands[s]} trump={trump} label={SEAT_NAME[s]} />
+              )}
             </section>
           ))}
           <div className="order-2 flex justify-center">
@@ -383,6 +390,7 @@ export function PlayExerciseView({ ex, onPass }: { ex: PlayExercise; onPass: () 
         onPlay={onPlay}
         pick={pick}
         trickKey={epoch}
+        hideDefenders={ex.hideDefenders === true && !over}
       />
       {!over && (
         <p

@@ -974,6 +974,94 @@ const SOURCE: readonly Exercise<Bilingual>[] = [
       en: 'What does the summary compare your play with?',
     },
   },
+  // ---------- Chapter 15: reading the auction (M32) ----------
+  {
+    id: 'ch15-who-declares',
+    chapter: 15,
+    kind: 'choice',
+    title: { th: 'ใครเป็น declarer?', en: 'Who is declarer?' },
+    auction: { dealer: 'N', calls: '1H-P-4H-P-P-P' },
+    instruction: {
+      th: 'การประมูลข้างล่างจบที่ 4{H} — ใครเป็น [[declarer]]?',
+      en: 'The auction below ends in 4{H}. Who is [[declarer]]?',
+    },
+    options: [
+      { th: 'North', en: 'North' },
+      { th: 'South', en: 'South' },
+      { th: 'East', en: 'East' },
+      { th: 'West', en: 'West' },
+    ],
+    answer: 0,
+    hint: {
+      th: 'ไม่ใช่คนที่ประมูลครั้งสุดท้าย — ดูว่าในฝั่ง NS ใครเอ่ย {H} ก่อน',
+      en: 'Not the player who bid last: look at who in NS named {H} first.',
+    },
+    explanation: {
+      th: 'North เปิด 1{H} เป็นคนแรกของฝั่ง NS ที่เอ่ย {H} จึงเป็น declarer แม้ South จะประมูล 4{H} เป็นคนสุดท้าย (South เป็น dummy) — ในเกมนี้ ถ้าการประมูลออกมาแบบนี้ เกมจะหมุนโต๊ะครึ่งรอบให้คุณเป็น South ที่เล่น',
+      en: 'North opened 1{H}: the first player of NS to name {H}, so North is declarer, even though South bid 4{H} last (South is dummy). In this game, an auction like this one is turned round so that you, South, play it.',
+    },
+  },
+  {
+    id: 'ch15-count-points',
+    chapter: 15,
+    kind: 'choice',
+    title: { th: 'นับแต้มของ West', en: "Count West's points" },
+    auction: { dealer: 'E', calls: '1H-1S-P-2S-P-P-P' },
+    instruction: {
+      th: 'dummy หงายแล้ว South กับ North มีรวม 22 [[hcp|HCP]] — West มี HCP ได้**มากที่สุด**กี่แต้ม?',
+      en: 'Dummy is face up, and South and North hold 22 [[hcp|HCP]] between them. What is the **most** West can hold?',
+    },
+    options: [
+      { th: '6', en: '6' },
+      { th: '12', en: '12' },
+      { th: '18', en: '18' },
+      { th: '22', en: '22' },
+    ],
+    answer: 0,
+    hint: {
+      th: 'ทั้งสำรับมี 40 HCP — ที่เหลือจาก 22 อยู่ที่ West + East และ East เปิด 1{H} ต้องมีอย่างน้อยเท่าไหร่?',
+      en: 'The pack holds 40 HCP. What is left after 22 is with West + East, and how many does East need to open 1{H}?',
+    },
+    explanation: {
+      th: '40 − 22 = 18 HCP อยู่ที่ West + East · East เปิด 1{H} = อย่างน้อย 12 · West จึงมีได้ไม่เกิน 18 − 12 = **6** (และ East มีได้ถึง 18 ถ้า West ไม่มีเลย)',
+      en: '40 − 22 = 18 HCP are with West + East · East opened 1{H}: at least 12 · so West holds at most 18 − 12 = **6** (and East up to 18 if West has none).',
+    },
+  },
+  {
+    id: 'ch15-two-way-finesse',
+    chapter: 15,
+    kind: 'play',
+    title: { th: '{SQ} อยู่ที่ใคร?', en: 'Where is the {SQ}?' },
+    auction: { dealer: 'E', calls: '1N-2H-P-P-P' },
+    hands: { N: 'K32.A..', E: 'Q65.Q..', S: 'AJ4.3..', W: 'T98.2..' },
+    trump: 'H',
+    leader: 'S',
+    goal: { nsTricks: 4 },
+    hideDefenders: true,
+    instruction: {
+      th: '[[trump]] คือ {H} · South เป็นคนนำ · ต้องได้**ครบ 4 trick** — {SQ} หายไป และจะ [[finesse]] ได้ทั้งสองทาง ตอนเริ่มมือ South กับ North มีรวม 24 [[hcp|HCP]] และ East เปิด 1NT',
+      en: '[[trump|Trumps]] are {H} · South leads · you need **all 4 tricks** — the {SQ} is missing and you can [[finesse]] either way. At the start of the hand South and North held 24 [[hcp|HCP]], and East opened 1NT.',
+    },
+    hint: {
+      th: '40 − 24 = 16 HCP อยู่ที่ West + East และ East เปิด 1NT (15–17) — West มีได้กี่แต้ม? {SQ} (2 แต้ม) จึงอยู่ที่ใคร',
+      en: '40 − 24 = 16 HCP are with West + East, and East opened 1NT (15–17). How many can West hold? So who has the {SQ} (2 points)?',
+    },
+    explanation: {
+      th: '16 HCP ที่ไม่ได้อยู่ในมือคุณกับ dummy — East เปิด 1NT อย่างน้อย 15 · West จึงมีไม่เกิน 1 แต้ม และถือ {SQ} (2 แต้ม) ไม่ได้: {SQ} อยู่กับ East ไป North ด้วย {H3} ถึง {HA} แล้วนำ {S2} เข้าหา {SA}{SJ} ถ้า East ลงใบเล็ก South ลง {SJ} กิน จากนั้น {SA} กับ {SK} เก็บที่เหลือ',
+      en: 'Only 16 HCP are not in your hand or dummy, and East opened 1NT with at least 15, so West holds at most 1 point and cannot have the {SQ} (2 points): the {SQ} is with East. Go to North with {H3} to {HA}, then lead {S2} towards {SA}{SJ}; when East plays low, South plays {SJ} and wins, and {SA} and {SK} take the rest.',
+    },
+    solution: ['H3', 'HA', 'S2', 'SJ', 'SA', 'S3', 'S4', 'SK'],
+    wrong: [
+      {
+        at: 0,
+        card: 'SJ',
+        why: {
+          th: 'นำ {SJ} จาก South คือ finesse ทาง West (หวังว่า West มี {SQ}) แต่ West มีได้ไม่เกิน 1 แต้ม — {SQ} อยู่กับ East และจะได้กินหนึ่ง trick',
+          en: 'Leading {SJ} from South is a finesse against West (hoping West holds the {SQ}), but West holds at most 1 point: the {SQ} is with East and will win a trick.',
+        },
+      },
+    ],
+  },
 ];
 
 /** Every exercise in one language. */

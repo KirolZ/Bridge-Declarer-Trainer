@@ -39,7 +39,7 @@ test('chapter list, a lesson with terms and examples, progress kept', async ({ p
   const errors = collectErrors(page);
   await page.goto('/');
   await page.getByRole('link', { name: 'คู่มือ' }).click();
-  await expect(page.getByTestId('learn-progress')).toContainText('อ่านแล้ว 0/14 บท');
+  await expect(page.getByTestId('learn-progress')).toContainText('อ่านแล้ว 0/15 บท');
   // A new player sees the rules and chapter 14; the technique part is folded (M21).
   await expect(page.locator('[data-chapter]')).toHaveCount(7);
   await noSideScroll(page);
@@ -68,7 +68,7 @@ test('chapter list, a lesson with terms and examples, progress kept', async ({ p
   await expect(page.locator('[data-term-entry="discard"]')).toHaveAttribute('data-focus', 'true');
 
   await page.goto('/#/learn');
-  await expect(page.getByTestId('learn-progress')).toContainText('อ่านแล้ว 1/14 บท');
+  await expect(page.getByTestId('learn-progress')).toContainText('อ่านแล้ว 1/15 บท');
   await page.reload();
   await expect(page.locator('[data-chapter="2"]')).toHaveAttribute('data-read', 'true');
   expect(errors).toEqual([]);
@@ -93,17 +93,17 @@ test('the chapter list in parts: rules, technique folded until the rules are rea
   const toggle = page.getByTestId('part-toggle');
   await expect(technique.getByRole('heading', { name: 'เทคนิคการเล่น' })).toBeVisible();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(toggle).toContainText('ดู 7 บท');
+  await expect(toggle).toContainText('ดู 8 บท');
   await expect(technique.locator('[data-chapter]')).toHaveCount(0);
   await noSideScroll(page);
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(technique.locator('[data-chapter]')).toHaveCount(7);
+  await expect(technique.locator('[data-chapter]')).toHaveCount(8);
   // Opened by hand, it stays open after a chapter and back.
   await technique.locator('[data-chapter="8"]').click();
-  await expect(page.getByText('บทที่ 8 / 14 · เทคนิคการเล่น')).toBeVisible();
+  await expect(page.getByText('บทที่ 8 / 15 · เทคนิคการเล่น')).toBeVisible();
   await page.getByRole('link', { name: 'กลับไปรายการบท' }).first().click();
-  await expect(technique.locator('[data-chapter]')).toHaveCount(7);
+  await expect(technique.locator('[data-chapter]')).toHaveCount(8);
   await toggle.click();
   await expect(technique.locator('[data-chapter]')).toHaveCount(0);
 
@@ -117,8 +117,8 @@ test('the chapter list in parts: rules, technique folded until the rules are rea
   await page.reload();
   await expect(rules).toContainText('อ่านแล้ว 6/6');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(technique.locator('[data-chapter]')).toHaveCount(7);
-  await expect(page.locator('[data-chapter]')).toHaveCount(14);
+  await expect(technique.locator('[data-chapter]')).toHaveCount(8);
+  await expect(page.locator('[data-chapter]')).toHaveCount(15);
   await noSideScroll(page);
   expect(errors).toEqual([]);
 });
@@ -129,7 +129,7 @@ test('the last rules chapter says the rules are enough, and deals a hand (M21)',
   test.setTimeout(60_000);
   const errors = collectErrors(page);
   await page.goto('/#/learn/5');
-  await expect(page.getByText('บทที่ 5 / 14 · กฎการเล่น')).toBeVisible();
+  await expect(page.getByText('บทที่ 5 / 15 · กฎการเล่น')).toBeVisible();
   await expect(page.getByTestId('rules-done')).toHaveCount(0);
   await page.goto('/#/learn/6');
   const done = page.getByTestId('rules-done');
@@ -278,9 +278,53 @@ test('guide pages fit a 360 px phone', async ({ page }) => {
     '/#/learn/2',
     '/#/learn/glossary',
     '/#/learn/ex/ch10-finesse-aq',
+    '/#/learn/15',
+    '/#/learn/ex/ch15-two-way-finesse',
   ]) {
     await page.goto(path);
     await expect(page.locator('main')).toBeVisible();
     await noSideScroll(page);
   }
+});
+
+// TASKS M32: chapter 15 (reading the auction) sits in the technique part after 13, shows auction
+// tables whose calls explain themselves, and its exercises come with the auction they ask about.
+test('chapter 15: auction examples, then the exercises with their auction', async ({ page }) => {
+  test.setTimeout(90_000);
+  const errors = collectErrors(page);
+  await page.goto('/#/learn/13');
+  await page.getByRole('link', { name: /บทถัดไป/ }).click();
+  await expect(page).toHaveURL(/#\/learn\/15$/);
+  await expect(page.getByText('บทที่ 15 / 15 · เทคนิคการเล่น')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'อ่านการประมูล' })).toBeVisible();
+
+  // The first example: tap North's 4♥ and read what it shows.
+  const example = page.getByTestId('guide-auction').first();
+  await example.getByTestId('auction-call-button').nth(2).click();
+  await expect(example.getByTestId('auction-meaning')).toContainText('4♥ (North)');
+  await noSideScroll(page);
+
+  // Who declares: North named ♥ first.
+  await page.goto('/#/learn/ex/ch15-who-declares');
+  await expect(page.getByTestId('guide-auction')).toBeVisible();
+  await page.getByRole('button', { name: 'South', exact: true }).click();
+  await expect(page.getByTestId('feedback')).toHaveAttribute('data-tone', 'wrong');
+  await page.getByRole('button', { name: 'North', exact: true }).click();
+  await expect(page.getByTestId('feedback')).toHaveAttribute('data-tone', 'ok');
+
+  // The two-way finesse: East opened 1NT, so the ♠Q is East's — finesse East and take all 4.
+  await page.goto('/#/learn/ex/ch15-two-way-finesse');
+  await expect(page.getByTestId('guide-auction')).toBeVisible();
+  // The defenders' cards stay face down: the auction, not the cards, says where the ♠Q is.
+  const east = page.getByRole('region', { name: 'East' });
+  await expect(east).toContainText('4 ใบ');
+  await expect(east).not.toContainText('Q');
+  const feedback = page.getByTestId('feedback');
+  for (const code of ['H3', 'HA', 'S2', 'SJ', 'SA', 'S3', 'S4', 'SK']) {
+    await playable(page, code).click(CORNER);
+  }
+  await expect(feedback).toHaveAttribute('data-tone', 'ok');
+  await expect(feedback).toContainText('NS ได้ 4 trick');
+  await noSideScroll(page);
+  expect(errors).toEqual([]);
 });

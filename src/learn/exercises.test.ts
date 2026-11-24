@@ -4,9 +4,12 @@
 // something false.
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { Contract, PlayState, Seat } from '../engine';
+import type { Auction, Contract, PlayState, Seat } from '../engine';
 import {
   applyPlay,
+  auctionError,
+  auctionResult,
+  decodeAuction,
   decodeContract,
   isComplete,
   legalPlays,
@@ -22,6 +25,7 @@ import {
   tricksNeeded,
   tricksWon,
 } from '../engine';
+import { explainAuction } from '../bidding';
 import { solutionLine } from '../game/exercise';
 import type { DdsSolver } from '../solver/dds';
 import { loadDds } from '../solver/dds';
@@ -90,7 +94,20 @@ const CHOICE_ANSWERS: Readonly<Record<string, (ex: ChoiceExercise) => string>> =
     expect(games).toHaveLength(1);
     return games[0]!;
   },
+  // M32: the auction rules and the game's own system give the answers.
+  'ch15-who-declares': (ex) => SEAT_NAMES[auctionResult(auctionOf(ex))!.declarer],
+  'ch15-count-points': (ex) => {
+    // 40 − 22 in sight, less the least East (the opener) can hold.
+    const opening = explainAuction(auctionOf(ex), 'none')[0]!;
+    return String(40 - 22 - opening.hcp![0]);
+  },
 };
+
+function auctionOf(ex: Exercise): Auction {
+  const a = ex.auction && decodeAuction(ex.auction.dealer, ex.auction.calls);
+  if (!a) throw new Error(`${ex.id}: no auction`);
+  return a;
+}
 
 /** Choice questions the engine cannot answer: checked by reading them (TASKS 12.9). */
 const ANSWERED_BY_HAND: readonly string[] = [
@@ -133,6 +150,25 @@ describe.each(EXERCISES.map((ex) => [ex.id, ex] as const))('%s', (id, ex) => {
       expect(() => exerciseStart(ex)).not.toThrow();
     }
   });
+
+  if (ex.auction) {
+    it('shows a finished auction that the system explains (M32)', () => {
+      const auction = auctionOf(ex);
+      expect(auctionError(auction)).toBeNull();
+      const result = auctionResult(auction);
+      expect(result).not.toBeNull();
+      expect(result!.doubling).toBe(0);
+      // Every bid has a meaning: the player can tap it and read something.
+      explainAuction(auction, 'none').forEach((m, i) => {
+        if (auction.calls[i]!.kind === 'bid') expect(m, `call ${i}`).not.toBeNull();
+      });
+      if (ex.kind === 'play') {
+        // A position to play is from the contract the auction reached, South declaring.
+        expect(result!.declarer).toBe('S');
+        expect(result!.strain).toBe(ex.trump);
+      }
+    });
+  }
 
   if (ex.kind === 'legal') {
     it('asks for a card of the player (South or North)', () => {

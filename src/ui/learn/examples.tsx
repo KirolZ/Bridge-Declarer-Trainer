@@ -11,6 +11,7 @@ import { OpenHand } from '../table/hands';
 import { SEAT_NAME } from '../table/labels';
 import { sortForDisplay } from '../table/layout';
 import { PlayingCard } from '../table/PlayingCard';
+import { AuctionExampleView } from './AuctionExampleView';
 import { Rich } from './Rich';
 
 function Figure({ caption, children }: { caption?: string; children: ReactNode }) {
@@ -247,6 +248,12 @@ function BlockView({ block }: { block: Block }) {
       return (
         <Figure caption={block.caption}>
           <DealDiagram hands={block.hands} trump={block.trump} />
+        </Figure>
+      );
+    case 'auction':
+      return (
+        <Figure caption={block.caption}>
+          <AuctionExampleView example={block} />
         </Figure>
       );
   }

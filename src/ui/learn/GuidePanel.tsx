@@ -4,7 +4,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useId, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { chapterOf, chaptersIn, partsIn } from '../../learn';
+import { chapterNextTo, chapterOf, chaptersIn, partsIn } from '../../learn';
 import { useLanguage, useT } from '../gameStore';
 import { Blocks } from './examples';
 import { TermSheetProvider } from './Rich';
@@ -22,6 +22,8 @@ export function GuidePanel({ chapter: n, onChapter, onClose }: GuidePanelProps) 
   const lang = useLanguage();
   const chapters = chaptersIn(lang);
   const chapter = chapterOf(n, lang) ?? chapters[0]!;
+  const prev = chapterNextTo(chapter.n, -1, lang);
+  const next = chapterNextTo(chapter.n, 1, lang);
   const panel = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -97,16 +99,16 @@ export function GuidePanel({ chapter: n, onChapter, onClose }: GuidePanelProps) 
             <button
               type="button"
               className={NAV}
-              disabled={!chapterOf(n - 1)}
-              onClick={() => onChapter(n - 1)}
+              disabled={!prev}
+              onClick={() => prev && onChapter(prev.n)}
             >
               {t.learn.prevChapter}
             </button>
             <button
               type="button"
               className={NAV}
-              disabled={!chapterOf(n + 1)}
-              onClick={() => onChapter(n + 1)}
+              disabled={!next}
+              onClick={() => next && onChapter(next.n)}
             >
               {t.learn.nextChapter}
             </button>

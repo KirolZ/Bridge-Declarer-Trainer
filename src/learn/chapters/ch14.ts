@@ -68,38 +68,9 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'แตะ call ในตาราง แล้วบรรทัดใต้ตารางจะบอกว่า call นั้นบอกอะไร เช่น "2{H} (East) — [[weak-two|weak two]] · 5–10 [[hcp|HCP]] · {H} 6 ใบ" ความหมายนี้เป็นข้อมูลชุดเดียวกับที่ระบบใช้ตัดสินใจประมูลจริง: ระบบประมูล call นั้นก็ต่อเมื่อมือเข้ากับความหมายนั้น ชื่อที่จะเห็นบ่อย:',
-        en: 'Tap a call in the table and the line under it says what the call shows, e.g. "2{H} (East) — [[weak-two|Weak two]] · 5–10 [[hcp|HCP]] · {H} 6". It is the same data the system bids with: it only makes a call when the hand fits its meaning. Names you will often see:',
+        th: 'แตะ call ในตาราง แล้วบรรทัดใต้ตารางจะบอกว่า call นั้นบอกอะไร เช่น "2{H} (East) — [[weak-two|weak two]] · 5–10 [[hcp|HCP]] · {H} 6 ใบ" ความหมายนี้เป็นข้อมูลชุดเดียวกับที่ระบบใช้ตัดสินใจประมูลจริง: ระบบประมูล call นั้นก็ต่อเมื่อมือเข้ากับความหมายนั้น วิธีอ่านการประมูลและชื่อที่จะเห็นบ่อยอยู่ในบท 15',
+        en: 'Tap a call in the table and the line under it says what the call shows, e.g. "2{H} (East) — [[weak-two|Weak two]] · 5–10 [[hcp|HCP]] · {H} 6". It is the same data the system bids with: it only makes a call when the hand fits its meaning. How to read an auction, and the names you will often see, are in chapter 15.',
       },
-    },
-    {
-      kind: 'list',
-      items: [
-        {
-          th: '[[opening|เปิดประมูล]] และ [[overcall]] (ประมูลแทรกหลังฝั่งตรงข้ามเปิด): บอกแต้มและดอกยาว',
-          en: 'An [[opening|opening bid]] and an [[overcall]] (bidding after the other side has opened): points and a long suit',
-        },
-        {
-          th: '[[weak-two|weak two]] และ [[preempt]]: แต้มน้อยแต่ดอกยาวมาก',
-          en: 'A [[weak-two|weak two]] and a [[preempt]]: few points but a very long suit',
-        },
-        {
-          th: '[[raise]] (ยกดอกของคู่), [[rebid]] (ดอกเดิมซ้ำ), [[reverse]], [[jump-shift|jump shift]] และ [[two-over-one|2/1]]: การตอบและการประมูลรอบที่สอง',
-          en: "A [[raise]] of partner's suit, a [[rebid]] of your own suit, a [[reverse]], a [[jump-shift|jump shift]] and a [[two-over-one|2/1]]: responses and second bids",
-        },
-        {
-          th: '[[stayman|Stayman]], [[transfer]] และ [[blackwood|Blackwood]]: ไม่ได้บอกดอกที่ประมูล แต่ถามหรือบอกเรื่องอื่น',
-          en: '[[stayman|Stayman]], a [[transfer]] and [[blackwood|Blackwood]]: they say nothing about the suit bid, but ask or show something else',
-        },
-        {
-          th: 'X ในตารางคือ [[takeout-double|takeout double]]: ให้คู่เลือกดอก',
-          en: 'An X in the table is a [[takeout-double|takeout double]]: partner is asked to pick a suit',
-        },
-        {
-          th: 'มือ [[balanced]]: มีทุกดอกอย่างน้อย 2 ใบ',
-          en: 'A [[balanced]] hand: at least 2 cards in every suit',
-        },
-      ],
     },
     {
       kind: 'p',

@@ -18,7 +18,10 @@ import { CH11 } from './chapters/ch11';
 import { CH12 } from './chapters/ch12';
 import { CH13 } from './chapters/ch13';
 import { CH14 } from './chapters/ch14';
+import { CH15 } from './chapters/ch15';
 
+// In reading order: chapter 15 (M32) belongs to the technique part, so it comes before 14. The
+// numbers never move, as saved progress and the table's `?` button refer to them.
 const SOURCE: readonly Chapter<Bilingual>[] = [
   CH1,
   CH2,
@@ -33,6 +36,7 @@ const SOURCE: readonly Chapter<Bilingual>[] = [
   CH11,
   CH12,
   CH13,
+  CH15,
   CH14,
 ];
 
@@ -67,7 +71,7 @@ const PART_SOURCE: readonly Part<Bilingual>[] = [
       th: 'อ่านเมื่อพร้อม — วิธีเล่นให้ได้ trick มากขึ้น อ่านหลังจากลองเล่นไปสักพักก็ได้',
       en: 'Read when you are ready. Ways to win more tricks, best read after a few hands.',
     },
-    chapters: [7, 8, 9, 10, 11, 12, 13],
+    chapters: [7, 8, 9, 10, 11, 12, 13, 15],
   },
   {
     id: 'app',
@@ -91,6 +95,13 @@ export const PARTS = partsIn('th');
 /** The part a chapter belongs to. */
 export function partOf(n: number, lang: Language = 'th'): Part | undefined {
   return partsIn(lang).find((p) => p.chapters.includes(n));
+}
+
+/** The chapter read after (`step` 1) or before (`step` -1) chapter `n`, in reading order. */
+export function chapterNextTo(n: number, step: 1 | -1, lang: Language = 'th'): Chapter | undefined {
+  const all = chaptersIn(lang);
+  const i = all.findIndex((c) => c.n === n);
+  return i < 0 ? undefined : all[i + step];
 }
 
 export function partById(id: PartId, lang: Language = 'th'): Part {
