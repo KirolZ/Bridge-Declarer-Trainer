@@ -5,8 +5,9 @@
 // mode (SPEC §7.8) adds tips at the corner and says why a card cannot be played.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Card, Seat } from '../../engine';
+import type { Call, Card, Seat } from '../../engine';
 import {
+  callerAt,
   completedTricks,
   currentTrick,
   illegalReason,
@@ -35,8 +36,11 @@ import {
 } from '../gameStore';
 import { GuidePanel } from '../learn/GuidePanel';
 import { ActionBar } from './ActionBar';
-import { AuctionTable } from './AuctionTable';
+import { AuctionSheet, AuctionTable, CallLabel } from './AuctionTable';
 import { useAuctionInfo } from './auctionInfo';
+import { rangeText } from './meaningText';
+import { WIDE_SCREEN, useMediaQuery } from '../useMediaQuery';
+import { MAX_HCP } from '../../bidding';
 import { ClaimDialog } from './ClaimDialog';
 import { CoachTipView } from './CoachTip';
 import { useCardPick } from './cardPick';
@@ -50,11 +54,40 @@ import { ReplayView } from './ReplayView';
 import type { PendingPlay } from './TrickArea';
 import { TrickArea } from './TrickArea';
 
-type SeatTagProps = { seat: Seat; active: boolean; thinking?: boolean; className?: string };
+type SeatTagProps = {
+  seat: Seat;
+  active: boolean;
+  thinking?: boolean;
+  className?: string;
+  /** The seat's calls, shown beside the name (M33). */
+  calls?: readonly Call[] | null;
+};
 
-function SeatTag({ seat, active, thinking, className }: SeatTagProps) {
+/**
+ * A seat's calls in the auction, like bidding cards left in front of a player (M33): the ones that
+ * are not passes, or Pass when that is all the seat said.
+ */
+function SeatCalls({ seat, calls }: { seat: Seat; calls: readonly Call[] }) {
   const t = useT();
+  const shown = calls.filter((c) => c.kind !== 'pass');
   return (
+    <span
+      data-testid="seat-calls"
+      data-seat={seat}
+      className="inline-flex shrink-0 items-center gap-1 rounded bg-white px-1.5 text-xs whitespace-nowrap text-black sm:text-sm"
+    >
+      {shown.length === 0 ? (
+        <span className="text-black/55">{t.auction.pass}</span>
+      ) : (
+        shown.map((c, i) => <CallLabel key={i} call={c} t={t} />)
+      )}
+    </span>
+  );
+}
+
+function SeatTag({ seat, active, thinking, className, calls }: SeatTagProps) {
+  const t = useT();
+  const tag = (
     <span
       data-seat={seat}
       data-active={active || undefined}
@@ -63,7 +96,7 @@ function SeatTag({ seat, active, thinking, className }: SeatTagProps) {
         active
           ? 'bg-amber-300 text-black shadow-[0_0_12px_rgba(252,211,77,0.7)]'
           : 'bg-black/35 text-white/85',
-        className,
+        calls ? undefined : className,
       ].join(' ')}
     >
       {t.seatRole[seat]}
@@ -78,6 +111,13 @@ function SeatTag({ seat, active, thinking, className }: SeatTagProps) {
           ))}
         </span>
       )}
+    </span>
+  );
+  if (!calls) return tag;
+  return (
+    <span className={`inline-flex items-center gap-1.5 ${className ?? ''}`}>
+      {tag}
+      <SeatCalls seat={seat} calls={calls} />
     </span>
   );
 }
@@ -212,11 +252,24 @@ export function PlayTable() {
   // M31), unless they opened or closed it during this hand.
   const playerPlayed =
     play?.plays.slice(state.startPlays).some((p) => sideOf(p.seat) === 'NS') ?? false;
+  // Wide screens: open above the table until the first card. Narrow screens (M33): a sheet the
+  // player opens, never on its own, so the table keeps its room.
+  const wide = useMediaQuery(WIDE_SCREEN);
   const auctionOpen =
-    auctionToggle?.serial === state.handSerial ? auctionToggle.open : !beginner && !playerPlayed;
+    auctionToggle?.serial === state.handSerial
+      ? auctionToggle.open
+      : wide && !beginner && !playerPlayed;
   const dummyUp = plays > 0 || studyMode;
   const auctionInfo = useAuctionInfo(hand, dummyUp);
   const handSerial = state.handSerial;
+  const auction = hand?.auction;
+  /** Each seat's calls, shown by its name on the table (M33). */
+  const seatCalls = useMemo(() => {
+    if (!auction) return null;
+    const out: Record<Seat, Call[]> = { N: [], E: [], S: [], W: [] };
+    auction.calls.forEach((c, i) => out[callerAt(auction.dealer, i)].push(c));
+    return out;
+  }, [auction]);
   const onToggleAuction = useCallback(
     () => setAuctionToggle({ serial: handSerial, open: !auctionOpen }),
     [handSerial, auctionOpen],
@@ -286,12 +339,30 @@ export function PlayTable() {
   else if (seat === 'S') status = t.table.yourTurn;
   else if (seat) status = t.table.botThinking(seat);
 
-  const defender = (s: 'W' | 'E') =>
-    studyMode ? (
-      <OpenHand cards={hands[s]} trump={trump} label={SEAT_NAME[s]} />
-    ) : (
-      <HiddenHand count={hands[s].length} label={SEAT_NAME[s]} />
+  // The defender's HCP as far as the auction and the cards in sight tell (M33).
+  const hcpOf = (s: 'W' | 'E') => {
+    const inf = auctionInfo?.inference[s];
+    if (!inf) return null;
+    return (
+      <span
+        data-testid="seat-hcp"
+        data-seat={s}
+        className="text-xs whitespace-nowrap text-white/85 tabular-nums"
+      >
+        {rangeText(inf.hcp, MAX_HCP + 1)} HCP
+      </span>
     );
+  };
+  const defender = (s: 'W' | 'E') => (
+    <>
+      {studyMode ? (
+        <OpenHand cards={hands[s]} trump={trump} label={SEAT_NAME[s]} />
+      ) : (
+        <HiddenHand count={hands[s].length} label={SEAT_NAME[s]} />
+      )}
+      {hcpOf(s)}
+    </>
+  );
 
   return (
     <div ref={root} className="flex min-h-full flex-col">
@@ -338,12 +409,21 @@ export function PlayTable() {
 
       {hand.auction && auctionInfo && (
         <AuctionTable
-          key={state.handSerial}
+          key={`table${state.handSerial}`}
           auction={hand.auction}
           vulnerability={hand.vulnerability}
           info={auctionInfo}
-          open={auctionOpen}
+          open={wide && auctionOpen}
           onToggle={onToggleAuction}
+        />
+      )}
+      {hand.auction && auctionInfo && !wide && auctionOpen && (
+        <AuctionSheet
+          key={`sheet${state.handSerial}`}
+          auction={hand.auction}
+          vulnerability={hand.vulnerability}
+          info={auctionInfo}
+          onClose={onToggleAuction}
         />
       )}
 
@@ -376,7 +456,12 @@ export function PlayTable() {
                 .join(' ')}
             >
               {/* Wider screens: name tags in the corner, to save height. */}
-              <SeatTag seat="N" active={active('N')} className="sm:absolute sm:top-2 sm:left-3" />
+              <SeatTag
+                seat="N"
+                active={active('N')}
+                calls={seatCalls?.N}
+                className="sm:absolute sm:top-2 sm:left-3"
+              />
               {dummyUp ? (
                 <DummyHand
                   cards={hands.N}
@@ -394,7 +479,12 @@ export function PlayTable() {
 
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1">
               <section aria-label="West" className="flex flex-col items-center gap-1.5">
-                <SeatTag seat="W" active={active('W')} thinking={active('W') && botThinking} />
+                <SeatTag
+                  seat="W"
+                  active={active('W')}
+                  thinking={active('W') && botThinking}
+                  calls={seatCalls?.W}
+                />
                 {defender('W')}
               </section>
               <div className="flex justify-center">
@@ -409,7 +499,12 @@ export function PlayTable() {
                 />
               </div>
               <section aria-label="East" className="flex flex-col items-center gap-1.5">
-                <SeatTag seat="E" active={active('E')} thinking={active('E') && botThinking} />
+                <SeatTag
+                  seat="E"
+                  active={active('E')}
+                  thinking={active('E') && botThinking}
+                  calls={seatCalls?.E}
+                />
                 {defender('E')}
               </section>
             </div>
@@ -457,7 +552,12 @@ export function PlayTable() {
                 onPlay={onPlay}
                 onBlocked={onBlocked}
               />
-              <SeatTag seat="S" active={active('S')} className="sm:absolute sm:top-2 sm:left-3" />
+              <SeatTag
+                seat="S"
+                active={active('S')}
+                calls={seatCalls?.S}
+                className="sm:absolute sm:top-2 sm:left-3"
+              />
             </section>
           </div>
         </div>

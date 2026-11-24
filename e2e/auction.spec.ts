@@ -20,6 +20,25 @@ function collectErrors(page: Page): string[] {
   return errors;
 }
 
+/** Narrow screens open the auction as a sheet the player opens (M33); wide ones open it in place. */
+const narrow = (page: Page) => (page.viewportSize()?.width ?? 0) < 1024;
+
+/** Shows the whole auction: on a narrow screen by opening the sheet. */
+async function showAuction(page: Page) {
+  if (narrow(page)) {
+    await expect(page.getByTestId('auction')).toHaveCount(0);
+    await page.getByTestId('auction-toggle').click();
+  }
+  await expect(page.getByTestId('auction')).toBeVisible();
+}
+
+/** Closes the sheet so the cards can be played (narrow screens). */
+async function closeSheet(page: Page) {
+  if (!narrow(page)) return;
+  await page.getByTestId('auction-sheet-close').click();
+  await expect(page.getByTestId('auction')).toHaveCount(0);
+}
+
 const noSideScroll = (page: Page) =>
   expect
     .poll(() =>
@@ -37,7 +56,7 @@ test('a link with an auction shows it, and the hand still plays out with 0 trick
   await page.goto(HAND);
 
   const auction = page.getByTestId('auction');
-  await expect(auction).toBeVisible();
+  await showAuction(page);
   await expect(page.getByTestId('auction-info')).toHaveText('แจก: South · ไม่มีฝ่ายไหน vul');
   const calls = auction.getByTestId('auction-call');
   await expect(calls).toHaveCount(8);
@@ -46,6 +65,7 @@ test('a link with an auction shows it, and the hand still plays out with 0 trick
   await expect(calls.nth(1)).toHaveText('2♦');
   await expect(calls.last()).toHaveText('Pass');
   await noSideScroll(page);
+  await closeSheet(page);
 
   const result = page.getByTestId('result');
   const playable = page.locator('[data-playable="true"]');
@@ -76,8 +96,10 @@ test('a link with an auction shows it, and the hand still plays out with 0 trick
 test('the folded auction opens again and closes on demand', async ({ page }) => {
   await page.goto(HAND);
   const auction = page.getByTestId('auction');
-  await expect(auction).toBeVisible();
-  await page.getByTestId('auction-toggle').click();
+  await showAuction(page);
+  // The sheet covers the bar on a phone: it closes from the sheet.
+  if (narrow(page)) await closeSheet(page);
+  else await page.getByTestId('auction-toggle').click();
   await expect(auction).toBeHidden();
   await expect(page.getByTestId('auction-line')).toBeVisible();
   await page.getByTestId('auction-toggle').click();
@@ -86,6 +108,7 @@ test('the folded auction opens again and closes on demand', async ({ page }) => 
   await page.goto('/');
   await page.getByTestId('language-switch').getByRole('button', { name: 'English' }).click();
   await page.goto(`${HAND.replace('?', '?v=ns&')}`);
+  await showAuction(page);
   await expect(page.getByTestId('auction-info')).toHaveText('Dealer: South · NS vul');
   await noSideScroll(page);
 });
@@ -113,9 +136,10 @@ test('a new deal comes with its auction, and the hints make the contract', async
   await page.goto('/');
   await page.getByRole('button', { name: /เคยเล่นแล้ว/ }).click();
   await expect(page).toHaveURL(/\?(v=ns&)?d=[NESW]&a=\S+$/, { timeout: 30_000 });
-  await expect(page.getByTestId('auction')).toBeVisible();
+  await showAuction(page);
   await expect(page.getByTestId('auction-call').last()).toHaveText('Pass');
   await noSideScroll(page);
+  await closeSheet(page);
 
   const result = page.getByTestId('result');
   const playable = page.locator('[data-playable="true"]');
@@ -158,6 +182,7 @@ test('tapping a call shows what it means, with what the defenders probably hold'
   const errors = collectErrors(page);
   await page.goto(BID);
   const auction = page.getByTestId('auction');
+  await showAuction(page);
   const meaning = page.getByTestId('auction-meaning');
   await expect(meaning).toHaveText('แตะ call เพื่อดูความหมาย');
   const button = auction.getByTestId('auction-call-button');
@@ -250,5 +275,69 @@ test('beginner mode starts with the auction folded and a tip about the defender 
   // The tip points at the bar: it opens.
   await page.getByTestId('auction-toggle').click();
   await expect(page.getByTestId('auction')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+// TASKS M33: on a phone the auction never takes the table's room — a sheet the player opens —
+// and each seat's calls and the defenders' HCP stay on the table all hand long.
+test('the calls stay by each seat, with the defenders HCP, on every screen', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(BID);
+  const calls = (seat: string) => page.locator(`[data-testid="seat-calls"][data-seat="${seat}"]`);
+  await expect(calls('S')).toHaveText('1♥');
+  await expect(calls('W')).toHaveText('2♦');
+  await expect(calls('N')).toHaveText('2♥');
+  await expect(calls('E')).toHaveText('Pass');
+  // Dummy face up after West's lead: 20 HCP out of sight, West showed 10–16.
+  const hcp = (seat: string) => page.locator(`[data-testid="seat-hcp"][data-seat="${seat}"]`);
+  await expect(hcp('W')).toHaveText('10–16 HCP', { timeout: 15_000 });
+  await expect(hcp('E')).toHaveText('4–10 HCP');
+  await noSideScroll(page);
+  expect(errors).toEqual([]);
+});
+
+test('on a phone the auction opens as a sheet, and closes every way', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto(BID);
+  await expect(page.locator('[data-playable="true"]').first()).toBeVisible({ timeout: 15_000 });
+  // Nothing opens on its own: the table keeps the room.
+  await expect(page.getByTestId('auction')).toHaveCount(0);
+  await expect(page.getByTestId('auction-line')).toBeVisible();
+  const sheet = page.getByTestId('auction-sheet');
+
+  await page.getByTestId('auction-toggle').click();
+  await expect(sheet).toBeVisible();
+  await sheet.getByTestId('auction-call-button').nth(1).click();
+  await expect(sheet.getByTestId('auction-meaning')).toHaveText(
+    '2♦ (West) — overcall · 10–16 HCP · ♦ 5 ใบขึ้นไป',
+  );
+  // A glossary term opens over the sheet; Esc closes the term first, then the sheet.
+  await sheet.locator('[data-term="overcall"]').click();
+  await expect(page.getByTestId('term-sheet')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('term-sheet')).toHaveCount(0);
+  await expect(sheet).toBeVisible();
+  await noSideScroll(page);
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+
+  // A tap above the sheet closes it, so does ✕, so does A.
+  await page.getByTestId('auction-toggle').click();
+  await page.getByTestId('auction-sheet-backdrop').click({ position: { x: 20, y: 20 } });
+  await expect(sheet).toHaveCount(0);
+  await page.getByTestId('auction-toggle').click();
+  await page.getByTestId('auction-sheet-close').click();
+  await expect(sheet).toHaveCount(0);
+  await page.keyboard.press('a');
+  await expect(sheet).toBeVisible();
+  await page.keyboard.press('a');
+  await expect(sheet).toHaveCount(0);
+
+  // Closed, the cards play as before.
+  await page
+    .locator('[data-playable="true"]')
+    .first()
+    .click({ position: { x: 6, y: 6 } });
   expect(errors).toEqual([]);
 });
