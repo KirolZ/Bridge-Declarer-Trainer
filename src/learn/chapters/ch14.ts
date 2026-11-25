@@ -61,8 +61,8 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'บนจอกว้าง ตารางการประมูลอยู่ด้านซ้ายของโต๊ะและเปิดอยู่ตลอด บนมือถือหรือจอที่แคบกว่า การประมูลเป็นบรรทัดเดียวเหนือโต๊ะ แตะบรรทัดนั้น (หรือกดปุ่ม A บนคีย์บอร์ด) แล้วตารางเต็มจะขึ้นมาจากด้านล่างของจอ ปิดด้วย **ปิด ✕** หรือแตะนอกกล่อง',
-        en: 'On a wide screen the auction table sits to the left of the table and stays open. On a phone or a narrower screen the auction is one line above the table: tap it (or press the A key) and the whole table comes up from the bottom of the screen; close it with **Close ✕**, a tap outside it or Esc.',
+        th: 'บนจอกว้าง ตารางการประมูลอยู่ด้านซ้ายของโต๊ะและเปิดอยู่ตลอด บนแท็บเล็ตจอสูง (เช่นแท็บเล็ตที่ถือแนวตั้ง) ตารางอยู่เหนือโต๊ะและเปิดอยู่ตลอดเช่นกัน บนมือถือหรือจออื่นที่แคบกว่า การประมูลเป็นบรรทัดเดียวเหนือโต๊ะ แตะบรรทัดนั้น (หรือกดปุ่ม A บนคีย์บอร์ด) แล้วตารางเต็มจะขึ้นมาจากด้านล่างของจอ ปิดด้วย **ปิด ✕** หรือแตะนอกกล่อง',
+        en: 'On a wide screen the auction table sits to the left of the table and stays open; on a tall tablet (such as an iPad held upright) it sits above the table and stays open too. On a phone or another narrower screen the auction is one line above the table: tap it (or press the A key) and the whole table comes up from the bottom of the screen; close it with **Close ✕**, a tap outside it or Esc.',
       },
     },
     {

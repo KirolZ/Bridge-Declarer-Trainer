@@ -341,6 +341,38 @@ export function AuctionPanel({
   );
 }
 
+/**
+ * The auction above the table on a tall screen without room on the side (M37, the user): always
+ * open like the side panel, the table under it keeps the rest of the height. Grows with the
+ * screen (`.auction-top` in index.css).
+ */
+export function AuctionTop({
+  auction,
+  vulnerability,
+  info,
+}: {
+  auction: Auction;
+  vulnerability: Vulnerability;
+  info: AuctionInfo;
+}) {
+  const t = useT();
+  return (
+    <TermSheetProvider>
+      <section
+        aria-label={t.auction.title}
+        data-testid="auction"
+        data-layout="top"
+        className={`auction-top @container ${BAR}`}
+      >
+        <div className="mx-auto flex max-w-4xl flex-col gap-1 text-left">
+          <AuctionHeader auction={auction} vulnerability={vulnerability} />
+          <AuctionBody auction={auction} vulnerability={vulnerability} info={info} />
+        </div>
+      </section>
+    </TermSheetProvider>
+  );
+}
+
 type AuctionSheetProps = {
   auction: Auction;
   vulnerability: Vulnerability;
@@ -389,7 +421,7 @@ export function AuctionSheet({ auction, vulnerability, info, onClose }: AuctionS
           aria-labelledby={titleId}
           tabIndex={-1}
           data-testid="auction-sheet"
-          className="@container max-h-[85vh] overflow-y-auto rounded-t-2xl bg-felt-dark px-3 pt-2 pb-4 shadow-2xl ring-1 ring-white/15 outline-none"
+          className="auction-sheet @container max-h-[85vh] overflow-y-auto rounded-t-2xl bg-felt-dark px-3 pt-2 pb-4 shadow-2xl ring-1 ring-white/15 outline-none"
           initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
         >

@@ -34,9 +34,9 @@ import {
 } from '../gameStore';
 import { GuidePanel } from '../learn/GuidePanel';
 import { ActionBar } from './ActionBar';
-import { AuctionPanel, AuctionSheet, AuctionTable } from './AuctionTable';
+import { AuctionPanel, AuctionSheet, AuctionTable, AuctionTop } from './AuctionTable';
 import { useAuctionInfo } from './auctionInfo';
-import { SIDE_SCREEN, useMediaQuery } from '../useMediaQuery';
+import { SIDE_SCREEN, TOP_SCREEN, useMediaQuery } from '../useMediaQuery';
 import { ClaimDialog } from './ClaimDialog';
 import { CoachTipView } from './CoachTip';
 import { useCardPick } from './cardPick';
@@ -211,7 +211,10 @@ export function PlayTable() {
   // The auction (M33): with room beside the table, a panel there that is always open; otherwise one
   // line above the table and a sheet the player opens (never on its own, so the table keeps its
   // room). The sheet stays as the player left it until the hand ends.
+  // A tall screen without that room (M37): always open above the table.
   const side = useMediaQuery(SIDE_SCREEN);
+  const top = useMediaQuery(TOP_SCREEN);
+  const sheet = !side && !top;
   const auctionOpen = auctionToggle?.serial === state.handSerial && auctionToggle.open;
   const dummyUp = plays > 0 || studyMode;
   const auctionInfo = useAuctionInfo(hand, dummyUp);
@@ -224,7 +227,7 @@ export function PlayTable() {
     !claimOpen && !dealing && replayTrick === null && guide === null,
     onKeyHint,
     beginner ? onKeyUndo : undefined,
-    hand?.auction && !over && !side ? onToggleAuction : undefined,
+    hand?.auction && !over && sheet ? onToggleAuction : undefined,
   );
 
   if (!hand || !play) return null;
@@ -335,7 +338,15 @@ export function PlayTable() {
         </div>
       )}
 
-      {hand.auction && auctionInfo && !side && (
+      {hand.auction && auctionInfo && top && (
+        <AuctionTop
+          key={`top${state.handSerial}`}
+          auction={hand.auction}
+          vulnerability={hand.vulnerability}
+          info={auctionInfo}
+        />
+      )}
+      {hand.auction && auctionInfo && sheet && (
         <AuctionTable
           key={`table${state.handSerial}`}
           auction={hand.auction}
@@ -345,7 +356,7 @@ export function PlayTable() {
           onToggle={onToggleAuction}
         />
       )}
-      {hand.auction && auctionInfo && !side && auctionOpen && (
+      {hand.auction && auctionInfo && sheet && auctionOpen && (
         <AuctionSheet
           key={`sheet${state.handSerial}`}
           auction={hand.auction}

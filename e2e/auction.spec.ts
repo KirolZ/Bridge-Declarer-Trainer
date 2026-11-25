@@ -365,3 +365,49 @@ test('with room on the side, the auction is a panel beside the table', async ({ 
   await noSideScroll(page);
   expect(errors).toEqual([]);
 });
+
+// TASKS M37 37.7 (the user, a 960 × 1440 tablet): a tall screen without room on the side shows the
+// auction open above the table — no line, no sheet over South's hand — and the table still fits.
+test('a tall tablet: the auction stays open above the table, South is not covered', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.setViewportSize({ width: 960, height: 1440 });
+  await page.goto(BID);
+  const top = page.locator('[data-testid="auction"][data-layout="top"]');
+  await expect(top).toBeVisible();
+  await expect(page.getByTestId('auction-line')).toHaveCount(0);
+  await expect(page.getByTestId('auction-toggle')).toHaveCount(0);
+  // Above the table, and grown with the screen.
+  const [a, t] = [(await top.boundingBox())!, (await page.locator('.table-felt').boundingBox())!];
+  expect(a.y + a.height).toBeLessThanOrEqual(t.y);
+  expect(await top.evaluate((el) => getComputedStyle(el).zoom)).toBe('1.2');
+  // A call's meaning shows in place.
+  await top.getByTestId('auction-call-button').nth(1).click();
+  await expect(top.getByTestId('auction-meaning')).toContainText('2♦ (West) — overcall');
+
+  // The whole table fits under it; A opens nothing.
+  await expect(page.locator('[data-playable="true"]').first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('region', { name: 'South (คุณ)' })).toBeInViewport({ ratio: 1 });
+  await page.keyboard.press('a');
+  await expect(page.getByTestId('auction-sheet')).toHaveCount(0);
+  expect(
+    await page.evaluate(() => document.scrollingElement!.scrollHeight - innerHeight),
+  ).toBeLessThanOrEqual(0);
+  await noSideScroll(page);
+  expect(errors).toEqual([]);
+});
+
+test('a tablet that keeps the sheet: the sheet grows and stays on the screen', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto(BID);
+  await expect(page.locator('[data-playable="true"]').first()).toBeVisible({ timeout: 15_000 });
+  await page.getByTestId('auction-toggle').click();
+  const sheet = page.getByTestId('auction-sheet');
+  await expect(sheet).toBeVisible();
+  expect(await sheet.evaluate((el) => getComputedStyle(el).zoom)).toBe('1.2');
+  await expect(sheet.getByTestId('auction-sheet-close')).toBeInViewport({ ratio: 1 });
+  // A phone keeps the old size.
+  await page.setViewportSize({ width: 412, height: 915 });
+  await expect.poll(() => sheet.evaluate((el) => getComputedStyle(el).zoom)).toBe('1');
+});
