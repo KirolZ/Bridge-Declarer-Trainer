@@ -211,6 +211,7 @@ export function ResultPanel(props: ResultPanelProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollable, setScrollable] = useState(false);
+  const [buttonsHidden, setButtonsHidden] = useState(false);
   // A line between the content and the buttons only while the content scrolls (M35).
   useLayoutEffect(() => {
     const body = bodyRef.current;
@@ -311,43 +312,67 @@ export function ResultPanel(props: ResultPanelProps) {
 
         <div
           data-testid="result-actions"
-          className={`flex flex-col gap-3 px-5 pb-5 sm:px-6 sm:pb-6 ${scrollable ? 'border-t border-white/10 pt-3' : 'pt-2'}`}
+          data-hidden={buttonsHidden}
+          className={
+            buttonsHidden
+              ? 'flex justify-end border-t border-white/10 px-3 py-2'
+              : `relative flex flex-col px-5 pb-5 sm:px-6 sm:pb-6 ${scrollable ? 'border-t border-white/10 pt-3' : 'pt-2'}`
+          }
         >
-          <div className="flex w-full flex-wrap gap-2">
-            <button type="button" onClick={() => props.onReplay(1)} className={SECONDARY}>
-              {t.result.replay}
-            </button>
-            <ShareButton hand={props.hand} className={SECONDARY} />
-          </div>
-          <div className="flex w-full gap-2">
+          {/* Hide the buttons to read a long summary with the whole height (M35, the user).
+              Only while the content scrolls (or the buttons are hidden): otherwise it gains nothing. */}
+          {(scrollable || buttonsHidden) && (
             <button
-              ref={first}
               type="button"
-              onClick={props.onNewHand}
-              className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+              onClick={() => setButtonsHidden((h) => !h)}
+              aria-expanded={!buttonsHidden}
+              aria-controls="result-buttons"
+              data-testid="result-buttons-toggle"
+              className={`rounded-full border border-white/15 bg-felt-dark px-2.5 py-0.5 text-xs text-white/80 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none ${buttonsHidden ? '' : 'absolute -top-3 right-3'}`}
             >
-              {t.table.newDeal}
+              {buttonsHidden ? t.result.showButtons : t.result.hideButtons}{' '}
+              <span aria-hidden="true">{buttonsHidden ? '▴' : '▾'}</span>
             </button>
-            <button type="button" onClick={props.onRestart} className={SECONDARY}>
-              {t.table.restart}
-            </button>
-          </div>
-          <div className="flex w-full gap-2">
-            {/* Undo is for beginner mode only (M22). */}
-            {props.beginner && (
-              <button
-                type="button"
-                onClick={props.onUndo}
-                aria-keyshortcuts="U"
-                className={SECONDARY}
-              >
-                {t.result.undo(claimed)}
-              </button>
-            )}
-            <Link to="/" className={SECONDARY}>
-              {t.common.home}
-            </Link>
-          </div>
+          )}
+          {!buttonsHidden && (
+            <div id="result-buttons" className="flex flex-col gap-3">
+              <div className="flex w-full flex-wrap gap-2">
+                <button type="button" onClick={() => props.onReplay(1)} className={SECONDARY}>
+                  {t.result.replay}
+                </button>
+                <ShareButton hand={props.hand} className={SECONDARY} />
+              </div>
+              <div className="flex w-full gap-2">
+                <button
+                  ref={first}
+                  type="button"
+                  onClick={props.onNewHand}
+                  className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                >
+                  {t.table.newDeal}
+                </button>
+                <button type="button" onClick={props.onRestart} className={SECONDARY}>
+                  {t.table.restart}
+                </button>
+              </div>
+              <div className="flex w-full gap-2">
+                {/* Undo is for beginner mode only (M22). */}
+                {props.beginner && (
+                  <button
+                    type="button"
+                    onClick={props.onUndo}
+                    aria-keyshortcuts="U"
+                    className={SECONDARY}
+                  >
+                    {t.result.undo(claimed)}
+                  </button>
+                )}
+                <Link to="/" className={SECONDARY}>
+                  {t.common.home}
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </motion.div>

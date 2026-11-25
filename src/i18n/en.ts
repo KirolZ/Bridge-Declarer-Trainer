@@ -361,6 +361,8 @@ export const en: Messages = {
     lost: (n) => `${tricks(n)} lost against double-dummy`,
     trick: (n) => `Trick ${n}`,
     lossHelp: 'Tap an item to replay that trick',
+    hideButtons: 'Hide buttons',
+    showButtons: 'Show buttons',
     replay: '▶ Replay',
     undo: (claimed) => (claimed ? '↶ Undo the claim' : '↶ Undo the last card'),
   },

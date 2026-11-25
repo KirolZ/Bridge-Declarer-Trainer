@@ -138,8 +138,8 @@ export const CH14: Chapter<Bilingual> = {
     {
       kind: 'p',
       text: {
-        th: 'ใต้นั้นคือรายการ**จุดที่เสีย trick**: trick ที่เท่าไหร่ คุณลงใบไหน และควรลงใบไหน กดรายการเพื่อ**ดูย้อนหลัง** เห็นไพ่ทั้ง 4 มือทีละ trick และกด "ลองเล่นใหม่จากตรงนี้" เพื่อเล่นจุดนั้นใหม่ได้',
-        en: 'Below that is the list of **where tricks were lost**: which trick, the card you played and the card to play instead. Tap an item to **replay** it, with all 4 hands shown trick by trick, and press "Play again from here" to try that point again.',
+        th: 'ใต้นั้นคือรายการ**จุดที่เสีย trick**: trick ที่เท่าไหร่ คุณลงใบไหน และควรลงใบไหน กดรายการเพื่อ**ดูย้อนหลัง** เห็นไพ่ทั้ง 4 มือทีละ trick และกด "ลองเล่นใหม่จากตรงนี้" เพื่อเล่นจุดนั้นใหม่ได้ ถ้าสรุปยาวจนต้องเลื่อน ปุ่ม **ซ่อนปุ่ม** มุมขวาเหนือแถวปุ่มเก็บปุ่มลงไปให้อ่านได้เต็มความสูง (กด **แสดงปุ่ม** เพื่อเอากลับมา)',
+        en: 'Below that is the list of **where tricks were lost**: which trick, the card you played and the card to play instead. Tap an item to **replay** it, with all 4 hands shown trick by trick, and press "Play again from here" to try that point again. When the summary is long enough to scroll, **Hide buttons** at the right above the buttons tucks them away so you can read with the whole height (**Show buttons** brings them back).',
       },
     },
     {

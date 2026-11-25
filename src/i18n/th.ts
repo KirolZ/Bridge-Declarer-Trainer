@@ -379,6 +379,8 @@ export const th = {
     lost: (n: number) => `เสีย ${n} trick เทียบกับ double-dummy`,
     trick: (n: number) => `trick ${n}`,
     lossHelp: 'กดรายการเพื่อดูย้อนหลัง trick นั้น',
+    hideButtons: 'ซ่อนปุ่ม',
+    showButtons: 'แสดงปุ่ม',
     replay: '▶ ดูย้อนหลัง',
     undo: (claimed: boolean): string => `↶ ย้อน${claimed ? ' claim' : 'ใบล่าสุด'}`,
   },

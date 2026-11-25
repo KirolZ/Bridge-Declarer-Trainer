@@ -239,6 +239,18 @@ test.describe('summary size', () => {
     expect((await result.getByRole('button', { name: 'แจกไพ่ใหม่' }).boundingBox())!.y).toBe(
       before.y,
     );
+
+    // Hide the buttons to read with the whole height (35.6, the user), then bring them back.
+    const toggle = page.getByTestId('result-buttons-toggle');
+    const tall = await body.evaluate((b) => b.clientHeight);
+    await toggle.click();
+    await expect(result.getByRole('button', { name: 'แจกไพ่ใหม่' })).toHaveCount(0);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(toggle).toBeInViewport({ ratio: 1 });
+    expect(await body.evaluate((b) => b.clientHeight)).toBeGreaterThan(tall + 100);
+    await toggle.click();
+    await expect(result.getByRole('button', { name: 'แจกไพ่ใหม่' })).toBeInViewport({ ratio: 1 });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(errors).toEqual([]);
   });
 
@@ -260,6 +272,8 @@ test.describe('summary size', () => {
     const result = page.getByTestId('result');
     await expect(page.getByTestId('review')).toHaveAttribute('data-lost', '2');
     await expect(result).toHaveAttribute('data-scrollable', 'false');
+    // Nothing to gain from hiding the buttons.
+    await expect(page.getByTestId('result-buttons-toggle')).toHaveCount(0);
     // Full width less the margins, as before M35 (polled: the popup scales in).
     await expect.poll(async () => (await result.boundingBox())!.width).toBe(328);
   });
