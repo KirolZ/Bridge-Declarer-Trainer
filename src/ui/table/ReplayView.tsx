@@ -9,6 +9,7 @@ import type { HandReview } from '../../game/review';
 import { ddValueAt, replayTrickCount } from '../../game/review';
 import type { Messages } from '../../i18n';
 import { useT } from '../gameStore';
+import { useScrollable } from '../useScrollable';
 import type { AuctionInfo } from './auctionInfo';
 import { AuctionTable } from './AuctionTable';
 import type { CardMark } from './hands';
@@ -65,6 +66,10 @@ export function ReplayView(props: ReplayViewProps) {
 
   const next = useRef<HTMLButtonElement>(null);
   const [auctionOpen, setAuctionOpen] = useState(false);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  // A line above the buttons only while they are stuck over a page that scrolls (M36).
+  const scrollable = useScrollable(scrollerRef, [mainRef], [auctionOpen]);
   useEffect(() => next.current?.focus({ preventScroll: true }), []);
 
   useEffect(() => {
@@ -101,7 +106,13 @@ export function ReplayView(props: ReplayViewProps) {
       <span className="rounded-full bg-black/35 px-2 text-xs font-semibold text-white/85">
         {t.seatRole[seat]}
       </span>
-      <OpenHand cards={hands[seat]} trump={trump} label={SEAT_NAME[seat]} markOf={markOf(seat)} />
+      <OpenHand
+        cards={hands[seat]}
+        trump={trump}
+        label={SEAT_NAME[seat]}
+        markOf={markOf(seat)}
+        alone={seat === 'N' || seat === 'S'}
+      />
     </div>
   );
 
@@ -112,7 +123,9 @@ export function ReplayView(props: ReplayViewProps) {
       aria-labelledby="replay-title"
       data-testid="replay"
       data-trick={trick}
-      className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-felt-dark"
+      ref={scrollerRef}
+      data-scrollable={scrollable}
+      className="no-scrollbar fixed inset-0 z-40 flex flex-col overflow-y-auto bg-felt-dark"
     >
       <header className="flex items-center gap-2 border-b border-white/10 bg-black/25 px-2 py-1.5 sm:px-4">
         <button
@@ -174,7 +187,7 @@ export function ReplayView(props: ReplayViewProps) {
         })}
       </nav>
 
-      <main className="flex flex-1 flex-col gap-2 p-2 sm:p-4">
+      <main ref={mainRef} className="flex flex-1 flex-col gap-2 p-2 sm:p-4">
         <div
           className="table-felt mx-auto flex w-full max-w-3xl flex-col"
           style={{ containerType: 'inline-size' }}
@@ -228,31 +241,38 @@ export function ReplayView(props: ReplayViewProps) {
           )}
         </div>
 
-        <div className="mx-auto flex w-full max-w-3xl flex-wrap gap-2">
-          <button
-            type="button"
-            className={NAV}
-            disabled={trick <= 1}
-            onClick={() => onTrick(trick - 1)}
-          >
-            {t.replay.prev}
-          </button>
-          <button
-            ref={next}
-            type="button"
-            className={NAV}
-            disabled={trick >= count}
-            onClick={() => onTrick(trick + 1)}
-          >
-            {t.replay.next}
-          </button>
-          <button
-            type="button"
-            onClick={() => onPlayFrom(trick)}
-            className="w-full rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:w-auto sm:flex-1"
-          >
-            {t.replay.playFromHere}
-          </button>
+        {/* Sticks to the bottom of the screen while the page is longer than it (M36); right
+            below the notes when it fits. Full width so nothing shows beside it when stuck. */}
+        <div
+          data-testid="replay-actions"
+          className={`sticky bottom-0 -mx-2 -mb-2 bg-felt-dark px-2 py-2 sm:-mx-4 sm:-mb-4 sm:px-4 ${scrollable ? 'border-t border-white/10' : ''}`}
+        >
+          <div className="mx-auto flex w-full max-w-3xl flex-wrap gap-2">
+            <button
+              type="button"
+              className={NAV}
+              disabled={trick <= 1}
+              onClick={() => onTrick(trick - 1)}
+            >
+              {t.replay.prev}
+            </button>
+            <button
+              ref={next}
+              type="button"
+              className={NAV}
+              disabled={trick >= count}
+              onClick={() => onTrick(trick + 1)}
+            >
+              {t.replay.next}
+            </button>
+            <button
+              type="button"
+              onClick={() => onPlayFrom(trick)}
+              className="w-full rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:w-auto sm:flex-1"
+            >
+              {t.replay.playFromHere}
+            </button>
+          </div>
         </div>
       </main>
     </div>

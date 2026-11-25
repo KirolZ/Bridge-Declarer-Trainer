@@ -238,11 +238,14 @@ export function OpenHand({
   trump,
   label,
   markOf,
+  alone = false,
 }: {
   cards: readonly Card[];
   trump: Strain;
   label: string;
   markOf?: (card: Card) => CardMark | undefined;
+  /** Alone on its row (North / South in the replay): not held to the width beside the trick. */
+  alone?: boolean;
 }) {
   const order = useSuitOrder();
   const t = useT();
@@ -251,7 +254,7 @@ export function OpenHand({
     <div
       data-open-hand={label}
       aria-label={`${label}: ${cards.map(t.cardName).join(', ') || t.table.noCards}`}
-      className="max-w-[27cqw] rounded-lg bg-white/95 px-1.5 py-1 text-[11px] leading-snug font-semibold text-black shadow sm:px-2 sm:text-sm"
+      className={`${alone ? 'max-w-[60cqw]' : 'max-w-[27cqw]'} rounded-lg bg-white/95 px-1.5 py-1 text-[11px] leading-snug font-semibold text-black shadow sm:px-2 sm:text-sm`}
     >
       {displaySuits(trump, order).map((suit) => {
         const ranks = sorted.filter((c) => c.suit === suit);

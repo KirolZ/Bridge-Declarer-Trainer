@@ -3,13 +3,14 @@
 // (§7.2), and the ways on: replay, share, new hand, play again, undo (§7.3).
 
 import { motion } from 'framer-motion';
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Card, Contract, Vulnerability } from '../../engine';
 import { contractLabel, isDeclarerVulnerable, scoreBreakdown, tricksNeeded } from '../../engine';
 import type { HandSetup } from '../../game/playStore';
 import type { HandReview, Loss } from '../../game/review';
 import { useT } from '../gameStore';
+import { useScrollable } from '../useScrollable';
 import type { AuctionInfo } from './auctionInfo';
 import { AuctionTable } from './AuctionTable';
 import { CardText } from './hands';
@@ -210,21 +211,10 @@ export function ResultPanel(props: ResultPanelProps) {
   const [auctionOpen, setAuctionOpen] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [scrollable, setScrollable] = useState(false);
-  const [buttonsHidden, setButtonsHidden] = useState(false);
   // A line between the content and the buttons only while the content scrolls (M35).
-  useLayoutEffect(() => {
-    const body = bodyRef.current;
-    const content = contentRef.current;
-    if (!body || !content) return;
-    const check = () => setScrollable(body.scrollHeight > body.clientHeight + 1);
-    check();
-    const observer = new ResizeObserver(check);
-    observer.observe(body);
-    observer.observe(content);
-    return () => observer.disconnect();
-  }, []);
-  // No scroll: on a phone the buttons are below the fold, the result should stay in view.
+  const scrollable = useScrollable(bodyRef, [contentRef]);
+  const [buttonsHidden, setButtonsHidden] = useState(false);
+  // No scroll: the top of a long summary (the result) stays in view.
   useEffect(() => first.current?.focus({ preventScroll: true }), []);
 
   const notes = [
@@ -254,7 +244,7 @@ export function ResultPanel(props: ResultPanelProps) {
         <div
           ref={bodyRef}
           data-testid="result-body"
-          className="result-body min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-2 sm:px-6 sm:pt-6"
+          className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-2 sm:px-6 sm:pt-6"
         >
           <div ref={contentRef} className="flex flex-col items-center gap-3">
             <h2

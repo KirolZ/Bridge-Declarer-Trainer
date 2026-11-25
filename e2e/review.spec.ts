@@ -278,3 +278,65 @@ test.describe('summary size', () => {
     await expect.poll(async () => (await result.boundingBox())!.width).toBe(328);
   });
 });
+
+// TASKS M36: the replay keeps its buttons on the screen, and North / South are not squeezed.
+test.describe('replay size', () => {
+  const AUCTION_HAND = `${HAND}?d=S&a=1H-2D-2H-3D-3H-P-P-P`;
+
+  /** Claim 7 (the loss is at trick 1, North's spades marked), then open the replay there. */
+  async function openReplay(page: Page) {
+    await page.goto(AUCTION_HAND);
+    await claim(page, 7);
+    await expect(page.getByTestId('review')).toHaveAttribute('data-lost', '2');
+    await page.getByTestId('loss').first().click();
+    const replay = page.getByTestId('replay');
+    await expect(replay).toHaveAttribute('data-trick', '1');
+    return replay;
+  }
+
+  test('a short phone: the buttons stay in view, North is one line a suit', async ({ page }) => {
+    const errors = collectErrors(page);
+    await page.setViewportSize({ width: 360, height: 640 });
+    const replay = await openReplay(page);
+    await replay.getByTestId('auction-toggle').click();
+    await expect(replay.getByRole('table')).toBeVisible();
+
+    await expect(replay).toHaveAttribute('data-scrollable', 'true');
+    const playFrom = replay.getByRole('button', { name: 'ลองเล่นใหม่จากตรงนี้' });
+    await expect(playFrom).toBeInViewport({ ratio: 1 });
+    await expect(replay.getByRole('button', { name: /trick ถัดไป/ })).toBeInViewport({ ratio: 1 });
+    expect(await replay.evaluate((r) => getComputedStyle(r).scrollbarWidth)).toBe('none');
+    // Scroll to the end: the notes come into view, the buttons stay where they are.
+    const y = (await playFrom.boundingBox())!.y;
+    await replay.evaluate((r) => r.scrollTo(0, r.scrollHeight));
+    await expect(replay.getByTestId('replay-loss').first()).toBeInViewport({ ratio: 1 });
+    expect((await playFrom.boundingBox())!.y).toBe(y);
+    expect(await replay.evaluate((r) => r.scrollWidth > r.clientWidth)).toBe(false);
+
+    // North's spades carry the "better" rings; each suit stays on one line.
+    const north = replay.locator('[data-open-hand="North"]');
+    await expect(north.locator('[data-mark="better"]').first()).toBeVisible();
+    const tops = await north.evaluate((hand) =>
+      Array.from(hand.children).map(
+        (row) =>
+          new Set(
+            Array.from(row.querySelectorAll('[data-hand-card]')).map(
+              (c) => c.getBoundingClientRect().top,
+            ),
+          ).size,
+      ),
+    );
+    expect(tops.every((n) => n <= 1)).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
+  test('a screen where it fits: the buttons sit right below the notes', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    const replay = await openReplay(page);
+    await expect(replay).toHaveAttribute('data-scrollable', 'false');
+    const notes = (await replay.getByTestId('replay-notes').boundingBox())!;
+    const actions = (await replay.getByTestId('replay-actions').boundingBox())!;
+    expect(actions.y - (notes.y + notes.height)).toBeLessThan(24);
+    expect(actions.y + actions.height).toBeLessThan(1000);
+  });
+});

@@ -108,11 +108,12 @@ body {
   }
 }
 
-/* The summary's content scrolls without a scrollbar (M35, the user): a row cut off at the bottom
-   and the line above the buttons already say there is more. Wheel, touch and keys still scroll. */
-.result-body {
+/* Scrolls without a scrollbar (M35, the user — the summary's content; M36 — the replay): a row cut
+   off at the bottom and the line above the buttons already say there is more. Wheel, touch and
+   keys still scroll. */
+.no-scrollbar {
   scrollbar-width: none;
 }
-.result-body::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
