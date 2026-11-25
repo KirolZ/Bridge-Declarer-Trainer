@@ -182,3 +182,83 @@ test.describe('phone width', () => {
     }
   });
 });
+
+// TASKS M35: the summary is never taller than the screen (the buttons stay in view while the
+// content scrolls), and it grows on a large screen.
+test.describe('summary size', () => {
+  const AUCTION_HAND = `${HAND}?d=S&a=1H-2D-2H-3D-3H-P-P-P`;
+
+  /** Beginner mode adds the score explanation: the longest summary. */
+  async function beginnerSummary(page: Page) {
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('seeded')) return;
+      sessionStorage.setItem('seeded', '1');
+      localStorage.setItem(
+        'bridge-trainer.settings.v1',
+        JSON.stringify({ beginnerMode: true, cardPlay: 'tap' }),
+      );
+      localStorage.setItem('bridge-trainer.learn.v1', JSON.stringify({ welcomed: true }));
+    });
+    await page.goto(AUCTION_HAND);
+    await claim(page, 7);
+    await expect(page.getByTestId('review')).toHaveAttribute('data-lost', '2');
+    await expect(page.getByTestId('score-explain')).toBeVisible();
+  }
+
+  test('a short phone: the buttons stay in view, the content scrolls', async ({ page }) => {
+    const errors = collectErrors(page);
+    await page.setViewportSize({ width: 360, height: 640 });
+    await beginnerSummary(page);
+    const result = page.getByTestId('result');
+    await result.getByTestId('auction-toggle').click();
+    await expect(result.getByRole('table')).toBeVisible();
+
+    await expect(result).toHaveAttribute('data-scrollable', 'true');
+    const body = page.getByTestId('result-body');
+    expect(await body.evaluate((b) => b.scrollHeight > b.clientHeight)).toBe(true);
+    // The popup and every button fit the screen without scrolling the page.
+    const box = (await result.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(640);
+    for (const name of ['แจกไพ่ใหม่', 'เล่นมือนี้ใหม่', 'หน้าแรก', /ดูย้อนหลัง/]) {
+      await expect(
+        result.getByRole('button', { name }).or(result.getByRole('link', { name })),
+      ).toBeInViewport({ ratio: 1 });
+    }
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+    ).toBe(false);
+    // The content scrolls to its end; the buttons stay where they are.
+    const before = (await result.getByRole('button', { name: 'แจกไพ่ใหม่' }).boundingBox())!;
+    await body.evaluate((b) => b.scrollTo(0, b.scrollHeight));
+    await expect(result.getByText(/ฝั่งป้องกันน่าจะมี/)).toBeInViewport();
+    expect((await result.getByRole('button', { name: 'แจกไพ่ใหม่' }).boundingBox())!.y).toBe(
+      before.y,
+    );
+    expect(errors).toEqual([]);
+  });
+
+  test('a large screen: the summary is bigger and still fits', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await beginnerSummary(page);
+    const result = page.getByTestId('result');
+    await expect.poll(async () => (await result.boundingBox())!.width).toBeGreaterThan(540);
+    const box = (await result.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(1080);
+    await expect(result.getByRole('button', { name: 'แจกไพ่ใหม่' })).toBeInViewport({ ratio: 1 });
+  });
+
+  test('a phone summary that fits has no line above the buttons', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto(AUCTION_HAND);
+    await claim(page, 7);
+    const result = page.getByTestId('result');
+    await expect(page.getByTestId('review')).toHaveAttribute('data-lost', '2');
+    await expect(result).toHaveAttribute('data-scrollable', 'false');
+    // Full width less the margins, as before M35 (polled: the popup scales in).
+    await expect.poll(async () => (await result.boundingBox())!.width).toBe(328);
+  });
+});

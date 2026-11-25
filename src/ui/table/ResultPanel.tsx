@@ -3,7 +3,7 @@
 // (§7.2), and the ways on: replay, share, new hand, play again, undo (§7.3).
 
 import { motion } from 'framer-motion';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Card, Contract, Vulnerability } from '../../engine';
 import { contractLabel, isDeclarerVulnerable, scoreBreakdown, tricksNeeded } from '../../engine';
@@ -208,6 +208,21 @@ export function ResultPanel(props: ResultPanelProps) {
   const first = useRef<HTMLButtonElement>(null);
   const t = useT();
   const [auctionOpen, setAuctionOpen] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [scrollable, setScrollable] = useState(false);
+  // A line between the content and the buttons only while the content scrolls (M35).
+  useLayoutEffect(() => {
+    const body = bodyRef.current;
+    const content = contentRef.current;
+    if (!body || !content) return;
+    const check = () => setScrollable(body.scrollHeight > body.clientHeight + 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(body);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
   // No scroll: on a phone the buttons are below the fold, the result should stay in view.
   useEffect(() => first.current?.focus({ preventScroll: true }), []);
 
@@ -219,73 +234,86 @@ export function ResultPanel(props: ResultPanelProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-40 overflow-y-auto bg-black/55 px-4 py-6"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/55 px-4 py-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <div className="flex min-h-full items-center justify-center">
-        <motion.div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="result-title"
-          data-testid="result"
-          data-made={result.made}
-          className="flex w-full max-w-md flex-col items-center gap-3 rounded-2xl border border-white/10 bg-felt-dark p-5 text-center shadow-2xl sm:p-6"
-          initial={{ scale: 0.9, y: 16 }}
-          animate={{ scale: 1, y: 0 }}
+      {/* Never taller than the screen (M35): the content scrolls, the buttons stay at the bottom. */}
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="result-title"
+        data-testid="result"
+        data-made={result.made}
+        data-scrollable={scrollable}
+        className="result-dialog flex max-h-full w-full max-w-md flex-col rounded-2xl border border-white/10 bg-felt-dark text-center shadow-2xl"
+        initial={{ scale: 0.9, y: 16 }}
+        animate={{ scale: 1, y: 0 }}
+      >
+        <div
+          ref={bodyRef}
+          data-testid="result-body"
+          className="min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-2 sm:px-6 sm:pt-6"
         >
-          <h2
-            id="result-title"
-            className={`text-2xl font-bold ${result.made ? 'text-amber-300' : 'text-red-300'}`}
-          >
-            {result.made
-              ? t.result.made(contractLabel(contract))
-              : t.result.down(contractLabel(contract), -result.result)}
-          </h2>
-          <p className="text-white/85" data-testid="result-tricks">
-            {t.result.tricks(nsTricks, ddTricks, needed, result.made ? result.result : 0)}
-          </p>
-          <p className="text-3xl font-bold tabular-nums" data-testid="score">
-            {result.total > 0 ? `+${result.total}` : result.total}
-            <span className="ml-1 text-base font-normal text-white/70">{t.result.points}</span>
-          </p>
-          {props.beginner && (
-            <ScoreExplain
-              contract={contract}
-              tricks={nsTricks}
-              vulnerable={isDeclarerVulnerable(vulnerability)}
-            />
-          )}
-          <p className="text-sm text-white/65" data-testid="result-notes">
-            {notes.map((note, i) => (
-              <Fragment key={i}>
-                {i > 0 && ' · '}
-                <span className="whitespace-nowrap">{note}</span>
-              </Fragment>
-            ))}
-          </p>
-
-          <ReviewSection
-            review={review}
-            reviewStatus={props.reviewStatus}
-            onReplay={props.onReplay}
-            onRetry={props.onRetryReview}
-          />
-
-          {props.hand.auction && props.auctionInfo && (
-            <div className="w-full rounded-xl bg-black/25 text-left">
-              <AuctionTable
-                auction={props.hand.auction}
-                vulnerability={vulnerability}
-                info={props.auctionInfo}
-                open={auctionOpen}
-                onToggle={() => setAuctionOpen((o) => !o)}
-                className="px-1.5 py-1.5"
+          <div ref={contentRef} className="flex flex-col items-center gap-3">
+            <h2
+              id="result-title"
+              className={`text-2xl font-bold ${result.made ? 'text-amber-300' : 'text-red-300'}`}
+            >
+              {result.made
+                ? t.result.made(contractLabel(contract))
+                : t.result.down(contractLabel(contract), -result.result)}
+            </h2>
+            <p className="text-white/85" data-testid="result-tricks">
+              {t.result.tricks(nsTricks, ddTricks, needed, result.made ? result.result : 0)}
+            </p>
+            <p className="text-3xl font-bold tabular-nums" data-testid="score">
+              {result.total > 0 ? `+${result.total}` : result.total}
+              <span className="ml-1 text-base font-normal text-white/70">{t.result.points}</span>
+            </p>
+            {props.beginner && (
+              <ScoreExplain
+                contract={contract}
+                tricks={nsTricks}
+                vulnerable={isDeclarerVulnerable(vulnerability)}
               />
-            </div>
-          )}
+            )}
+            <p className="text-sm text-white/65" data-testid="result-notes">
+              {notes.map((note, i) => (
+                <Fragment key={i}>
+                  {i > 0 && ' · '}
+                  <span className="whitespace-nowrap">{note}</span>
+                </Fragment>
+              ))}
+            </p>
 
-          <div className="mt-1 flex w-full flex-wrap gap-2">
+            <ReviewSection
+              review={review}
+              reviewStatus={props.reviewStatus}
+              onReplay={props.onReplay}
+              onRetry={props.onRetryReview}
+            />
+
+            {props.hand.auction && props.auctionInfo && (
+              <div className="w-full rounded-xl bg-black/25 text-left">
+                <AuctionTable
+                  auction={props.hand.auction}
+                  vulnerability={vulnerability}
+                  info={props.auctionInfo}
+                  open={auctionOpen}
+                  onToggle={() => setAuctionOpen((o) => !o)}
+                  className="px-1.5 py-1.5"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          data-testid="result-actions"
+          className={`flex flex-col gap-3 px-5 pb-5 sm:px-6 sm:pb-6 ${scrollable ? 'border-t border-white/10 pt-3' : 'pt-2'}`}
+        >
+          <div className="flex w-full flex-wrap gap-2">
             <button type="button" onClick={() => props.onReplay(1)} className={SECONDARY}>
               {t.result.replay}
             </button>
@@ -320,8 +348,8 @@ export function ResultPanel(props: ResultPanelProps) {
               {t.common.home}
             </Link>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

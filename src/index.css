@@ -94,3 +94,16 @@ body {
     --card-w: 58px;
   }
 }
+
+/* End-of-hand summary (M35): grows with a large screen. `zoom` scales the text, buttons and the
+   cards written in the text alike; the height check keeps a short screen (1280 × 720) at 1×. */
+@media (min-width: 1024px) and (min-height: 800px) {
+  .result-dialog {
+    zoom: 1.2;
+  }
+}
+@media (min-width: 1600px) and (min-height: 1000px) {
+  .result-dialog {
+    zoom: 1.3;
+  }
+}
