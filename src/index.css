@@ -99,7 +99,7 @@ body {
   .table-cards {
     --card-w: min(
       clamp(40px, 14.5cqw, var(--card-cap, 130px)),
-      max(40px, calc((100svh - 290px) / 7.2))
+      max(40px, calc((100svh - 290px - var(--card-extra, 0px)) / 7.2))
     );
   }
 }
@@ -144,6 +144,13 @@ body {
 }
 .auction-top ~ main .play-cards {
   --card-extra: 180px;
+}
+/* The one-line auction above the table (M33) was not counted: 1024 × 768 / 1180 × 820 scrolled
+   12–13 px, 360 × 640 5 px (M37 37.8). The line is 33 px tall, but the 250 / 290 px already had
+   some room: 16 px is the least that stops the scroll at every size measured (12 px left 1 px at
+   1180 × 820), so the cards lose only ~2 px. */
+[data-auction-bar] ~ main .play-cards {
+  --card-extra: 16px;
 }
 
 /* The auction sheet on a tablet or a laptop (M37, the user: too small there): grows like the

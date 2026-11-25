@@ -286,7 +286,7 @@ export function AuctionTable({
   const t = useT();
   if (!open) {
     return (
-      <div className={className}>
+      <div className={className} data-auction-bar>
         <AuctionLine auction={auction} onOpen={onToggle} />
       </div>
     );

@@ -411,3 +411,23 @@ test('a tablet that keeps the sheet: the sheet grows and stays on the screen', a
   await page.setViewportSize({ width: 412, height: 915 });
   await expect.poll(() => sheet.evaluate((el) => getComputedStyle(el).zoom)).toBe('1');
 });
+
+// TASKS M37 37.8: the one-line auction above the table is counted in the card height, so a short
+// screen with it does not scroll (it did by 5–13 px).
+for (const [width, height] of [
+  [1024, 768],
+  [1180, 820],
+  [360, 640],
+] as const) {
+  test(`${width} × ${height} with the auction line: the table fits without scrolling`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto(BID);
+    await expect(page.locator('[data-playable="true"]').first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('auction-line')).toBeVisible();
+    expect(
+      await page.evaluate(() => document.scrollingElement!.scrollHeight - innerHeight),
+    ).toBeLessThanOrEqual(0);
+  });
+}
