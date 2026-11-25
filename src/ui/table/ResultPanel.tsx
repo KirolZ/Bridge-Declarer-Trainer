@@ -253,7 +253,7 @@ export function ResultPanel(props: ResultPanelProps) {
         <div
           ref={bodyRef}
           data-testid="result-body"
-          className="min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-2 sm:px-6 sm:pt-6"
+          className="result-body min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-2 sm:px-6 sm:pt-6"
         >
           <div ref={contentRef} className="flex flex-col items-center gap-3">
             <h2

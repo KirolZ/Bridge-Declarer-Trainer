@@ -107,3 +107,12 @@ body {
     zoom: 1.3;
   }
 }
+
+/* The summary's content scrolls without a scrollbar (M35, the user): a row cut off at the bottom
+   and the line above the buttons already say there is more. Wheel, touch and keys still scroll. */
+.result-body {
+  scrollbar-width: none;
+}
+.result-body::-webkit-scrollbar {
+  display: none;
+}

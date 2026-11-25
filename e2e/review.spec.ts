@@ -216,6 +216,8 @@ test.describe('summary size', () => {
     await expect(result).toHaveAttribute('data-scrollable', 'true');
     const body = page.getByTestId('result-body');
     expect(await body.evaluate((b) => b.scrollHeight > b.clientHeight)).toBe(true);
+    // No scrollbar (35.5, the user). Headless Chromium hides scrollbars anyway, so check the style.
+    expect(await body.evaluate((b) => getComputedStyle(b).scrollbarWidth)).toBe('none');
     // The popup and every button fit the screen without scrolling the page.
     const box = (await result.boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(0);
