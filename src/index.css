@@ -3,6 +3,9 @@
 @theme {
   --color-felt: #0f5132;
   --color-felt-dark: #0a3622;
+  /* The summary's button panel and its tab (M35): a shade darker than felt-dark, opaque so the
+     content scrolling under the tab does not show through. */
+  --color-result-panel: #072a1a;
   --color-suit-red: #c62828;
   --color-suit-black: #111827;
 }

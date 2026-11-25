@@ -243,8 +243,10 @@ test.describe('summary size', () => {
     // Hide the buttons to read with the whole height (35.6, the user), then bring them back.
     const toggle = page.getByTestId('result-buttons-toggle');
     const tall = await body.evaluate((b) => b.clientHeight);
+    await expect(toggle).toHaveAccessibleName('ซ่อนปุ่ม');
     await toggle.click();
     await expect(result.getByRole('button', { name: 'แจกไพ่ใหม่' })).toHaveCount(0);
+    await expect(toggle).toHaveAccessibleName('แสดงปุ่ม');
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await expect(toggle).toBeInViewport({ ratio: 1 });
     expect(await body.evaluate((b) => b.clientHeight)).toBeGreaterThan(tall + 100);

@@ -2,7 +2,7 @@
 // double-dummy value, where tricks were lost and which cards would have kept them, hints used
 // (§7.2), and the ways on: replay, share, new hand, play again, undo (§7.3).
 
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Card, Contract, Vulnerability } from '../../engine';
@@ -214,6 +214,8 @@ export function ResultPanel(props: ResultPanelProps) {
   // A line between the content and the buttons only while the content scrolls (M35).
   const scrollable = useScrollable(bodyRef, [contentRef]);
   const [buttonsHidden, setButtonsHidden] = useState(false);
+  // The buttons sit on a panel with a tab while the content scrolls or they are hidden.
+  const tabbed = scrollable || buttonsHidden;
   // No scroll: the top of a long summary (the result) stays in view.
   useEffect(() => first.current?.focus({ preventScroll: true }), []);
 
@@ -237,14 +239,14 @@ export function ResultPanel(props: ResultPanelProps) {
         data-testid="result"
         data-made={result.made}
         data-scrollable={scrollable}
-        className="result-dialog flex max-h-full w-full max-w-md flex-col rounded-2xl border border-white/10 bg-felt-dark text-center shadow-2xl"
+        className="result-dialog flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-felt-dark text-center shadow-2xl"
         initial={{ scale: 0.9, y: 16 }}
         animate={{ scale: 1, y: 0 }}
       >
         <div
           ref={bodyRef}
           data-testid="result-body"
-          className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-2 sm:px-6 sm:pt-6"
+          className={`no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pt-5 sm:px-6 sm:pt-6 ${tabbed ? 'pb-8' : 'pb-2'}`}
         >
           <div ref={contentRef} className="flex flex-col items-center gap-3">
             <h2
@@ -303,66 +305,94 @@ export function ResultPanel(props: ResultPanelProps) {
         <div
           data-testid="result-actions"
           data-hidden={buttonsHidden}
-          className={
-            buttonsHidden
-              ? 'flex justify-end border-t border-white/10 px-3 py-2'
-              : `relative flex flex-col px-5 pb-5 sm:px-6 sm:pb-6 ${scrollable ? 'border-t border-white/10 pt-3' : 'pt-2'}`
-          }
+          className={`relative ${tabbed ? 'border-t border-white/10 bg-result-panel' : ''}`}
         >
-          {/* Hide the buttons to read a long summary with the whole height (M35, the user).
-              Only while the content scrolls (or the buttons are hidden): otherwise it gains nothing. */}
-          {(scrollable || buttonsHidden) && (
+          {/* A tab on the panel's top right edge hides the buttons to read a long summary with the
+              whole height (M35, the user); it stays on the bottom edge to bring them back. Only while
+              the content scrolls (or the buttons are hidden): otherwise it gains nothing. */}
+          {tabbed && (
             <button
               type="button"
               onClick={() => setButtonsHidden((h) => !h)}
               aria-expanded={!buttonsHidden}
               aria-controls="result-buttons"
+              aria-label={buttonsHidden ? t.result.showButtons : t.result.hideButtons}
+              title={buttonsHidden ? t.result.showButtons : t.result.hideButtons}
               data-testid="result-buttons-toggle"
-              className={`rounded-full border border-white/15 bg-felt-dark px-2.5 py-0.5 text-xs text-white/80 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none ${buttonsHidden ? '' : 'absolute -top-3 right-3'}`}
+              className="absolute right-4 bottom-full grid h-6 w-12 place-items-center rounded-t-lg border border-b-0 border-white/10 bg-result-panel text-white/70 hover:text-white focus-visible:text-white focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none focus-visible:ring-inset"
             >
-              {buttonsHidden ? t.result.showButtons : t.result.hideButtons}{' '}
-              <span aria-hidden="true">{buttonsHidden ? '▴' : '▾'}</span>
+              <motion.svg
+                viewBox="0 0 16 16"
+                className="size-3.5"
+                aria-hidden="true"
+                initial={false}
+                animate={{ rotate: buttonsHidden ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <path
+                  d="M3.5 6l4.5 4.5L12.5 6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </motion.svg>
             </button>
           )}
-          {!buttonsHidden && (
-            <div id="result-buttons" className="flex flex-col gap-3">
-              <div className="flex w-full flex-wrap gap-2">
-                <button type="button" onClick={() => props.onReplay(1)} className={SECONDARY}>
-                  {t.result.replay}
-                </button>
-                <ShareButton hand={props.hand} className={SECONDARY} />
-              </div>
-              <div className="flex w-full gap-2">
-                <button
-                  ref={first}
-                  type="button"
-                  onClick={props.onNewHand}
-                  className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+          <AnimatePresence initial={false}>
+            {!buttonsHidden && (
+              <motion.div
+                key="buttons"
+                id="result-buttons"
+                className="overflow-hidden"
+                initial={{ height: 0 }}
+                animate={{ height: 'auto' }}
+                exit={{ height: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+              >
+                <div
+                  className={`flex flex-col gap-3 px-5 pb-5 sm:px-6 sm:pb-6 ${tabbed ? 'pt-3' : 'pt-2'}`}
                 >
-                  {t.table.newDeal}
-                </button>
-                <button type="button" onClick={props.onRestart} className={SECONDARY}>
-                  {t.table.restart}
-                </button>
-              </div>
-              <div className="flex w-full gap-2">
-                {/* Undo is for beginner mode only (M22). */}
-                {props.beginner && (
-                  <button
-                    type="button"
-                    onClick={props.onUndo}
-                    aria-keyshortcuts="U"
-                    className={SECONDARY}
-                  >
-                    {t.result.undo(claimed)}
-                  </button>
-                )}
-                <Link to="/" className={SECONDARY}>
-                  {t.common.home}
-                </Link>
-              </div>
-            </div>
-          )}
+                  <div className="flex w-full flex-wrap gap-2">
+                    <button type="button" onClick={() => props.onReplay(1)} className={SECONDARY}>
+                      {t.result.replay}
+                    </button>
+                    <ShareButton hand={props.hand} className={SECONDARY} />
+                  </div>
+                  <div className="flex w-full gap-2">
+                    <button
+                      ref={first}
+                      type="button"
+                      onClick={props.onNewHand}
+                      className="flex-1 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-black hover:bg-amber-300 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                    >
+                      {t.table.newDeal}
+                    </button>
+                    <button type="button" onClick={props.onRestart} className={SECONDARY}>
+                      {t.table.restart}
+                    </button>
+                  </div>
+                  <div className="flex w-full gap-2">
+                    {/* Undo is for beginner mode only (M22). */}
+                    {props.beginner && (
+                      <button
+                        type="button"
+                        onClick={props.onUndo}
+                        aria-keyshortcuts="U"
+                        className={SECONDARY}
+                      >
+                        {t.result.undo(claimed)}
+                      </button>
+                    )}
+                    <Link to="/" className={SECONDARY}>
+                      {t.common.home}
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </motion.div>
