@@ -339,6 +339,73 @@ test.describe('replay size', () => {
     const notes = (await replay.getByTestId('replay-notes').boundingBox())!;
     const actions = (await replay.getByTestId('replay-actions').boundingBox())!;
     expect(actions.y - (notes.y + notes.height)).toBeLessThan(24);
-    expect(actions.y + actions.height).toBeLessThan(1000);
+    // Clear of the bottom edge (not stuck there). M37 made the replay 1.3× at this size, so the
+    // buttons end near 1005 px — still well above the screen's 1080.
+    expect(actions.y + actions.height).toBeLessThan(1080 - 48);
+  });
+});
+
+// TASKS M37: on a large screen the replay grows by the summary's steps (from 900 px tall): wider
+// felt, bigger hand text and trick cards; smaller screens keep the old sizes.
+test.describe('replay on a large screen', () => {
+  const AUCTION_HAND = `${HAND}?d=S&a=1H-2D-2H-3D-3H-P-P-P`;
+
+  async function openReplay(page: Page) {
+    await page.goto(AUCTION_HAND);
+    await claim(page, 7);
+    await page.getByTestId('loss').first().click();
+    const replay = page.getByTestId('replay');
+    await expect(replay).toHaveAttribute('data-trick', '1');
+    return replay;
+  }
+
+  const sizesOf = (replay: ReturnType<Page['getByTestId']>) =>
+    replay.evaluate((r) => ({
+      font: parseFloat(getComputedStyle(r.querySelector('[data-open-hand="North"]')!).fontSize),
+      cardW: parseFloat(
+        getComputedStyle(r.querySelector('.table-cards')!).getPropertyValue('--card-w'),
+      ),
+      felt: r.querySelector('.table-felt')!.getBoundingClientRect().width,
+    }));
+
+  test('1920 × 1080: 1.3 times, still fits', async ({ page }) => {
+    const errors = collectErrors(page);
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    const replay = await openReplay(page);
+    const s = await sizesOf(replay);
+    expect(s.font).toBeCloseTo(18.2, 0);
+    expect(s.cardW).toBeCloseTo(104, 0);
+    expect(s.felt).toBeGreaterThan(990);
+    await expect(replay).toHaveAttribute('data-scrollable', 'false');
+    await expect(replay.getByRole('button', { name: 'ลองเล่นใหม่จากตรงนี้' })).toBeInViewport({
+      ratio: 1,
+    });
+    expect(await replay.evaluate((r) => r.scrollWidth > r.clientWidth)).toBe(false);
+    expect(errors).toEqual([]);
+  });
+
+  test('iPad Pro 13 landscape: 1.2 times, still fits', async ({ page }) => {
+    await page.setViewportSize({ width: 1376, height: 1032 });
+    const replay = await openReplay(page);
+    const s = await sizesOf(replay);
+    expect(s.font).toBeCloseTo(16.8, 0);
+    expect(s.cardW).toBeCloseTo(96, 0);
+    await expect(replay).toHaveAttribute('data-scrollable', 'false');
+  });
+
+  test('1280 × 800 and an iPad mini keep the old sizes', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    let replay = await openReplay(page);
+    let s = await sizesOf(replay);
+    expect(s.font).toBe(14);
+    expect(s.felt).toBeLessThanOrEqual(768);
+    await expect(replay).toHaveAttribute('data-scrollable', 'false');
+
+    // 768 px wide: the table's cards grow (M37) but the replay's stay at the old 80 px cap.
+    await page.setViewportSize({ width: 768, height: 1024 });
+    replay = page.getByTestId('replay');
+    await expect.poll(async () => (await sizesOf(replay)).cardW).toBe(80);
+    s = await sizesOf(replay);
+    expect(s.font).toBe(14);
   });
 });

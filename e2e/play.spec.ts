@@ -126,3 +126,63 @@ test('a broken link says so', async ({ page }) => {
   await page.goto('/#/play/GNA8WobYT233o4lpzA/8S');
   await expect(page.getByRole('heading', { name: 'ลิงก์มือไพ่ไม่ถูกต้อง' })).toBeVisible();
 });
+
+// TASKS M37: cards grow on a large screen (the cap was 80 px) and the whole table still fits;
+// phones and short laptop screens keep their size.
+test.describe('card size', () => {
+  const SIZES = [
+    { width: 1032, height: 1376, min: 118, max: 130 }, // iPad Pro 13, portrait
+    { width: 1376, height: 1032, min: 100, max: 112 }, // iPad Pro 13, landscape
+    { width: 1920, height: 1080, min: 110, max: 120 },
+    { width: 1280, height: 720, min: 64, max: 67 }, // as before M37
+    { width: 360, height: 740, min: 47, max: 50 }, // as before M37
+  ];
+
+  for (const { width, height, min, max } of SIZES) {
+    test(`${width} × ${height}: cards ${min}–${max} px, the table fits`, async ({ page }) => {
+      const errors = collectErrors(page);
+      await page.setViewportSize({ width, height });
+      await page.goto(HAND);
+      // West has led: dummy is face up and the player picks from it.
+      const card = page.locator('[data-playable="true"]').first();
+      await expect(card).toBeVisible({ timeout: 15_000 });
+      const w = (await card.boundingBox())!.width;
+      expect(w).toBeGreaterThanOrEqual(min);
+      expect(w).toBeLessThanOrEqual(max);
+
+      const fit = await page.evaluate(() => {
+        const se = document.scrollingElement!;
+        const cards = Array.from(document.querySelectorAll('.table-cards section'));
+        return {
+          lowest: Math.max(...cards.map((s) => s.getBoundingClientRect().bottom)),
+          scrollY: se.scrollHeight - innerHeight,
+        };
+      });
+      expect(fit.lowest).toBeLessThanOrEqual(height);
+      expect(fit.scrollY).toBeLessThanOrEqual(0);
+      expect(await hasHorizontalScroll(page)).toBe(false);
+      expect(errors).toEqual([]);
+    });
+  }
+
+  // From 640 px North's name tag sits in the corner beside dummy's columns. Bigger cards must not
+  // push the columns under it (they did at 640–700 px even before M37).
+  for (const width of [640, 768, 1032]) {
+    test(`${width} px: dummy's columns stay clear of North's name tag`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1200 });
+      await page.goto(HAND);
+      await expect(page.locator('[data-playable="true"]').first()).toBeVisible({ timeout: 15_000 });
+      const north = page.locator('section[aria-label="North (dummy)"]');
+      const gap = await north.evaluate((n) => {
+        const tag = n.firstElementChild!.getBoundingClientRect();
+        const left = Math.min(
+          ...Array.from(n.querySelectorAll('[data-suit]')).map(
+            (c) => c.getBoundingClientRect().left,
+          ),
+        );
+        return left - tag.right;
+      });
+      expect(gap).toBeGreaterThanOrEqual(8);
+    });
+  }
+});

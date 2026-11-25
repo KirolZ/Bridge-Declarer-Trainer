@@ -380,7 +380,7 @@ export function PlayTable() {
                 : undefined
             }
           />
-          <div className="table-cards flex flex-1 flex-col justify-between gap-2 p-2 sm:gap-3 sm:p-4">
+          <div className="table-cards play-cards flex flex-1 flex-col justify-between gap-2 p-2 sm:gap-3 sm:p-4">
             <section
               aria-label="North (dummy)"
               data-turn={active('N') || undefined}

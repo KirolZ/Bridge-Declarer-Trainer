@@ -103,7 +103,7 @@ export function ReplayView(props: ReplayViewProps) {
   );
   const diagram = (seat: Seat) => (
     <div className="flex flex-col items-center gap-1">
-      <span className="rounded-full bg-black/35 px-2 text-xs font-semibold text-white/85">
+      <span className="replay-seat rounded-full bg-black/35 px-2 text-xs font-semibold text-white/85">
         {t.seatRole[seat]}
       </span>
       <OpenHand
@@ -125,9 +125,9 @@ export function ReplayView(props: ReplayViewProps) {
       data-trick={trick}
       ref={scrollerRef}
       data-scrollable={scrollable}
-      className="no-scrollbar fixed inset-0 z-40 flex flex-col overflow-y-auto bg-felt-dark"
+      className="replay no-scrollbar fixed inset-0 z-40 flex flex-col overflow-y-auto bg-felt-dark"
     >
-      <header className="flex items-center gap-2 border-b border-white/10 bg-black/25 px-2 py-1.5 sm:px-4">
+      <header className="replay-zoom flex items-center gap-2 border-b border-white/10 bg-black/25 px-2 py-1.5 sm:px-4">
         <button
           type="button"
           onClick={onClose}
@@ -145,18 +145,20 @@ export function ReplayView(props: ReplayViewProps) {
       </header>
 
       {props.auction && props.auctionInfo && (
-        <AuctionTable
-          auction={props.auction}
-          vulnerability={props.vulnerability}
-          info={props.auctionInfo}
-          open={auctionOpen}
-          onToggle={() => setAuctionOpen((o) => !o)}
-        />
+        <div className="replay-zoom">
+          <AuctionTable
+            auction={props.auction}
+            vulnerability={props.vulnerability}
+            info={props.auctionInfo}
+            open={auctionOpen}
+            onToggle={() => setAuctionOpen((o) => !o)}
+          />
+        </div>
       )}
 
       <nav
         aria-label={t.replay.pickTrick}
-        className="flex flex-wrap justify-center gap-1 px-2 pt-2 sm:px-4"
+        className="replay-zoom flex flex-wrap justify-center gap-1 px-2 pt-2 sm:px-4"
       >
         {Array.from({ length: count }, (_, i) => i + 1).map((n) => {
           const lossy = lossTricks.has(n);
@@ -189,7 +191,7 @@ export function ReplayView(props: ReplayViewProps) {
 
       <main ref={mainRef} className="flex flex-1 flex-col gap-2 p-2 sm:p-4">
         <div
-          className="table-felt mx-auto flex w-full max-w-3xl flex-col"
+          className="table-felt replay-col mx-auto flex w-full flex-col"
           style={{ containerType: 'inline-size' }}
         >
           <div className="table-cards flex flex-col items-center gap-2 p-2 sm:gap-3 sm:p-4">
@@ -210,7 +212,7 @@ export function ReplayView(props: ReplayViewProps) {
         </div>
 
         <div
-          className="mx-auto flex w-full max-w-3xl flex-col gap-1.5 text-sm text-white/85"
+          className="replay-zoom mx-auto flex w-full max-w-3xl flex-col gap-1.5 text-sm text-white/85"
           data-testid="replay-notes"
         >
           <p>
@@ -247,7 +249,7 @@ export function ReplayView(props: ReplayViewProps) {
           data-testid="replay-actions"
           className={`sticky bottom-0 -mx-2 -mb-2 bg-felt-dark px-2 py-2 sm:-mx-4 sm:-mb-4 sm:px-4 ${scrollable ? 'border-t border-white/10' : ''}`}
         >
-          <div className="mx-auto flex w-full max-w-3xl flex-wrap gap-2">
+          <div className="replay-zoom mx-auto flex w-full max-w-3xl flex-wrap gap-2">
             <button
               type="button"
               className={NAV}

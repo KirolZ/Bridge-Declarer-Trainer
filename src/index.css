@@ -70,15 +70,37 @@ body {
 /*
  * Width-bound on phones, height-bound on desktop windows: the table is about 7 card widths tall
  * plus ~250 px of labels and padding, so a whole hand fits on screen without scrolling.
+ * The 130 px cap (M37, was 80 px) only stops a very large screen; the width and height terms
+ * decide everywhere else (an iPad or a 1920 × 1080 window lands at 108–127 px). The replay sets
+ * its own, lower cap (`--card-cap` below).
  */
 .table-cards {
-  --card-w: min(clamp(40px, 14.5cqw, 80px), max(40px, calc((100svh - 250px) / 7.2)));
+  --card-w: min(
+    clamp(40px, 14.5cqw, var(--card-cap, 130px)),
+    max(40px, calc((100svh - 250px) / 7.2)),
+    var(--card-fit, 100vw)
+  );
+}
+
+/*
+ * From 640 px North's name tag sits in the felt's top-left corner, beside dummy's four columns
+ * (4.42 card widths with the gaps, centred). Keep the columns clear of the tag (~132 px from the
+ * section's edge, plus a 12 px gap): 4.42 × card <= felt − 2 × 16 px padding − 2 × 144 px.
+ * Before M37 the 80 px cap already overlapped it at 640–700 px; the 130 px cap would at 640–880.
+ */
+@media (min-width: 640px) {
+  .play-cards {
+    --card-fit: max(40px, calc((100cqw - 320px) / 4.42));
+  }
 }
 
 /* Phones: the practice buttons take a row of their own under the contract. */
 @media (max-width: 639.98px) {
   .table-cards {
-    --card-w: min(clamp(40px, 14.5cqw, 80px), max(40px, calc((100svh - 290px) / 7.2)));
+    --card-w: min(
+      clamp(40px, 14.5cqw, var(--card-cap, 130px)),
+      max(40px, calc((100svh - 290px) / 7.2))
+    );
   }
 }
 
@@ -108,6 +130,39 @@ body {
 @media (min-width: 1600px) and (min-height: 1000px) {
   .result-dialog {
     zoom: 1.3;
+  }
+}
+
+/* Replay on a large screen (M37): steps like the summary's (M35) but from 900 px tall — the replay
+   is taller than the summary, and a 1280 × 800 window would start to scroll. The felt widens by
+   the factor and its hand diagrams and trick cards grow with it — the trick cards keep the old
+   80 px cap times the factor, or they would follow the table's 130 px cap and dwarf the text
+   hands (an iPad mini at 1×: 104 px next to 14 px text); the bars above and below
+   (title, trick buttons, auction, notes, buttons) are zoomed as a whole. The felt itself is not
+   zoomed: it holds `cqw` / `svh` lengths that zoom would scale a second time. */
+.replay {
+  --card-cap: calc(80px * var(--replay-zoom, 1));
+}
+.replay-zoom {
+  zoom: var(--replay-zoom, 1);
+}
+.replay-col {
+  max-width: calc(48rem * var(--replay-zoom, 1));
+}
+@media (min-width: 1024px) and (min-height: 900px) {
+  .replay {
+    --replay-zoom: 1.2;
+  }
+  .replay [data-open-hand] {
+    font-size: calc(0.875rem * var(--replay-zoom));
+  }
+  .replay-seat {
+    font-size: calc(0.75rem * var(--replay-zoom));
+  }
+}
+@media (min-width: 1600px) and (min-height: 1000px) {
+  .replay {
+    --replay-zoom: 1.3;
   }
 }
 
