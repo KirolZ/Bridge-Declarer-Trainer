@@ -9,7 +9,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { Auction, Call, Seat, Vulnerability } from '../../engine';
 import { callerAt, strainSymbol } from '../../engine';
 import type { Messages } from '../../i18n';
-import { useLanguage, useT } from '../gameStore';
+import { useLanguage, useSettings, useT } from '../gameStore';
 import { Rich, TermSheetProvider } from '../learn/Rich';
 import { SEAT_NAME } from './labels';
 import type { AuctionInfo } from './auctionInfo';
@@ -168,7 +168,10 @@ function AuctionBody({
   for (let i = 0; i < cells.length; i += 4) rows.push(cells.slice(i, i + 4));
   const meaningOf = (i: number) => meaningMarkup(info.meanings[i] ?? null, t);
   const pickedCall = picked === null ? null : (calls[picked] ?? null);
-  const defenders = (['W', 'E'] as const).filter((s) => info.inference[s]);
+  // What the defenders probably hold is a beginner's aid (M38, the user): other players count it
+  // from the auction themselves. Call meanings stay for everyone.
+  const beginner = useSettings((s) => s.settings.beginnerMode);
+  const defenders = beginner ? (['W', 'E'] as const).filter((s) => info.inference[s]) : [];
 
   return (
     <div className="flex flex-col gap-1.5 @2xl:flex-row @2xl:items-start @2xl:gap-6">

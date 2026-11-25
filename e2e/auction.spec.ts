@@ -186,7 +186,7 @@ test('with "แสดงการประมูล" off, new deals have no auct
 // bidder's own auction: S 1♥, W 2♦ (overcall), N 2♥, all pass — 2♥ by South.
 const BID = '/#/play/GNA8WobYT233o4lpzA/2H?d=S&a=1H-2D-2H-P-P-P';
 
-test('tapping a call shows what it means, with what the defenders probably hold', async ({
+test('tapping a call shows what it means; what the defenders hold is for beginners only', async ({
   page,
 }) => {
   const errors = collectErrors(page);
@@ -212,12 +212,9 @@ test('tapping a call shows what it means, with what the defenders probably hold'
     'North: 2♥ — raise ดอกของคู่ · 6–10 HCP · ♥ 3 ใบขึ้นไป',
   );
 
-  // Dummy is face up once West has led: 20 HCP out of sight, West showed 10–16.
-  const inference = page.getByTestId('auction-inference');
-  await expect(inference.locator('[data-seat="W"]')).toHaveText('West: 10–16 HCP · ♦ 5 ใบขึ้นไป', {
-    timeout: 15_000,
-  });
-  await expect(inference.locator('[data-seat="E"]')).toHaveText('East: 4–10 HCP · ♦ ไม่เกิน 4 ใบ');
+  // What the defenders probably hold is a beginner-mode aid (M38): not here, even with dummy up.
+  await expect(page.locator('[data-playable="true"]').first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId('auction-inference')).toHaveCount(0);
   await noSideScroll(page);
 
   // A closes and opens the sheet; the panel beside the table is always there.
@@ -249,7 +246,8 @@ test('the summary and the replay show the auction too', async ({ page }) => {
   await result.getByTestId('auction-toggle').click();
   await result.getByTestId('auction-call-button').first().click();
   await expect(result.getByTestId('auction-meaning')).toContainText('1♥ (South) — เปิดประมูล');
-  await expect(result.getByTestId('auction-inference')).toContainText('West: 10–16 HCP');
+  // Not in beginner mode: no "the defenders probably hold" here either (M38).
+  await expect(result.getByTestId('auction-inference')).toHaveCount(0);
   await noSideScroll(page);
 
   await result.getByRole('button', { name: 'ดูย้อนหลัง' }).click();
@@ -257,6 +255,7 @@ test('the summary and the replay show the auction too', async ({ page }) => {
   await expect(replay.getByTestId('auction-line')).toBeVisible();
   await replay.getByTestId('auction-toggle').click();
   await expect(replay.getByTestId('auction-call')).toHaveCount(6);
+  await expect(replay.getByTestId('auction-inference')).toHaveCount(0);
   await noSideScroll(page);
   expect(errors).toEqual([]);
 });
@@ -294,6 +293,12 @@ test('beginner mode starts with the auction folded and a tip about the defender 
   // The tip points at the auction: on a narrower screen the line opens it.
   if (!hasPanel(page)) await page.getByTestId('auction-toggle').click();
   await expect(page.getByTestId('auction')).toBeVisible();
+  // Beginner mode shows what the defenders probably hold (M38): dummy is face up once West has
+  // led, 20 HCP out of sight, West showed 10–16.
+  const inference = page.getByTestId('auction-inference');
+  await expect(inference.locator('[data-seat="W"]')).toHaveText('West: 10–16 HCP · ♦ 5 ใบขึ้นไป');
+  await expect(inference.locator('[data-seat="E"]')).toHaveText('East: 4–10 HCP · ♦ ไม่เกิน 4 ใบ');
+  await noSideScroll(page);
   expect(errors).toEqual([]);
 });
 

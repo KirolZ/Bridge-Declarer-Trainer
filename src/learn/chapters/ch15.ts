@@ -103,8 +103,8 @@ export const CH15: Chapter<Bilingual> = {
     {
       kind: 'note',
       text: {
-        th: 'ในตารางการประมูลมี**ฝั่งป้องกันน่าจะมี** ที่นับแบบนี้ให้แล้ว ลองนับเองก่อน แล้วค่อยดูว่าตรงไหม',
-        en: 'In the auction table, **The defenders probably hold** does this count for you. Try it yourself first, then check.',
+        th: 'ในโหมดมือใหม่ ตารางการประมูลมี**ฝั่งป้องกันน่าจะมี** ที่นับแบบนี้ให้แล้ว ลองนับเองก่อน แล้วค่อยดูว่าตรงไหม พอคล่องแล้วปิดโหมดมือใหม่ แล้วนับเองทั้งหมด',
+        en: 'In beginner mode, the auction table has **The defenders probably hold**, which does this count for you. Try it yourself first, then check. Once you are at ease, turn beginner mode off and count it all yourself.',
       },
     },
     { kind: 'h', text: { th: 'ใช้ตอนเล่น', en: 'Using it in play' } },

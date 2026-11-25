@@ -312,7 +312,8 @@ test.describe('replay size', () => {
     const y = (await playFrom.boundingBox())!.y;
     await replay.evaluate((r) => r.scrollTo(0, r.scrollHeight));
     await expect(replay.getByTestId('replay-loss').first()).toBeInViewport({ ratio: 1 });
-    expect((await playFrom.boundingBox())!.y).toBe(y);
+    // Within half a pixel: a sticky bar can land on a sub-pixel at the end of the scroll.
+    expect((await playFrom.boundingBox())!.y).toBeCloseTo(y, 0);
     expect(await replay.evaluate((r) => r.scrollWidth > r.clientWidth)).toBe(false);
 
     // North's spades carry the "better" rings; each suit stays on one line.
